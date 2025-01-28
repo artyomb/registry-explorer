@@ -1,0 +1,111 @@
+ruby:
+  base_path = ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../docker/data/docker/registry/v2'
+  path_to_repositories = base_path + "/repositories"
+  repositories_path_list = Dir.glob(path_to_repositories + "/*").select { |f| File.directory?(f) }
+  repositories = []
+  repositories_path_list.each do |repository_path|
+    repo_name = (repository_path.split('/').last).to_sym
+    current_repo = { name: repo_name, tags: [] }
+    repositories << current_repo
+    puts("-" * 1000 + "\n" + repository_path + "\n" + "-" * 1000)
+    Dir.glob(repository_path + "/_manifests/tags/*").select{ |f| File.directory?(f) }.each do |tag_path|
+      puts tag_path
+      current_tag = { name: tag_path.split('/').last, layers_in_manifest: [], existing_layers_in_blob: [], existing_layers_in_registry: [] }
+      #current_tag = { name: tag_path.split('/').last, manifest_content: nil}
+      current_repo[:tags] << current_tag
+      manifest_sha256 = Dir.glob(tag_path + "/index/sha256/*").first.split('/').last
+      puts("-" * 1000 + "\n" + manifest_sha256 + "\n" + "-" * 1000)
+      manifest_path = Dir.glob(base_path + "/blobs/sha256/#{manifest_sha256[0..1]}/*")
+                         .select { |f| File.directory?(f) and f.split('/').last == manifest_sha256 }.first + "/data"
+      manifest_data = JSON.parse(File.read(manifest_path))
+      current_tag[:layers_in_manifest] = manifest_data["layers"].map { |layer| layer["digest"] }
+      #current_tag[:manifest_content] = manifest_data
+    end
+  end
+
+sass:
+  .macro_container
+    display: flex
+    flex-direction: column
+    .table-header
+      .header-element
+    .expandable-repository
+      cursor: pointer
+      &.expand-tags
+        .hide-show-arrow
+          background-color: rgba(255, 255, 255, 0.2)
+          transform: rotate(90deg)
+        .table-row
+          background-color: rgba(255, 255, 255, 0.1)
+      .hide-show-arrow
+        cursor: pointer
+        transition: transform 0.3s ease
+        transform: rotate(0deg)
+      .table-row
+        width: 90%
+        .row-element
+    .expandable-tag
+      //display: none
+      &.outer-expanded
+        display: table-row
+javascript:
+    document.addEventListener("DOMContentLoaded", function() {
+        document.querySelectorAll(".expandable-repository").forEach(function(row) {
+            row.addEventListener("click", function() {
+                row.classList.toggle("expand-tags");
+                row.querySelector(".expandable-tag").classList.toggle("outer-expanded");
+            });
+        });
+    });
+
+.macro_container
+  h1 Exploring repositories
+  table
+    tr
+      th.header-element
+      th.header-element Image name
+      th.header-element Image tags
+      th.header-element Total size
+      th.header-element Total amount of layers
+      th.header-element Image status
+    - repositories.each do |repository|
+      tr.expandable-repository
+        td
+          img.hide-show-arrow src='/images/chevron-right.svg' alt="Toggle Example"
+        td.row-element #{repository[:name]}
+        td.row-element #{repository[:tags].map{|t| t[:name]}.join(', ')}
+        td.row-element Total Size
+        td.row-element Total Layers
+        td.row-element Status
+      tr.expandable-tag
+        td colspan="6"
+          table
+            tr.header-element
+              th.header-element Tag
+              th.header-element Total size
+              th.header-element Layers in manifest
+              th.header-element Layers in repository folder
+
+            - repository[:tags].each do |tag|
+              tr.expandable-tag
+                td.row-element #{tag[:name]}
+                td.row-element Total Size
+                td.row-element Layers in repository folder
+                td.row-element Layers in manifest
+                / #{tag[:layers_in_manifest].map { |layer| layer.split(':').last }.join(', ')}
+              tr.expandable-tag
+                td colspan="6"
+                  table
+                    tr.header-element
+                      th.header-element Tag
+                      th.header-element Total size
+                      th.header-element Layers in repository folder
+                      th.header-element Layers in manifest
+                    - repository[:tags].each do |tag|
+                      tr.expandable-tag
+                        td.row-element #{tag[:name]}
+                        td.row-element Total Size
+                        td.row-element Layers in repository folder
+                        td.row-element Layers in manifest
+                          / #{tag[:layers_in_manifest].map { |layer| layer.split(':').last }.join(', ')}
+

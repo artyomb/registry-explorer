@@ -1,0 +1,57 @@
+source 'https://rubygems.org'
+ruby File.read("#{__dir__}/.ruby-version").strip
+
+gem 'rubocop', group: 'development', require: false
+gem 'grape'
+gem 'grape-swagger'
+gem 'grape-swagger-entity'
+gem 'grape_logging'
+gem 'falcon'
+gem 'oj'
+
+gem 'rgeo' # apt-get install libgeos-dev
+gem 'rgeo-geojson'
+
+gem 'sinatra'
+gem 'sinatra-contrib'
+# gem 'sinatra-reloader'
+gem 'slim'
+gem 'rack-sassc'
+
+gem 'safrano'
+gem "async-http-faraday"
+gem 'async-http'
+
+gem 'geo_coord'
+
+gem 'sequel'
+gem 'sequel_pg', :require=>'sequel'
+
+group :development do
+  gem 'sqlite3'
+end
+
+gem 'async-io'
+gem 'async-await'
+gem 'rack'
+gem 'rack-cors'
+gem 'rackup'
+
+gem 'tilt'
+gem 'json'
+gem 'ruby-debug-ide'
+
+gem 'rspec'
+gem 'rspec-benchmark'
+gem 'rspec_junit_formatter'
+gem 'rack-test'
+gem 'async-rspec'
+
+gem 'opentelemetry-sdk'
+gem 'opentelemetry-exporter-otlp'
+gem 'opentelemetry-instrumentation-all'
+
+gem 'simplecov'
+# gem 'simplecov-cobertura'
+
+# gem 'rbase', path: '../src_rbase'

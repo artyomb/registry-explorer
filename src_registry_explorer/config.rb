@@ -1,0 +1,4 @@
+$stdout.sync = true
+ENV['OTEL_TRACES_EXPORTER'] ||= ''
+
+LOGGER.warn 'TELEGRAM TOKEN, CHAT_ID not set' unless ENV['TELEGRAM_BOT_TOKEN'] && ENV['TELEGRAM_CHAT_ID']

@@ -1,0 +1,6 @@
+**/node_modules
+**/public/vite**
+node_modules/
+.yardoc
+spec/results
+tmp

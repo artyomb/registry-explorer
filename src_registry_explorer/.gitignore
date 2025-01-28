@@ -1,0 +1,5 @@
+tmp/*
+src/public/vite-dev
+spec/results/*
+coverage
+.yardoc/*
