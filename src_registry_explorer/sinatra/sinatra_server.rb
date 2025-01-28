@@ -11,6 +11,8 @@ class RegistryExplorerFront < Sinatra::Base
   set :root, '.' #File.dirname(__FILE__)
   get '/',         &->() { slim :index }
 
+  get '/healthcheck', &-> { 'Healthy' }
+
   error do
     "<h1>Error: #{env['sinatra.error']}</h1> <pre>#{env['sinatra.error'].backtrace.join("\n")}</pre>"
   end
