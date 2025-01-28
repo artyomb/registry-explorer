@@ -20,9 +20,9 @@ SimpleCov.start
 # require 'simplecov-cobertura'
 # SimpleCov.formatter = SimpleCov::Formatter::CoberturaFormatter
 
-require 'rbase/rack_helpers'
-$app = nil
-def rack_run(&) = $app = rack_build(&)
+# require 'rbase/rack_helpers'
+# $app = nil
+# def rack_run(&) = $app = rack_build(&)
 # FOR NOW SKIP UNTIL HAVING ABILITY TO TEST SQLITE WITH POSTGIS FUNCTIONS
 # load "#{__dir__}/../config.ru"
 
