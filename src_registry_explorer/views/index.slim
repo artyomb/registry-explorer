@@ -15,7 +15,7 @@ ruby:
   images_path_list.each do |image_path|
     subfolders = image_path.split('/')
     image_name = "/" + subfolders[subfolders.find_index('repositories') + 1..].join('/')
-    current_img = { name: image_name, tags: [] }
+    current_img = { name: image_name, tags: [], total_size: "-", total_layers: "-", status: "-" }
     images << current_img
     Dir.glob(image_path + "/_manifests/tags/*").select{ |f| File.directory?(f) }.each do |tag_path|
       puts("Founded tag #{tag_path}")
@@ -23,12 +23,14 @@ ruby:
       current_tag = { name: tag_path.split('/').last, layers_in_manifest: [], existing_layers_in_image_folder: [], existing_layers_in_blob_folder: [] }
       #current_tag = { name: tag_path.split('/').last, manifest_content: nil}
       current_img[:tags] << current_tag
-      manifest_sha256 = Dir.glob(tag_path + "/index/sha256/*").first.split('/').last
+      #manifest_sha256 = Dir.glob(tag_path + "/index/sha256/*").first.split('/').last
+      manifest_sha256 = File.read(tag_path + "/current/link").split(":").last
       puts("Manifest sha for this tag #{manifest_sha256}")
       puts
       manifest_path = Dir.glob(base_path + "/blobs/sha256/#{manifest_sha256[0..1]}/*")
                          .select { |f| File.directory?(f) and f.split('/').last == manifest_sha256 }.first + "/data"
       manifest_data = JSON.parse(File.read(manifest_path))
+      puts("Manifest data for this tag #{manifest_data}")
       current_tag[:layers_in_manifest] = manifest_data["layers"].map { |layer| layer["digest"] } unless manifest_data["layers"].nil?
       #current_tag[:manifest_content] = manifest_data
     end
@@ -85,9 +87,9 @@ javascript:
           img.hide-show-arrow src='/images/chevron-right.svg' alt="Toggle Example"
         td.row-element #{image[:name]}
         td.row-element #{image[:tags].size > 0 ? image[:tags].map{|t| t[:name]}.join(', ') : 'No tags'}
-        td.row-element Total Size
-        td.row-element Total Layers
-        td.row-element Status
+        td.row-element #{image[:total_size]}
+        td.row-element #{image[:total_layers]}
+        td.row-element #{image[:status]}
       tr.expandable-tag
         td colspan="6"
           table
