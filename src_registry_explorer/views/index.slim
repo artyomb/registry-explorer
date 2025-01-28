@@ -1,24 +1,35 @@
 ruby:
-  base_path = ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../docker/data/docker/registry/v2'
+  base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../docker/data') + "/docker/registry/v2"
   path_to_repositories = base_path + "/repositories"
   repositories_path_list = Dir.glob(path_to_repositories + "/*").select { |f| File.directory?(f) }
-  repositories = []
-  repositories_path_list.each do |repository_path|
-    repo_name = (repository_path.split('/').last).to_sym
-    current_repo = { name: repo_name, tags: [] }
-    repositories << current_repo
-    puts("-" * 1000 + "\n" + repository_path + "\n" + "-" * 1000)
-    Dir.glob(repository_path + "/_manifests/tags/*").select{ |f| File.directory?(f) }.each do |tag_path|
-      puts tag_path
-      current_tag = { name: tag_path.split('/').last, layers_in_manifest: [], existing_layers_in_blob: [], existing_layers_in_registry: [] }
+  images = []
+  images_path_list = Dir.glob("#{path_to_repositories}/**/*")
+                        .select do |f|
+    File.directory?(f) &&
+            Dir.exist?(File.join(f, "_layers")) &&
+            Dir.exist?(File.join(f, "_manifests")) &&
+            Dir.exist?(File.join(f, "_uploads"))
+  end
+  puts("Founded following images:\n #{images_path_list}")
+  puts
+  images_path_list.each do |image_path|
+    subfolders = image_path.split('/')
+    image_name = "/" + subfolders[subfolders.find_index('repositories') + 1..].join('/')
+    current_img = { name: image_name, tags: [] }
+    images << current_img
+    Dir.glob(image_path + "/_manifests/tags/*").select{ |f| File.directory?(f) }.each do |tag_path|
+      puts("Founded tag #{tag_path}")
+      puts
+      current_tag = { name: tag_path.split('/').last, layers_in_manifest: [], existing_layers_in_image_folder: [], existing_layers_in_blob_folder: [] }
       #current_tag = { name: tag_path.split('/').last, manifest_content: nil}
-      current_repo[:tags] << current_tag
+      current_img[:tags] << current_tag
       manifest_sha256 = Dir.glob(tag_path + "/index/sha256/*").first.split('/').last
-      puts("-" * 1000 + "\n" + manifest_sha256 + "\n" + "-" * 1000)
+      puts("Manifest sha for this tag #{manifest_sha256}")
+      puts
       manifest_path = Dir.glob(base_path + "/blobs/sha256/#{manifest_sha256[0..1]}/*")
                          .select { |f| File.directory?(f) and f.split('/').last == manifest_sha256 }.first + "/data"
       manifest_data = JSON.parse(File.read(manifest_path))
-      current_tag[:layers_in_manifest] = manifest_data["layers"].map { |layer| layer["digest"] }
+      current_tag[:layers_in_manifest] = manifest_data["layers"].map { |layer| layer["digest"] } unless manifest_data["layers"].nil?
       #current_tag[:manifest_content] = manifest_data
     end
   end
@@ -29,7 +40,7 @@ sass:
     flex-direction: column
     .table-header
       .header-element
-    .expandable-repository
+    .expandable-iamge
       cursor: pointer
       &.expand-tags
         .hide-show-arrow
@@ -50,7 +61,7 @@ sass:
         display: table-row
 javascript:
     document.addEventListener("DOMContentLoaded", function() {
-        document.querySelectorAll(".expandable-repository").forEach(function(row) {
+        document.querySelectorAll(".expandable-iamge").forEach(function(row) {
             row.addEventListener("click", function() {
                 row.classList.toggle("expand-tags");
                 row.querySelector(".expandable-tag").classList.toggle("outer-expanded");
@@ -59,7 +70,7 @@ javascript:
     });
 
 .macro_container
-  h1 Exploring repositories
+  h1 Exploring images
   table
     tr
       th.header-element
@@ -68,12 +79,12 @@ javascript:
       th.header-element Total size
       th.header-element Total amount of layers
       th.header-element Image status
-    - repositories.each do |repository|
-      tr.expandable-repository
+    - images.each do |image|
+      tr.expandable-image
         td
           img.hide-show-arrow src='/images/chevron-right.svg' alt="Toggle Example"
-        td.row-element #{repository[:name]}
-        td.row-element #{repository[:tags].map{|t| t[:name]}.join(', ')}
+        td.row-element #{image[:name]}
+        td.row-element #{image[:tags].size > 0 ? image[:tags].map{|t| t[:name]}.join(', ') : 'No tags'}
         td.row-element Total Size
         td.row-element Total Layers
         td.row-element Status
@@ -81,31 +92,30 @@ javascript:
         td colspan="6"
           table
             tr.header-element
-              th.header-element Tag
-              th.header-element Total size
-              th.header-element Layers in manifest
-              th.header-element Layers in repository folder
+              th.header-element Tag name
+              th.header-element Total layers size
+              th.header-element Amount in manifest
+              th.header-element Amount in image folder
+              th.header-element Amount in blob folder
 
-            - repository[:tags].each do |tag|
+            - image[:tags].each do |tag|
               tr.expandable-tag
                 td.row-element #{tag[:name]}
-                td.row-element Total Size
-                td.row-element Layers in repository folder
-                td.row-element Layers in manifest
-                / #{tag[:layers_in_manifest].map { |layer| layer.split(':').last }.join(', ')}
+                td.row-element -
+                td.row-element= tag[:layers_in_manifest].size
+                td.row-element= tag[:existing_layers_in_image_folder].size
+                td.row-element= tag[:existing_layers_in_blob_folder].size
+              / #{tag[:layers_in_manifest].map { |layer| layer.split(':').last }.join(', ')}
               tr.expandable-tag
                 td colspan="6"
                   table
                     tr.header-element
-                      th.header-element Tag
-                      th.header-element Total size
-                      th.header-element Layers in repository folder
                       th.header-element Layers in manifest
-                    - repository[:tags].each do |tag|
-                      tr.expandable-tag
-                        td.row-element #{tag[:name]}
-                        td.row-element Total Size
-                        td.row-element Layers in repository folder
-                        td.row-element Layers in manifest
-                          / #{tag[:layers_in_manifest].map { |layer| layer.split(':').last }.join(', ')}
+                      th.header-element Layers in image folder
+                      th.header-element Layers in blob folder
+                    tr.expandable-tag
+                      td.row-element = tag[:layers_in_manifest].map { |layer| layer.split(':').last }.join(', ')
+                      td.row-element = tag[:existing_layers_in_image_folder].map { |layer| layer.split(':').last }.join(', ')
+                      td.row-element = tag[:existing_layers_in_blob_folder].map { |layer| layer.split(':').last }.join(', ')
+                      / #{tag[:layers_in_manifest].map { |layer| layer.split(':').last }.join(', ')}
 
