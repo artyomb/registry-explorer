@@ -14,7 +14,7 @@ RUN gem install ruby-debug-ide bundler --no-document
 WORKDIR /app
 
 COPY .ruby-version Gemfile* /app/
-COPY --from=rbase Gemfile *.gemspec ../src_rbase/
+#COPY --from=rbase Gemfile *.gemspec ../src_rbase/
 
 RUN bundle install --jobs $(nproc) --retry=3
 
@@ -34,7 +34,7 @@ RUN apt update && apt install --fix-missing -y bash curl libpq-dev openssh-clien
 RUN echo 'gem: --no-document' >> ~/.gemrc
 COPY --from=base /usr/local/bundle /usr/local/bundle
 COPY --from=base /app /app
-COPY --from=rbase . ../src_rbase
+#COPY --from=rbase . ../src_rbase
 
 ENV SERVER_ENV=production \
     RACK_ENV=production \
