@@ -20,22 +20,22 @@ ruby:
     Dir.glob(image_path + "/_manifests/tags/*").select{ |f| File.directory?(f) }.each do |tag_path|
       puts("Founded tag #{tag_path}")
       puts
-      current_tag = { name: tag_path.split('/').last, layers_in_manifest: [], existing_layers_in_image_folder: [], existing_layers_in_blob_folder: [] }
-      #current_tag = { name: tag_path.split('/').last, manifest_content: nil}
-      current_img[:tags] << current_tag
-      #manifest_sha256 = Dir.glob(tag_path + "/index/sha256/*").first.split('/').last
+      current_tag = { name: tag_path.split('/').last, current_manifest_sha: nil, manifests_in_manifest: [], layer_shas: [], existing_layers_in_blob_folder: [], existing_layers_in_image_folder: [], size: 0 }
       manifest_sha256 = File.read(tag_path + "/current/link").split(":").last
+      current_tag[:current_manifest_sha] = manifest_sha256
+      current_img[:tags] << current_tag
       puts("Manifest sha for this tag #{manifest_sha256}")
       puts
       manifest_path = Dir.glob(base_path + "/blobs/sha256/#{manifest_sha256[0..1]}/*")
                          .select { |f| File.directory?(f) and f.split('/').last == manifest_sha256 }.first + "/data"
       manifest_data = JSON.parse(File.read(manifest_path))
       puts("Manifest data for this tag #{manifest_data}")
-      current_tag[:layers_in_manifest] = manifest_data["layers"].map { |layer| layer["digest"] } unless manifest_data["layers"].nil?
-      #current_tag[:manifest_content] = manifest_data
+      # TODO: get layers from manifest, implement collecting images from innermanifest
+      current_tag[:layer_shas] = manifest_data["layers"].map { |layer| layer["digest"] } unless manifest_data["layers"].nil?
+      current_tag[:manifest_content] = manifest_data
+      current_tag[:manifests_in_manifest] = manifest_data["manifests"].map {|manifest| manifest["digest"]} unless manifest_data["manifests"].nil?
     end
   end
-
 sass:
   .macro_container
     display: flex
@@ -104,7 +104,7 @@ javascript:
               tr.expandable-tag
                 td.row-element #{tag[:name]}
                 td.row-element -
-                td.row-element= tag[:layers_in_manifest].size
+                td.row-element= tag[:layer_shas].size
                 td.row-element= tag[:existing_layers_in_image_folder].size
                 td.row-element= tag[:existing_layers_in_blob_folder].size
               / #{tag[:layers_in_manifest].map { |layer| layer.split(':').last }.join(', ')}
@@ -113,10 +113,12 @@ javascript:
                   table
                     tr.header-element
                       th.header-element Layers in manifest
+                      th.header-element Manifests in manifest
                       th.header-element Layers in image folder
                       th.header-element Layers in blob folder
                     tr.expandable-tag
-                      td.row-element = tag[:layers_in_manifest].map { |layer| layer.split(':').last }.join(', ')
+                      td.row-element = tag[:layer_shas].map { |layer| layer.split(':').last }.join(', ')
+                      td.row-element = tag[:manifests_in_manifest].map { |layer| layer.split(':').last }.join(', ')
                       td.row-element = tag[:existing_layers_in_image_folder].map { |layer| layer.split(':').last }.join(', ')
                       td.row-element = tag[:existing_layers_in_blob_folder].map { |layer| layer.split(':').last }.join(', ')
                       / #{tag[:layers_in_manifest].map { |layer| layer.split(':').last }.join(', ')}
