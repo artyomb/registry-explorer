@@ -1,4 +1,4 @@
-FROM docker-io.monitorsoft.ru/ruby:3.3.1-slim-bookworm AS base
+FROM ruby:3.3.1-slim-bookworm AS base
 
 RUN apt update && apt --fix-missing install -y build-essential pkg-config bash curl libpq-dev openssh-client \
      libpq-dev libsqlite3-dev libssl-dev libgeos-dev\
