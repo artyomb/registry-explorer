@@ -27,7 +27,7 @@ class Node
   def add_link(path, value)
     digest_val = value[:digest]
     sha256 = digest_val.is_a?(Hash) ? digest_val[:sha256] : digest_val.split(':').last
-    @links << { path:, node: Node.new(value[:mediaType], sha256, value[:node_size]) }
+    @links << { path:, node: Node.new(value[:mediaType], sha256, value[:size]) }
   end
 
   def node_type
