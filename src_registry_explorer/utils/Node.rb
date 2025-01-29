@@ -1,7 +1,7 @@
 $base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../docker/data') + "/docker/registry/v2"
 
 def blob_content(sha256)
-  File.read $base_path + "/blobs/sha256/#{sha256[0..1]}/data/#{sha256}"
+  File.read $base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data"
 end
 
 class Node
@@ -19,14 +19,14 @@ class Node
     return unless n.is_a? Hash
     n.each do |key, value|
       next unless value.is_a? Hash
-
       add_link(path + [key], value) if value.key? :digest
       find_links path + [key], value
     end
   end
 
   def add_link(path, value)
-    sha256 = value.is_a?(Hash) ? values[:digest][:sha256] : values[:digest][/sha256:(.*)/,1]
+    digest_val = value[:digest]
+    sha256 = digest_val.is_a?(Hash) ? digest_val[:sha256] : digest_val.split(':').last
     @links << { path:, node: Node.new(value[:mediaType], sha256, value[:node_size]) }
   end
 

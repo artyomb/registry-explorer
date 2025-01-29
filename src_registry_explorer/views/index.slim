@@ -31,7 +31,7 @@ ruby:
         index_content = JSON.parse(File.read(outer_index_path))
         puts("Base Node #{index_sha256} content:")
         puts index_content
-        current_Node_link = { path: ["BASE_NODE"], node: Node.new(index_content[:mediaType], index_sha256, node_size=0) }
+        current_Node_link = { path: ["BASE_NODE"], node: Node.new(index_content["mediaType"], index_sha256, node_size=0) }
         current_tag[:index_Nodes] << current_Node_link
       end
     end
@@ -85,7 +85,7 @@ javascript:
     - images.each do |image|
       tr.expandable-image
         td
-          img.hide-show-arrow src='/images/chevron-right.svg' alt="Toggle Example"
+          img.hide-show-arrow src='/ikmages/chevron-right.svg' alt="Toggle Example"
         td.row-element #{image[:name]}
         td.row-element #{image[:tags].size > 0 ? image[:tags].map{|t| t[:name]}.join(', ') : 'No tags'}
         td.row-element #{image[:total_size]}
@@ -124,21 +124,8 @@ javascript:
                               td= node_link[:node].node_type
                               td= node_link[:node].node_size
                             - if node_link[:node].links.size > 0
-                              tr
-                                td colspan="4"
-                                  ==render_node_links.call(node_links[:node].links)
-                        ==render_node_links.call(tag[:index_Nodes]).to_s
-                / td colspan="6"
-                /   table
-                /     tr.header-element
-                /       th.header-element Layers in manifest
-                /       th.header-element Manifests in manifest
-                /       th.header-element Layers in image folder
-                /       th.header-element Layers in blob folder
-                /     tr.expandable-tag
-                /       td.row-element = tag[:layer_shas].map { |layer| layer.split(':').last }.join(', ')
-                /       td.row-element = tag[:manifests_in_manifest].map { |layer| layer.split(':').last }.join(', ')
-                /       td.row-element = tag[:existing_layers_in_image_folder].map { |layer| layer.split(':').last }.join(', ')
-                /       td.row-element = tag[:existing_layers_in_blob_folder].map { |layer| layer.split(':').last }.join(', ')
-                /       / #{tag[:layers_in_manifest].map { |layer| layer.split(':').last }.join(', ')}
-                /
+                              - puts "FOUNDED INNER LINKS"
+                                tr
+                                  td colspan="4"
+                                    ==render_node_links.call(node_links[:node].links)
+                        ==render_node_links.call(tag[:index_Nodes])
