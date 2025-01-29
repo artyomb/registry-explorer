@@ -1,4 +1,6 @@
 ruby:
+  require_relative '../utils/Node'
+  possible_statuses = ['error', 'ok', 'warning']
   base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../docker/data') + "/docker/registry/v2"
   path_to_repositories = base_path + "/repositories"
   repositories_path_list = Dir.glob(path_to_repositories + "/*").select { |f| File.directory?(f) }
@@ -20,26 +22,25 @@ ruby:
     Dir.glob(image_path + "/_manifests/tags/*").select{ |f| File.directory?(f) }.each do |tag_path|
       puts("Founded tag #{tag_path}")
       puts
-      current_tag = { name: tag_path.split('/').last, current_manifest_sha: nil, manifests_in_manifest: [], layer_shas: [], existing_layers_in_blob_folder: [], existing_layers_in_image_folder: [], size: 0 }
-      manifest_sha256 = File.read(tag_path + "/current/link").split(":").last
-      current_tag[:current_manifest_sha] = manifest_sha256
+      current_tag = { name: tag_path.split('/').last, index_Nodes: [] }
       current_img[:tags] << current_tag
-      puts("Manifest sha for this tag #{manifest_sha256}")
-      puts
-      manifest_path = Dir.glob(base_path + "/blobs/sha256/#{manifest_sha256[0..1]}/*")
-                         .select { |f| File.directory?(f) and f.split('/').last == manifest_sha256 }.first + "/data"
-      manifest_data = JSON.parse(File.read(manifest_path))
-      puts("Manifest data for this tag #{manifest_data}")
-      # TODO: get layers from manifest, implement collecting images from innermanifest
-      current_tag[:layer_shas] = manifest_data["layers"].map { |layer| layer["digest"] } unless manifest_data["layers"].nil?
-      current_tag[:manifest_content] = manifest_data
-      current_tag[:manifests_in_manifest] = manifest_data["manifests"].map {|manifest| manifest["digest"]} unless manifest_data["manifests"].nil?
+      indexes_paths = Dir.glob(tag_path + "/index/sha256/*")
+      indexes_paths.each do |index_path|
+        index_sha256 = index_path.split('/').last
+        outer_index_path = base_path + "/blobs/sha256/#{index_sha256[0..1]}/#{index_sha256}/data"
+        index_content = JSON.parse(File.read(outer_index_path))
+        puts("Base Node #{index_sha256} content:")
+        puts index_content
+        current_Node_link = { path: ["BASE_NODE"], node: Node.new(index_content[:mediaType], index_sha256, node_size=0) }
+        current_tag[:index_Nodes] << current_Node_link
+      end
     end
   end
 sass:
   .macro_container
     display: flex
     flex-direction: column
+    padding: 2rem
     .table-header
       .header-element
     .expandable-iamge
@@ -91,35 +92,53 @@ javascript:
         td.row-element #{image[:total_layers]}
         td.row-element #{image[:status]}
       tr.expandable-tag
-        td colspan="6"
-          table
-            tr.header-element
-              th.header-element Tag name
-              th.header-element Total layers size
-              th.header-element Amount in manifest
-              th.header-element Amount in image folder
-              th.header-element Amount in blob folder
-
-            - image[:tags].each do |tag|
-              tr.expandable-tag
-                td.row-element #{tag[:name]}
-                td.row-element -
-                td.row-element= tag[:layer_shas].size
-                td.row-element= tag[:existing_layers_in_image_folder].size
-                td.row-element= tag[:existing_layers_in_blob_folder].size
-              / #{tag[:layers_in_manifest].map { |layer| layer.split(':').last }.join(', ')}
-              tr.expandable-tag
-                td colspan="6"
-                  table
-                    tr.header-element
-                      th.header-element Layers in manifest
-                      th.header-element Manifests in manifest
-                      th.header-element Layers in image folder
-                      th.header-element Layers in blob folder
-                    tr.expandable-tag
-                      td.row-element = tag[:layer_shas].map { |layer| layer.split(':').last }.join(', ')
-                      td.row-element = tag[:manifests_in_manifest].map { |layer| layer.split(':').last }.join(', ')
-                      td.row-element = tag[:existing_layers_in_image_folder].map { |layer| layer.split(':').last }.join(', ')
-                      td.row-element = tag[:existing_layers_in_blob_folder].map { |layer| layer.split(':').last }.join(', ')
-                      / #{tag[:layers_in_manifest].map { |layer| layer.split(':').last }.join(', ')}
-
+        td style="padding: 0" colspan="6"
+          table style="margin: 0;margin-bottom: 2rem"
+            thead
+              tr.header-element
+                th.header-element
+                th.header-element Tag name
+                th.header-element Total Nodes amount
+            tbody
+              - image[:tags].each do |tag|
+                tr.expandable-tag
+                  td
+                    img.hide-show-arrow src='/images/chevron-right.svg' alt="Toggle Example"
+                  td.row-element #{tag[:name]}
+                  td.row-element #{tag[:index_Nodes].size}
+                tr.expandable-tag
+                  td colspan="6"
+                    table
+                      thead
+                        tr
+                          th Node path
+                          th Node sha256
+                          th Node type
+                          th Node size
+                      tbody
+                        - render_node_links = ->(node_links) do
+                          - node_links.each do |node_link|
+                            tr
+                              td= node_link[:path]
+                              td= node_link[:node].sha256
+                              td= node_link[:node].node_type
+                              td= node_link[:node].node_size
+                            - if node_link[:node].links.size > 0
+                              tr
+                                td colspan="4"
+                                  ==render_node_links.call(node_links[:node].links)
+                        ==render_node_links.call(tag[:index_Nodes]).to_s
+                / td colspan="6"
+                /   table
+                /     tr.header-element
+                /       th.header-element Layers in manifest
+                /       th.header-element Manifests in manifest
+                /       th.header-element Layers in image folder
+                /       th.header-element Layers in blob folder
+                /     tr.expandable-tag
+                /       td.row-element = tag[:layer_shas].map { |layer| layer.split(':').last }.join(', ')
+                /       td.row-element = tag[:manifests_in_manifest].map { |layer| layer.split(':').last }.join(', ')
+                /       td.row-element = tag[:existing_layers_in_image_folder].map { |layer| layer.split(':').last }.join(', ')
+                /       td.row-element = tag[:existing_layers_in_blob_folder].map { |layer| layer.split(':').last }.join(', ')
+                /       / #{tag[:layers_in_manifest].map { |layer| layer.split(':').last }.join(', ')}
+                /
