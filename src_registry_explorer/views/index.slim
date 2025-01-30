@@ -20,8 +20,8 @@ ruby:
     current_img = { name: image_name, tags: [], total_size: "-", total_layers: "-", status: "-" }
     images << current_img
     Dir.glob(image_path + "/_manifests/tags/*").select{ |f| File.directory?(f) }.each do |tag_path|
+      puts ("Image #{image_name}")
       puts("Founded tag #{tag_path}")
-      puts
       current_tag = { name: tag_path.split('/').last, index_Nodes: [] }
       current_img[:tags] << current_tag
       indexes_paths = Dir.glob(tag_path + "/index/sha256/*")
@@ -29,11 +29,10 @@ ruby:
         index_sha256 = index_path.split('/').last
         outer_index_path = base_path + "/blobs/sha256/#{index_sha256[0..1]}/#{index_sha256}/data"
         index_content = JSON.parse(File.read(outer_index_path))
-        puts("Base Node #{index_sha256} content:")
-        puts index_content
         current_Node_link = { path: ["BASE_NODE"], node: Node.new(index_content["mediaType"], index_sha256, index_content[:size]) }
         current_tag[:index_Nodes] << current_Node_link
       end
+      puts
     end
   end
 sass:
@@ -91,42 +90,43 @@ javascript:
         td.row-element #{image[:total_size]}
         td.row-element #{image[:total_layers]}
         td.row-element #{image[:status]}
-      tr.expandable-tag
-        td style="padding: 0" colspan="6"
-          table style="margin: 0;margin-bottom: 2rem"
-            thead
-              tr.header-element
-                th.header-element
-                th.header-element Tag name
-                th.header-element Total Nodes amount
-            tbody
-              - image[:tags].each do |tag|
-                tr.expandable-tag
-                  td
-                    img.hide-show-arrow src='/images/chevron-right.svg' alt="Toggle Example"
-                  td.row-element #{tag[:name]}
-                  td.row-element #{tag[:index_Nodes].size}
-                tr.expandable-tag
-                  td colspan="6"
-                    table
-                      thead
-                        tr
-                          th Node path
-                          th Node sha256
-                          th Node type
-                          th Node size
-                      tbody
-                        - render_node_links = ->(node_links) do
-                          - node_links.each do |node_link|
-                            tr
-                              td= node_link[:path]
-                              td= node_link[:node].sha256
-                              td= node_link[:node].node_type
-                              td= node_link[:node].node_size
-                            - if node_link[:node].links.any?
+      - if image[:tags].size > 0
+        tr.expandable-tag
+          td style="padding: 0" colspan="6"
+            table style="margin: 0;margin-bottom: 2rem"
+              thead
+                tr.header-element
+                  th.header-element
+                  th.header-element Tag name
+                  th.header-element Total Nodes amount
+              tbody
+                - image[:tags].each do |tag|
+                  tr.expandable-tag
+                    td
+                      img.hide-show-arrow src='/images/chevron-right.svg' alt="Toggle Example"
+                    td.row-element #{tag[:name]}
+                    td.row-element #{tag[:index_Nodes].size}
+                  tr.expandable-tag
+                    td colspan="6"
+                      table
+                        thead
+                          tr
+                            th Node path
+                            th Node sha256
+                            th Node type
+                            th Node size
+                        tbody
+                          - render_node_links = ->(node_links) do
+                            - node_links.each do |node_link|
                               tr
-                                / td colspan="4"
-                                /   table
-                                /     tbody
-                                - render_node_links.call(node_link[:node].links)
-                        - render_node_links.call(tag[:index_Nodes])
+                                td= node_link[:path]
+                                td= node_link[:node].sha256
+                                td= node_link[:node].node_type
+                                td= node_link[:node].node_size.nil? ? "Size unknown" : node_link[:node].node_size
+                              - if node_link[:node].links.any?
+                                tr
+                                  / td colspan="4"
+                                  /   table
+                                  /     tbody
+                                  - render_node_links.call(node_link[:node].links)
+                          - render_node_links.call(tag[:index_Nodes])
