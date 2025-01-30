@@ -11,16 +11,22 @@ class Node
     @node_size = node_size
     @links = []
     return unless @type.to_s =~ /json/
-
     find_links JSON.parse blob_content(@sha256), symbolize_names: true
   end
 
   def find_links(n, path = [])
     return unless n.is_a? Hash
     n.each do |key, value|
-      next unless value.is_a? Hash
-      add_link(path + [key], value) if value.key? :digest
-      find_links path + [key], value
+      if value.is_a? Hash
+        add_link(path + [key], value) if value.key? :digest
+        find_links path + [key], value
+      elsif value.is_a? Array
+        value.each_with_index do |sub_value, id|
+          if sub_value.is_a? Hash
+            find_links path + [key] + ["Array_Id_#{id}"], sub_value
+          end
+        end
+      end
     end
   end
 
