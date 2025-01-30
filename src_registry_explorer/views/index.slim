@@ -1,5 +1,6 @@
 ruby:
   require_relative '../utils/Node'
+  margin_coef=1.5
   possible_statuses = ['error', 'ok', 'warning']
   base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../docker/data') + "/docker/registry/v2"
   path_to_repositories = base_path + "/repositories"
@@ -117,11 +118,11 @@ javascript:
                             th Node type
                             th Node size
                         tbody
-                          - render_node_links = ->(node_links) do
+                          - render_node_links = ->(node_links, depth=0) do
                             - node_links.each do |node_link|
                               - if node_link[:node].node_type.to_s =~ /json/
                                 tr.node-row
-                                  td= node_link[:path]
+                                  td style="padding-left: #{depth * margin_coef}rem "= node_link[:path].join('/')
                                   / onclick="window.open('/json/#{node_link[:node].sha256}', '_blank')" style="cursor: pointer"
                                   td
                                     a href="/json/#{node_link[:node].sha256}" target="_blank"= node_link[:node].sha256
@@ -129,10 +130,11 @@ javascript:
                                   td= node_link[:node].node_size.nil? ? "Size unknown" : node_link[:node].node_size
                               - else
                                 tr.node-row
-                                  td= node_link[:path]
+                                  td style="padding-left: #{depth * margin_coef}rem "
+                                    = node_link[:path].join('/')
                                   td= node_link[:node].sha256
                                   td= node_link[:node].node_type
                                   td= node_link[:node].node_size.nil? ? "Size unknown" : node_link[:node].node_size
                               - if node_link[:node].links.any?
-                                - render_node_links.call(node_link[:node].links)
+                                - render_node_links.call(node_link[:node].links, depth + 1)
                           - render_node_links.call(tag[:index_Nodes])

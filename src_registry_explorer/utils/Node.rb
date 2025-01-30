@@ -28,8 +28,8 @@ class Node
     elsif n.is_a? Array
       n.each_with_index do |sub_hash, id|
         if sub_hash.is_a? Hash
-          add_link(path + ["Array_id_#{id}"], sub_hash) if sub_hash.key? :digest
-          find_links(sub_hash, path + ["Array_Id_#{id}"])
+          add_link(path + ["[#{id}]"], sub_hash) if sub_hash.key? :digest
+          find_links(sub_hash, path + ["[#{id}]"])
         end
       end
     end
