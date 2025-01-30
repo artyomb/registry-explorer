@@ -120,9 +120,11 @@ javascript:
                           - render_node_links = ->(node_links) do
                             - node_links.each do |node_link|
                               - if node_link[:node].node_type.to_s =~ /json/
-                                tr.node-row onclick="window.open('/json/#{node_link[:node].sha256}', '_blank')" style="cursor: pointer"
+                                tr.node-row
                                   td= node_link[:path]
-                                  td= node_link[:node].sha256
+                                  / onclick="window.open('/json/#{node_link[:node].sha256}', '_blank')" style="cursor: pointer"
+                                  td
+                                    a href="/json/#{node_link[:node].sha256}" target="_blank"= node_link[:node].sha256
                                   td= node_link[:node].node_type
                                   td= node_link[:node].node_size.nil? ? "Size unknown" : node_link[:node].node_size
                               - else
