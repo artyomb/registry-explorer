@@ -4,12 +4,22 @@ def blob_content(sha256)
   File.read $base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data"
 end
 
+def blob_size(sha256)
+  File.size $base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data"
+end
+
 class Node
   def initialize(type, sha256, node_size = nil)
     @type = type
     @sha256 = sha256
     @node_size = node_size
     @links = []
+    begin
+      @actual_blob_size = blob_size(@sha256)
+    rescue Exception => e
+      puts "Error: #{e}"
+      @actual_blob_size = -1
+    end
     return unless @type.to_s =~ /json/
     find_links JSON.parse blob_content(@sha256), symbolize_names: true
   end
@@ -52,6 +62,10 @@ class Node
 
   def node_size
     @node_size
+  end
+
+  def actual_blob_size
+    @actual_blob_size
   end
 
   def links

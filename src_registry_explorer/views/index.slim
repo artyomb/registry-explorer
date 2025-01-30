@@ -117,31 +117,36 @@ javascript:
                             th Node sha256
                             th Node type
                             th Node size
+                            th Actucal blob size
                         tbody
                           - render_node_links = ->(node_links, depth=0) do
                             - node_links.each do |node_link|
+                              - node_is_current = "#{node_link[:node].sha256 == tag[:current_index_sha256] ? '✅' : ''}"
                               - if node_link[:node].node_type.to_s =~ /json/
                                 tr.node-row
-                                  td style="padding-left: #{depth * margin_coef}rem "= node_link[:path].join('/') + "#{node_link[:node].sha256 == tag[:current_index_sha256] ? '✅' : ''}"
+                                  td style="padding-left: #{depth * margin_coef}rem "= node_link[:path].join('/') + node_is_current
                                   td
                                     a href="/json/#{node_link[:node].sha256}"= node_link[:node].sha256
                                   td= node_link[:node].node_type
                                   td= node_link[:node].node_size.nil? ? "Size unknown" : node_link[:node].node_size
-                              - elsif node_link[:node].node_type.to_s =~ /tar/ or /gzip/
+                                  td= node_link[:node].actual_blob_size.nil? ? "Size unknown" : node_link[:node].actual_blob_size
+                              - elsif node_link[:node].node_type.to_s =~ /gzip/
                                 tr.node-row
                                   td style="padding-left: #{depth * margin_coef}rem "
-                                    = node_link[:path].join('/')
+                                    = node_link[:path].join('/') + node_is_current
                                   td
                                     a href="/tar-gz/#{node_link[:node].sha256}" = node_link[:node].sha256
                                   td= node_link[:node].node_type
                                   td= node_link[:node].node_size.nil? ? "Size unknown" : node_link[:node].node_size
+                                  td= node_link[:node].actual_blob_size.nil? ? "Size unknown" : node_link[:node].actual_blob_size
                               - else
                                 tr.node-row
                                   td style="padding-left: #{depth * margin_coef}rem "
-                                    = node_link[:path].join('/')
+                                    = node_link[:path].join('/') + node_is_current
                                   td= node_link[:node].sha256
                                   td= node_link[:node].node_type
                                   td= node_link[:node].node_size.nil? ? "Size unknown" : node_link[:node].node_size
+                                  td= node_link[:node].actual_blob_size.nil? ? "Size unknown" : node_link[:node].actual_blob_size
                               - if node_link[:node].links.any?
                                 - render_node_links.call(node_link[:node].links, depth + 1)
                           - render_node_links.call(tag[:index_Nodes])
