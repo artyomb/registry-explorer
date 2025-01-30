@@ -12,6 +12,7 @@ class RegistryExplorerFront < Sinatra::Base
   get '/',         &->() { slim :index }
   get '/index',         &->() { slim :index }
   get '/json/:sha256', &->() { slim :json }
+  get '/tar-gz/:sha256', &->() { slim :targz }
   get '/healthcheck', &-> { 'Healthy' }
 
   error do

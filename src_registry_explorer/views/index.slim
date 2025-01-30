@@ -21,9 +21,9 @@ ruby:
     current_img = { name: image_name, tags: [], total_size: "-", total_layers: "-", status: "-" }
     images << current_img
     Dir.glob(image_path + "/_manifests/tags/*").select{ |f| File.directory?(f) }.each do |tag_path|
-      puts ("Image #{image_name}")
+      puts("Image #{image_name}")
       puts("Founded tag #{tag_path}")
-      current_tag = { name: tag_path.split('/').last, index_Nodes: [] }
+      current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: File.read(tag_path + "/current/link").split(':').last }
       current_img[:tags] << current_tag
       indexes_paths = Dir.glob(tag_path + "/index/sha256/*")
       indexes_paths.each do |index_path|
@@ -31,7 +31,7 @@ ruby:
         outer_index_path = base_path + "/blobs/sha256/#{index_sha256[0..1]}/#{index_sha256}/data"
         index_content = JSON.parse(File.read(outer_index_path))
         puts("Tag has index #{index_sha256} with content in blob: #{JSON.pretty_generate(index_content)}")
-        current_Node_link = { path: ["BASE_NODE"], node: Node.new(index_content["mediaType"], index_sha256, index_content[:size]) }
+        current_Node_link = { path: ["Image"], node: Node.new(index_content["mediaType"], index_sha256, index_content[:size]) }
         current_tag[:index_Nodes] << current_Node_link
       end
       puts
@@ -122,10 +122,17 @@ javascript:
                             - node_links.each do |node_link|
                               - if node_link[:node].node_type.to_s =~ /json/
                                 tr.node-row
-                                  td style="padding-left: #{depth * margin_coef}rem "= node_link[:path].join('/')
-                                  / onclick="window.open('/json/#{node_link[:node].sha256}', '_blank')" style="cursor: pointer"
+                                  td style="padding-left: #{depth * margin_coef}rem "= node_link[:path].join('/') + "#{node_link[:node].sha256 == tag[:current_index_sha256] ? '✅' : ''}"
                                   td
-                                    a href="/json/#{node_link[:node].sha256}" target="_blank"= node_link[:node].sha256
+                                    a href="/json/#{node_link[:node].sha256}"= node_link[:node].sha256
+                                  td= node_link[:node].node_type
+                                  td= node_link[:node].node_size.nil? ? "Size unknown" : node_link[:node].node_size
+                              - elsif node_link[:node].node_type.to_s =~ /tar/ or /gzip/
+                                tr.node-row
+                                  td style="padding-left: #{depth * margin_coef}rem "
+                                    = node_link[:path].join('/')
+                                  td
+                                    a href="/tar-gz/#{node_link[:node].sha256}" = node_link[:node].sha256
                                   td= node_link[:node].node_type
                                   td= node_link[:node].node_size.nil? ? "Size unknown" : node_link[:node].node_size
                               - else
