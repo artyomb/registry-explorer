@@ -70,6 +70,20 @@ javascript:
                 row.querySelector(".expandable-tag").classList.toggle("outer-expanded");
             });
         });
+
+        document.querySelectorAll(".node-row").forEach(function(row) {
+            const isJson = row.getAttribute("type").includes("json");
+            console.log("type: " + isJson);
+            if (isJson) {
+                row.addEventListener("click", function () {
+                    const newTab = window.open('', '_blank')
+                    if (newTab) {
+                        newTab.location.href = "/json/" + row.getAttribute("sha256");
+                    }
+                });
+                row.style.cursor = "pointer";
+            }
+        });
     });
 
 .macro_container
@@ -119,15 +133,11 @@ javascript:
                         tbody
                           - render_node_links = ->(node_links) do
                             - node_links.each do |node_link|
-                              tr
+                              tr.node-row type="#{node_link[:node].node_type.to_s}" sha256="#{node_link[:node].sha256}"
                                 td= node_link[:path]
                                 td= node_link[:node].sha256
                                 td= node_link[:node].node_type
                                 td= node_link[:node].node_size.nil? ? "Size unknown" : node_link[:node].node_size
                               - if node_link[:node].links.any?
-                                tr
-                                  / td colspan="4"
-                                  /   table
-                                  /     tbody
-                                  - render_node_links.call(node_link[:node].links)
+                                - render_node_links.call(node_link[:node].links)
                           - render_node_links.call(tag[:index_Nodes])

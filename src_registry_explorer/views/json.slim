@@ -1,0 +1,5 @@
+ruby:
+  require_relative '../utils/Node'
+  json_blob_content = JSON.parse(blob_content(params[:sha256]))
+
+pre= JSON.pretty_generate(json_blob_content)

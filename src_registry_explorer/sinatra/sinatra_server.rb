@@ -10,7 +10,7 @@ class RegistryExplorerFront < Sinatra::Base
 
   set :root, '.' #File.dirname(__FILE__)
   get '/',         &->() { slim :index }
-
+  get '/json/:sha256', &->() { slim :json }
   get '/healthcheck', &-> { 'Healthy' }
 
   error do
