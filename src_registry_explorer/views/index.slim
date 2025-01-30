@@ -123,7 +123,7 @@ javascript:
                             - node_links.each do |node_link|
                               - node_is_current = "#{node_link[:node].sha256 == tag[:current_index_sha256] ? '✅' : ''}"
                               - if node_link[:node].node_type.to_s =~ /json/
-                                tr.node-row
+                                tr.node-row id="#{node_link[:node].sha256}" children="#{node_link[:node].links.map {|link| link[:node].sha256}.join(',')}"
                                   td style="padding-left: #{depth * margin_coef}rem "= node_link[:path].join('/') + node_is_current
                                   td
                                     a href="/json/#{node_link[:node].sha256}"= node_link[:node].sha256
@@ -131,7 +131,7 @@ javascript:
                                   td= node_link[:node].node_size.nil? ? "Size unknown" : node_link[:node].node_size
                                   td= node_link[:node].actual_blob_size.nil? ? "Size unknown" : node_link[:node].actual_blob_size
                               - elsif node_link[:node].node_type.to_s =~ /gzip/
-                                tr.node-row
+                                tr.node-row id="#{node_link[:node].sha256}" children="#{node_link[:node].links.map {|link| link[:node].sha256}.join(',')}"
                                   td style="padding-left: #{depth * margin_coef}rem "
                                     = node_link[:path].join('/') + node_is_current
                                   td
@@ -140,7 +140,7 @@ javascript:
                                   td= node_link[:node].node_size.nil? ? "Size unknown" : node_link[:node].node_size
                                   td= node_link[:node].actual_blob_size.nil? ? "Size unknown" : node_link[:node].actual_blob_size
                               - else
-                                tr.node-row
+                                tr.node-row id="#{node_link[:node].sha256}" children="#{node_link[:node].links.map {|link| link[:node].sha256}.join(',')}"
                                   td style="padding-left: #{depth * margin_coef}rem "
                                     = node_link[:path].join('/') + node_is_current
                                   td= node_link[:node].sha256

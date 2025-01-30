@@ -4,29 +4,40 @@ ruby:
 h1= "Archive blob #{params[:sha256]} content"
 
 sass:
-  .file-structure
-    display: flex
-    flex-direction: column
-    padding: 1rem
-    .structure-element
-      display: flex
-      flex-direction: column
-      margin-left: 1rem
-    .folder-element
-      padding-top: 0.5rem
-      font-weight: bold
-      font-size: 1.2rem
-    .file-element
-      font-style: italic
+  li
+    list-style: none
+  ul
+    list-style: none
+link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/css/uikit.min.css"
+script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit.min.js"
+script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit-icons.min.js"
 .file-structure
-  - render_structure = ->(structure, level = 0) do
+  - render_structure = ->(structure, parent_id = 'root', counter = 0) do
     - structure.each do |name, content|
-      .structure-element
-        - if content.is_a?(Hash) and content!= 'file'
-          - puts "Folder: #{name}"
-          .folder-element= "#{name}"
-          - render_structure.call(content, level + 1)
+      li
+        - current_id = "node_#{parent_id}_#{counter}"
+        - if content.is_a?(Hash) && content != 'file'
+          a.uk-toggle href="#" uk-toggle="target: ##{current_id}"
+            span uk-icon="icon: triangle-right"
+            = " #{name}"
+          ul.uk-list.uk-margin-left id=current_id hidden=true
+            - render_structure.call(content, current_id, 0)
         - else
-          - puts "File: #{name}"
-          .file-element= " #{name}"
+          span uk-icon="icon: file"
+          = " #{name}"
+      - counter += 1
   - render_structure.call(structure)
+
+javascript:
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.uk-toggle').forEach(toggle => {
+      toggle.addEventListener('click', function() {
+        let icon = this.querySelector('[uk-icon]');
+        icon.setAttribute('uk-icon',
+          icon.getAttribute('uk-icon').includes('right') ?
+          'icon: triangle-down' :
+          'icon: triangle-right'
+        );
+      });
+    });
+  });
