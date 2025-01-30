@@ -1,3 +1,6 @@
+require 'zlib'
+require 'archive-tar-minitar'
+
 $base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../docker/data') + "/docker/registry/v2"
 
 def blob_content(sha256)
@@ -6,6 +9,30 @@ end
 
 def blob_size(sha256)
   File.size $base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data"
+end
+
+def extract_tar_gz_structure(tar_gz_sha256)
+  file_path = $base_path + "/blobs/sha256/#{tar_gz_sha256[0..1]}/#{tar_gz_sha256}/data"
+  structure = {}
+
+  Zlib::GzipReader.open(file_path) do |gz|
+    Archive::Tar::Minitar::Reader.open(gz) do |tar|
+      tar.each_entry do |entry|
+        parts = entry.name.split('/')
+        current_level = structure
+
+        parts.each_with_index do |part, index|
+          if index == parts.length - 1 # Last part is a file
+            current_level[part] = entry.directory? ? {} : 'file'
+          else
+            current_level[part] ||= {}
+            current_level = current_level[part]
+          end
+        end
+      end
+    end
+  end
+  structure
 end
 
 class Node

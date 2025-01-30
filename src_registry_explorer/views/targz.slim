@@ -1,5 +1,32 @@
 ruby:
   require_relative '../utils/Node'
+  structure = extract_tar_gz_structure(params[:sha256])
+h1= "Archive blob #{params[:sha256]} content"
 
-h1= "Tar.gz blob #{params[:sha256]} inspection"
-h2="Unimplemented yet"
+sass:
+  .file-structure
+    display: flex
+    flex-direction: column
+    padding: 1rem
+    .structure-element
+      display: flex
+      flex-direction: column
+      margin-left: 1rem
+    .folder-element
+      padding-top: 0.5rem
+      font-weight: bold
+      font-size: 1.2rem
+    .file-element
+      font-style: italic
+.file-structure
+  - render_structure = ->(structure, level = 0) do
+    - structure.each do |name, content|
+      .structure-element
+        - if content.is_a?(Hash) and content!= 'file'
+          - puts "Folder: #{name}"
+          .folder-element= "#{name}"
+          - render_structure.call(content, level + 1)
+        - else
+          - puts "File: #{name}"
+          .file-element= " #{name}"
+  - render_structure.call(structure)

@@ -52,6 +52,11 @@ gem 'opentelemetry-exporter-otlp'
 gem 'opentelemetry-instrumentation-all'
 
 gem 'simplecov'
+
+
+gem 'zlib'
+gem 'archive-tar-minitar'
+
 # gem 'simplecov-cobertura'
 
 # gem 'rbase', path: '../src_rbase'
