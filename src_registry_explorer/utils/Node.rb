@@ -15,16 +15,21 @@ class Node
   end
 
   def find_links(n, path = [])
-    return unless n.is_a? Hash
-    n.each do |key, value|
-      if value.is_a? Hash
-        add_link(path + [key], value) if value.key? :digest
-        find_links path + [key], value
-      elsif value.is_a? Array
-        value.each_with_index do |sub_value, id|
-          if sub_value.is_a? Hash
-            find_links path + [key] + ["Array_Id_#{id}"], sub_value
-          end
+    return unless (n.is_a? Hash or n.is_a? Array)
+    if n.is_a? Hash
+      n.each do |key, value|
+        if value.is_a? Hash
+          add_link(path + [key], value) if value.key? :digest
+          find_links(value, path + [key])
+        elsif value.is_a? Array
+          find_links(value, path + [key])
+        end
+      end
+    elsif n.is_a? Array
+      n.each_with_index do |sub_hash, id|
+        if sub_hash.is_a? Hash
+          add_link(path + ["Array_id_#{id}"], sub_hash) if sub_hash.key? :digest
+          find_links(sub_hash, path + ["Array_Id_#{id}"])
         end
       end
     end
@@ -52,5 +57,4 @@ class Node
   def links
     @links
   end
-
 end

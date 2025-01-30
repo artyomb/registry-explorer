@@ -29,6 +29,7 @@ ruby:
         index_sha256 = index_path.split('/').last
         outer_index_path = base_path + "/blobs/sha256/#{index_sha256[0..1]}/#{index_sha256}/data"
         index_content = JSON.parse(File.read(outer_index_path))
+        puts("Tag has index #{index_sha256} with content in blob: #{JSON.pretty_generate(index_content)}")
         current_Node_link = { path: ["BASE_NODE"], node: Node.new(index_content["mediaType"], index_sha256, index_content[:size]) }
         current_tag[:index_Nodes] << current_Node_link
       end
