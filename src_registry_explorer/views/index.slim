@@ -96,11 +96,12 @@ javascript:
                   th
                   th Tag name
                   th Total Nodes amount
+                  th Created at
               tbody
                 - image[:tags].each do |tag|
                   tr.expandable-tag
                     td
-                      img.hide-show-arrow src='/images/chevron-right.svg' alt="Toggle Example"
+                      / img.hide-show-arrow src='/images/chevron-right.svg' alt="Toggle Example"
                     td #{tag[:name]}
                     td #{tag[:index_Nodes].size}
-
+                    td #{(tag[:index_Nodes].map { |index_node| index_node[:node].created_at }).min}

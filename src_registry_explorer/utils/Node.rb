@@ -35,11 +35,17 @@ def extract_tar_gz_structure(tar_gz_sha256)
   structure
 end
 
+def define_create_time(sha256)
+  file = File.join($base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data")
+  Time.at(File.ctime(file))
+end
+
 class Node
   def initialize(type, sha256, node_size = nil)
     @type = type
     @sha256 = sha256
     @node_size = node_size
+    @created_at = define_create_time sha256
     @links = []
     begin
       @actual_blob_size = blob_size(@sha256)
@@ -97,5 +103,9 @@ class Node
 
   def links
     @links
+  end
+
+  def created_at
+    @created_at
   end
 end
