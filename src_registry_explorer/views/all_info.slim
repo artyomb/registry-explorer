@@ -31,7 +31,7 @@ ruby:
         outer_index_path = base_path + "/blobs/sha256/#{index_sha256[0..1]}/#{index_sha256}/data"
         index_content = JSON.parse(File.read(outer_index_path))
         puts("Tag has index #{index_sha256} with content in blob: #{JSON.pretty_generate(index_content)}")
-        current_Node_link = { path: ["Image"], node: Node.new(index_content["mediaType"], index_sha256, index_content[:size]) }
+        current_Node_link = { path: ["Image"], node: Node.new(index_content["mediaType"], index_sha256, index_content[:size]), parent_sha256: index_sha256 }
         current_tag[:index_Nodes] << current_Node_link
       end
       puts
@@ -92,7 +92,7 @@ javascript:
         td #{image[:total_layers]}
         td #{image[:status]}
       - if image[:tags].size > 0
-        tr.expandable-element data-parent="#{image[:name]}"
+        tr data-parent="#{image[:name]}"
           td style="padding: 0" colspan="6"
             table style="margin: 0;margin-bottom: 2rem"
               thead
@@ -103,13 +103,13 @@ javascript:
                   th Created at
               tbody
                 - image[:tags].each do |tag|
-                  tr.expandable-tag
+                  tr.expandable-element id="#{image[:name]}/#{tag[:name]}"
                     td
                       img.hide-show-arrow src='/images/chevron-right.svg' alt="Toggle Example"
                     td #{tag[:name]}
                     td #{tag[:index_Nodes].size}
                     td #{(tag[:index_Nodes].map { |index_node| index_node[:node].created_at }).min}
-                  tr.expandable-tag
+                  tr data-parent="#{image[:name]}/#{tag[:name]}"
                     td colspan="6"
                       table
                         thead
@@ -124,7 +124,7 @@ javascript:
                             - node_links.each do |node_link|
                               - node_is_current = "#{node_link[:node].sha256 == tag[:current_index_sha256] ? '✅' : ''}"
                               - if node_link[:node].node_type.to_s =~ /json/
-                                tr.node-row id="#{node_link[:node].sha256}" children="#{node_link[:node].links.map {|link| link[:node].sha256}.join(',')}"
+                                tr.expandable-element.node-row id="#{image[:name]}/#{tag[:name]}/#{node_link[:node].sha256}"
                                   td style="padding-left: #{depth * margin_coef}rem "= node_link[:path].join('/') + node_is_current
                                   td
                                     a href="/json/#{node_link[:node].sha256}"= node_link[:node].sha256
@@ -132,7 +132,7 @@ javascript:
                                   td= node_link[:node].node_size.nil? ? "Size unknown" : node_link[:node].node_size
                                   td= node_link[:node].actual_blob_size.nil? ? "Size unknown" : node_link[:node].actual_blob_size
                               - elsif node_link[:node].node_type.to_s =~ /gzip/
-                                tr.node-row id="#{node_link[:node].sha256}" children="#{node_link[:node].links.map {|link| link[:node].sha256}.join(',')}"
+                                tr.node-row id="#{node_link[:node].sha256}"
                                   td style="padding-left: #{depth * margin_coef}rem "
                                     = node_link[:path].join('/') + node_is_current
                                   td
@@ -141,7 +141,7 @@ javascript:
                                   td= node_link[:node].node_size.nil? ? "Size unknown" : node_link[:node].node_size
                                   td= node_link[:node].actual_blob_size.nil? ? "Size unknown" : node_link[:node].actual_blob_size
                               - else
-                                tr.node-row id="#{node_link[:node].sha256}" children="#{node_link[:node].links.map {|link| link[:node].sha256}.join(',')}"
+                                tr.node-row id="#{node_link[:node].sha256}"
                                   td style="padding-left: #{depth * margin_coef}rem "
                                     = node_link[:path].join('/') + node_is_current
                                   td= node_link[:node].sha256
