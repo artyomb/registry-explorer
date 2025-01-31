@@ -11,6 +11,7 @@ class RegistryExplorerFront < Sinatra::Base
   set :root, '.' #File.dirname(__FILE__)
   get '/',         &->() { slim :index }
   get '/index',         &->() { slim :index }
+  get '/all-info',         &->() { slim :all_info }
   get '/json/:sha256', &->() { slim :json }
   get '/tar-gz/:sha256', &->() { slim :targz }
   get '/healthcheck', &-> { 'Healthy' }

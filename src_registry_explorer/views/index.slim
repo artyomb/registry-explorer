@@ -42,33 +42,28 @@ sass:
     display: flex
     flex-direction: column
     padding: 2rem
-    .table-header
-      .header-element
-    .expandable-iamge
+    .expandable-element
       cursor: pointer
-      &.expand-tags
-        .hide-show-arrow
-          background-color: rgba(255, 255, 255, 0.2)
-          transform: rotate(90deg)
-        .table-row
-          background-color: rgba(255, 255, 255, 0.1)
       .hide-show-arrow
         cursor: pointer
         transition: transform 0.3s ease
         transform: rotate(0deg)
-      .table-row
-        width: 90%
-        .row-element
-    .expandable-tag
-      //display: none
-      &.outer-expanded
-        display: table-row
+        &.rotate-arrow
+          transform: rotate(90deg)
 javascript:
     document.addEventListener("DOMContentLoaded", function() {
-        document.querySelectorAll(".expandable-iamge").forEach(function(row) {
-            row.addEventListener("click", function() {
-                row.classList.toggle("expand-tags");
-                row.querySelector(".expandable-tag").classList.toggle("outer-expanded");
+        document.querySelectorAll(".expandable-element").forEach(function(expandableObject) {
+            const childElements = document.querySelectorAll(`[data-parent="${expandableObject.id}"]`);
+            childElements.forEach(element => {
+                element.style.display = 'none';
+            });
+            expandableObject.addEventListener("click", function() {
+                expandableObject.querySelector(".hide-show-arrow").classList.toggle("rotate-arrow");
+                childElements.forEach(element => {
+                    if (element.style.display === 'none') {
+                        element.style.display = 'table-row';
+                    } else {element.style.display = 'none';}
+                });
             });
         });
     });
@@ -77,76 +72,35 @@ javascript:
   h1 Exploring images
   table
     tr
-      th.header-element
-      th.header-element Image name
-      th.header-element Image tags
-      th.header-element Total size
-      th.header-element Total amount of layers
-      th.header-element Image status
+      th
+      th Image name
+      th Image tags
+      th Total size
+      th Total amount of layers
+      th Image status
     - images.each do |image|
-      tr.expandable-image
+      tr.expandable-element id="#{image[:name]}"
         td
-          img.hide-show-arrow src='/images/chevron-right.svg' alt="Toggle Example"
-        td.row-element #{image[:name]}
-        td.row-element #{image[:tags].size > 0 ? image[:tags].map{|t| t[:name]}.join(', ') : 'No tags'}
-        td.row-element #{image[:total_size]}
-        td.row-element #{image[:total_layers]}
-        td.row-element #{image[:status]}
+          img.hide-show-arrow src='/images/chevron-right.svg' alt="Toggle Example" style="display: #{image[:tags].size > 0 ? 'flex' : 'none' }"
+        td #{image[:name]}
+        td #{image[:tags].size > 0 ? image[:tags].map{|t| t[:name]}.join(', ') : 'No tags'}
+        td #{image[:total_size]}
+        td #{image[:total_layers]}
+        td #{image[:status]}
       - if image[:tags].size > 0
-        tr.expandable-tag
+        tr data-parent="#{image[:name]}"
           td style="padding: 0" colspan="6"
             table style="margin: 0;margin-bottom: 2rem"
               thead
-                tr.header-element
-                  th.header-element
-                  th.header-element Tag name
-                  th.header-element Total Nodes amount
+                tr
+                  th
+                  th Tag name
+                  th Total Nodes amount
               tbody
                 - image[:tags].each do |tag|
                   tr.expandable-tag
                     td
                       img.hide-show-arrow src='/images/chevron-right.svg' alt="Toggle Example"
-                    td.row-element #{tag[:name]}
-                    td.row-element #{tag[:index_Nodes].size}
-                  tr.expandable-tag
-                    td colspan="6"
-                      table
-                        thead
-                          tr
-                            th Node path
-                            th Node sha256
-                            th Node type
-                            th Node size
-                            th Actucal blob size
-                        tbody
-                          - render_node_links = ->(node_links, depth=0) do
-                            - node_links.each do |node_link|
-                              - node_is_current = "#{node_link[:node].sha256 == tag[:current_index_sha256] ? '✅' : ''}"
-                              - if node_link[:node].node_type.to_s =~ /json/
-                                tr.node-row id="#{node_link[:node].sha256}" children="#{node_link[:node].links.map {|link| link[:node].sha256}.join(',')}"
-                                  td style="padding-left: #{depth * margin_coef}rem "= node_link[:path].join('/') + node_is_current
-                                  td
-                                    a href="/json/#{node_link[:node].sha256}"= node_link[:node].sha256
-                                  td= node_link[:node].node_type
-                                  td= node_link[:node].node_size.nil? ? "Size unknown" : node_link[:node].node_size
-                                  td= node_link[:node].actual_blob_size.nil? ? "Size unknown" : node_link[:node].actual_blob_size
-                              - elsif node_link[:node].node_type.to_s =~ /gzip/
-                                tr.node-row id="#{node_link[:node].sha256}" children="#{node_link[:node].links.map {|link| link[:node].sha256}.join(',')}"
-                                  td style="padding-left: #{depth * margin_coef}rem "
-                                    = node_link[:path].join('/') + node_is_current
-                                  td
-                                    a href="/tar-gz/#{node_link[:node].sha256}" = node_link[:node].sha256
-                                  td= node_link[:node].node_type
-                                  td= node_link[:node].node_size.nil? ? "Size unknown" : node_link[:node].node_size
-                                  td= node_link[:node].actual_blob_size.nil? ? "Size unknown" : node_link[:node].actual_blob_size
-                              - else
-                                tr.node-row id="#{node_link[:node].sha256}" children="#{node_link[:node].links.map {|link| link[:node].sha256}.join(',')}"
-                                  td style="padding-left: #{depth * margin_coef}rem "
-                                    = node_link[:path].join('/') + node_is_current
-                                  td= node_link[:node].sha256
-                                  td= node_link[:node].node_type
-                                  td= node_link[:node].node_size.nil? ? "Size unknown" : node_link[:node].node_size
-                                  td= node_link[:node].actual_blob_size.nil? ? "Size unknown" : node_link[:node].actual_blob_size
-                              - if node_link[:node].links.any?
-                                - render_node_links.call(node_link[:node].links, depth + 1)
-                          - render_node_links.call(tag[:index_Nodes])
+                    td #{tag[:name]}
+                    td #{tag[:index_Nodes].size}
+

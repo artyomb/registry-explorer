@@ -1,0 +1,152 @@
+ruby:
+  require_relative '../utils/Node'
+  margin_coef=1.5
+  possible_statuses = ['error', 'ok', 'warning']
+  base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../docker/data') + "/docker/registry/v2"
+  path_to_repositories = base_path + "/repositories"
+  repositories_path_list = Dir.glob(path_to_repositories + "/*").select { |f| File.directory?(f) }
+  images = []
+  images_path_list = Dir.glob("#{path_to_repositories}/**/*")
+                        .select do |f|
+    File.directory?(f) &&
+            Dir.exist?(File.join(f, "_layers")) &&
+            Dir.exist?(File.join(f, "_manifests")) &&
+            Dir.exist?(File.join(f, "_uploads"))
+  end
+  puts("Founded following images:\n #{images_path_list}")
+  puts
+  images_path_list.each do |image_path|
+    subfolders = image_path.split('/')
+    image_name = "/" + subfolders[subfolders.find_index('repositories') + 1..].join('/')
+    current_img = { name: image_name, tags: [], total_size: "-", total_layers: "-", status: "-" }
+    images << current_img
+    Dir.glob(image_path + "/_manifests/tags/*").select{ |f| File.directory?(f) }.each do |tag_path|
+      puts("Image #{image_name}")
+      puts("Founded tag #{tag_path}")
+      current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: File.read(tag_path + "/current/link").split(':').last }
+      current_img[:tags] << current_tag
+      indexes_paths = Dir.glob(tag_path + "/index/sha256/*")
+      indexes_paths.each do |index_path|
+        index_sha256 = index_path.split('/').last
+        outer_index_path = base_path + "/blobs/sha256/#{index_sha256[0..1]}/#{index_sha256}/data"
+        index_content = JSON.parse(File.read(outer_index_path))
+        puts("Tag has index #{index_sha256} with content in blob: #{JSON.pretty_generate(index_content)}")
+        current_Node_link = { path: ["Image"], node: Node.new(index_content["mediaType"], index_sha256, index_content[:size]) }
+        current_tag[:index_Nodes] << current_Node_link
+      end
+      puts
+    end
+  end
+sass:
+  .macro_container
+    display: flex
+    flex-direction: column
+    padding: 2rem
+    .table-header
+      .header-element
+    .expandable-iamge
+      cursor: pointer
+      &.expand-tags
+        .hide-show-arrow
+          background-color: rgba(255, 255, 255, 0.2)
+          transform: rotate(90deg)
+        .table-row
+          background-color: rgba(255, 255, 255, 0.1)
+      .hide-show-arrow
+        cursor: pointer
+        transition: transform 0.3s ease
+        transform: rotate(0deg)
+      .table-row
+        width: 90%
+        .row-element
+    .expandable-tag
+      //display: none
+      &.outer-expanded
+        display: table-row
+javascript:
+    document.addEventListener("DOMContentLoaded", function() {
+        document.querySelectorAll(".expandable-iamge").forEach(function(row) {
+            row.addEventListener("click", function() {
+                row.classList.toggle("expand-tags");
+                row.querySelector(".expandable-tag").classList.toggle("outer-expanded");
+            });
+        });
+    });
+
+.macro_container
+  h1 Exploring images
+  table
+    tr
+      th.header-element
+      th.header-element Image name
+      th.header-element Image tags
+      th.header-element Total size
+      th.header-element Total amount of layers
+      th.header-element Image status
+    - images.each do |image|
+      tr.expandable-image
+        td
+          img.hide-show-arrow src='/images/chevron-right.svg' alt="Toggle Example"
+        td.row-element #{image[:name]}
+        td.row-element #{image[:tags].size > 0 ? image[:tags].map{|t| t[:name]}.join(', ') : 'No tags'}
+        td.row-element #{image[:total_size]}
+        td.row-element #{image[:total_layers]}
+        td.row-element #{image[:status]}
+      - if image[:tags].size > 0
+        tr.expandable-tag
+          td style="padding: 0" colspan="6"
+            table style="margin: 0;margin-bottom: 2rem"
+              thead
+                tr.header-element
+                  th.header-element
+                  th.header-element Tag name
+                  th.header-element Total Nodes amount
+              tbody
+                - image[:tags].each do |tag|
+                  tr.expandable-tag
+                    td
+                      img.hide-show-arrow src='/images/chevron-right.svg' alt="Toggle Example"
+                    td.row-element #{tag[:name]}
+                    td.row-element #{tag[:index_Nodes].size}
+                  tr.expandable-tag
+                    td colspan="6"
+                      table
+                        thead
+                          tr
+                            th Node path
+                            th Node sha256
+                            th Node type
+                            th Node size
+                            th Actucal blob size
+                        tbody
+                          - render_node_links = ->(node_links, depth=0) do
+                            - node_links.each do |node_link|
+                              - node_is_current = "#{node_link[:node].sha256 == tag[:current_index_sha256] ? '✅' : ''}"
+                              - if node_link[:node].node_type.to_s =~ /json/
+                                tr.node-row id="#{node_link[:node].sha256}" children="#{node_link[:node].links.map {|link| link[:node].sha256}.join(',')}"
+                                  td style="padding-left: #{depth * margin_coef}rem "= node_link[:path].join('/') + node_is_current
+                                  td
+                                    a href="/json/#{node_link[:node].sha256}"= node_link[:node].sha256
+                                  td= node_link[:node].node_type
+                                  td= node_link[:node].node_size.nil? ? "Size unknown" : node_link[:node].node_size
+                                  td= node_link[:node].actual_blob_size.nil? ? "Size unknown" : node_link[:node].actual_blob_size
+                              - elsif node_link[:node].node_type.to_s =~ /gzip/
+                                tr.node-row id="#{node_link[:node].sha256}" children="#{node_link[:node].links.map {|link| link[:node].sha256}.join(',')}"
+                                  td style="padding-left: #{depth * margin_coef}rem "
+                                    = node_link[:path].join('/') + node_is_current
+                                  td
+                                    a href="/tar-gz/#{node_link[:node].sha256}" = node_link[:node].sha256
+                                  td= node_link[:node].node_type
+                                  td= node_link[:node].node_size.nil? ? "Size unknown" : node_link[:node].node_size
+                                  td= node_link[:node].actual_blob_size.nil? ? "Size unknown" : node_link[:node].actual_blob_size
+                              - else
+                                tr.node-row id="#{node_link[:node].sha256}" children="#{node_link[:node].links.map {|link| link[:node].sha256}.join(',')}"
+                                  td style="padding-left: #{depth * margin_coef}rem "
+                                    = node_link[:path].join('/') + node_is_current
+                                  td= node_link[:node].sha256
+                                  td= node_link[:node].node_type
+                                  td= node_link[:node].node_size.nil? ? "Size unknown" : node_link[:node].node_size
+                                  td= node_link[:node].actual_blob_size.nil? ? "Size unknown" : node_link[:node].actual_blob_size
+                              - if node_link[:node].links.any?
+                                - render_node_links.call(node_link[:node].links, depth + 1)
+                          - render_node_links.call(tag[:index_Nodes])
