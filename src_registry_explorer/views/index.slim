@@ -104,4 +104,4 @@ javascript:
                       / img.hide-show-arrow src='/images/chevron-right.svg' alt="Toggle Example"
                     td #{tag[:name]}
                     td #{tag[:index_Nodes].size}
-                    td #{(tag[:index_Nodes].map { |index_node| index_node[:node].created_at }).min}
+                    td #{(tag[:index_Nodes].map { |index_node| index_node[:node].created_at.nil? ? -1 : index_node[:node].created_at }).min}

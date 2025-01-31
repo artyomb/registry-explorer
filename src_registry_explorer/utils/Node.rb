@@ -36,8 +36,13 @@ def extract_tar_gz_structure(tar_gz_sha256)
 end
 
 def define_create_time(sha256)
-  file = File.join($base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data")
-  Time.at(File.ctime(file))
+  begin
+    file = File.join($base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data")
+    Time.at(File.ctime(file))
+  rescue Exception => e
+    puts "Error: #{e}"
+    return nil
+  end
 end
 
 class Node
