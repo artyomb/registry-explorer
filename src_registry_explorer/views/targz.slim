@@ -18,7 +18,7 @@ script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit-icons.min.js
         - current_id = "node_#{parent_id}_#{counter}"
         - if content.is_a?(Hash) && content != 'file'
           a.uk-toggle href="#" uk-toggle="target: ##{current_id}"
-            span uk-icon="icon: triangle-right"
+            span uk-icon="icon: folder"
             = " #{name}"
           ul.uk-list.uk-margin-left id=current_id hidden=true
             - render_structure.call(content, current_id, 0)
@@ -28,16 +28,16 @@ script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit-icons.min.js
       - counter += 1
   - render_structure.call(structure)
 
-javascript:
-  document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.uk-toggle').forEach(toggle => {
-      toggle.addEventListener('click', function() {
-        let icon = this.querySelector('[uk-icon]');
-        icon.setAttribute('uk-icon',
-          icon.getAttribute('uk-icon').includes('right') ?
-          'icon: triangle-down' :
-          'icon: triangle-right'
-        );
-      });
-    });
-  });
+//javascript:
+//  document.addEventListener('DOMContentLoaded', function() {
+//    document.querySelectorAll('.uk-toggle').forEach(toggle => {
+//      toggle.addEventListener('click', function() {
+//        let icon = this.querySelector('[uk-icon]');
+//        icon.setAttribute('uk-icon',
+//          icon.getAttribute('uk-icon').includes('right') ?
+//          'icon: triangle-down' :
+//          'icon: triangle-right'
+//        );
+//      });
+//    });
+//  });
