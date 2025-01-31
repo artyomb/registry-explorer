@@ -6,6 +6,7 @@ ruby:
   margin_coef=1.5
   possible_statuses = ['error', 'ok', 'warning']
   base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../docker/data') + "/docker/registry/v2"
+
   path_to_repositories = base_path + "/repositories"
   repositories_path_list = Dir.glob(path_to_repositories + "/*").select { |f| File.directory?(f) }
   images = []
@@ -23,21 +24,8 @@ ruby:
     image_name = "/" + subfolders[subfolders.find_index('repositories') + 1..].join('/')
     current_img = { name: image_name, tags: [], total_size: "-", total_layers: "-", status: "-" }
     images << current_img
-    Dir.glob(image_path + "/_manifests/tags/*").select{ |f| File.directory?(f) }.each do |tag_path|
-      puts("Image #{image_name}")
-      puts("Founded tag #{tag_path}")
-      current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: File.read(tag_path + "/current/link").split(':').last }
-      current_img[:tags] << current_tag
-      indexes_paths = Dir.glob(tag_path + "/index/sha256/*")
-      indexes_paths.each do |index_path|
-        index_sha256 = index_path.split('/').last
-        outer_index_path = base_path + "/blobs/sha256/#{index_sha256[0..1]}/#{index_sha256}/data"
-        index_content = JSON.parse(File.read(outer_index_path))
-        puts("Tag has index #{index_sha256} with content in blob: #{JSON.pretty_generate(index_content)}")
-        current_Node_link = { path: ["Image"], node: Node.new(index_content["mediaType"], index_sha256, index_content[:size]), parent_sha256: index_sha256 }
-        current_tag[:index_Nodes] << current_Node_link
-      end
-      puts
+    Dir.glob(image_path + "/_manifests/tags/*").select { |f| File.directory?(f) }.each do |tag_path|
+      extract_tag(tag_path, image_name, current_img, base_path)
     end
   end
 sass:

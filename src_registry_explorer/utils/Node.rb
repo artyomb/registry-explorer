@@ -35,6 +35,29 @@ def extract_tar_gz_structure(tar_gz_sha256)
   structure
 end
 
+def extract_tag(tag_path, image_name, current_img, base_path)
+  puts("Image #{image_name}")
+  puts("Founded tag #{tag_path}")
+  current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: File.read(tag_path + "/current/link").split(':').last }
+  current_img[:tags] << current_tag
+  indexes_paths = Dir.glob(tag_path + "/index/sha256/*")
+  extract_index(current_tag[:current_index_sha256], base_path, current_tag)
+  indexes_paths.each do |index_path|
+    index_sha256 = index_path.split('/').last
+    next if index_sha256 == current_tag[:current_index_sha256]
+    extract_index(index_sha256, base_path, current_tag)
+  end
+  puts
+end
+
+def extract_index(index_sha256, base_path, current_tag)
+  outer_index_path = base_path + "/blobs/sha256/#{index_sha256[0..1]}/#{index_sha256}/data"
+  index_content = JSON.parse(File.read(outer_index_path))
+  puts("Tag has index #{index_sha256} with content in blob: #{JSON.pretty_generate(index_content)}")
+  current_Node_link = { path: ["Image"], node: Node.new(index_content["mediaType"], index_sha256, index_content[:size]), parent_sha256: index_sha256 }
+  current_tag[:index_Nodes] << current_Node_link
+end
+
 def define_create_time(sha256)
   begin
     file = File.join($base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data")
