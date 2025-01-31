@@ -1,3 +1,6 @@
+link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/css/uikit.min.css"
+script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit.min.js"
+script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit-icons.min.js"
 ruby:
   require_relative '../utils/Node'
   margin_coef=1.5
@@ -50,6 +53,11 @@ sass:
         transform: rotate(0deg)
         &.rotate-arrow
           transform: rotate(90deg)
+  .path_container
+    display: flex
+    flex-direction: row
+    align-items: center
+    column-gap: 1rem
 javascript:
     document.addEventListener("DOMContentLoaded", function() {
         document.querySelectorAll(".expandable-element").forEach(function(expandableObject) {
@@ -123,14 +131,18 @@ javascript:
                         tbody
                           - render_node_links = ->(node_links, depth=0, parent_sha256) do
                             - node_links.each do |node_link|
-                              - node_is_current = "#{node_link[:node].sha256 == tag[:current_index_sha256] ? '✅' : ''}"
+                              - node_is_current = node_link[:node].sha256 == tag[:current_index_sha256]
                               tr.expandable-element.node-row id="#{image[:name]}/#{tag[:name]}/#{node_link[:node].sha256}" data-parent="#{image[:name]}/#{tag[:name]}#{parent_sha256.size > 0 ? "/#{parent_sha256}" : ''}"
-                                - if node_link[:node].node_type.to_s =~ /json/
+                                - if node_link[:node].node_type.to_s =~ /json/ && node_link[:node].links.any?
                                   td
                                     img.hide-show-arrow src='/images/chevron-right.svg' alt="Toggle Example"
                                 - else
                                   td
-                                td style="padding-left: #{depth * margin_coef}rem "= node_link[:path].join('/') + node_is_current
+                                td style="padding-left: #{depth * margin_coef}rem "
+                                  .path_container
+                                    span= node_link[:path].join('/')
+                                    - if node_is_current
+                                      span uk-icon="icon: check"
                                 - if node_link[:node].node_type.to_s =~ /json/
                                   td
                                     a href="/json/#{node_link[:node].sha256}"= node_link[:node].sha256

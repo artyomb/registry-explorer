@@ -1,8 +1,3 @@
-ruby:
-  require_relative '../utils/Node'
-  structure = extract_tar_gz_structure(params[:sha256])
-h1= "Archive blob #{params[:sha256]} content"
-
 sass:
   li
     list-style: none
@@ -11,6 +6,12 @@ sass:
 link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/css/uikit.min.css"
 script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit.min.js"
 script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit-icons.min.js"
+
+ruby:
+  require_relative '../utils/Node'
+  structure = extract_tar_gz_structure(params[:sha256])
+h1= "Archive blob #{params[:sha256]} content"
+
 .file-structure
   - render_structure = ->(structure, parent_id = 'root', counter = 0) do
     - structure.each do |name, content|
@@ -23,7 +24,7 @@ script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit-icons.min.js
           ul.uk-list.uk-margin-left id=current_id hidden=true
             - render_structure.call(content, current_id, 0)
         - else
-          span uk-icon="icon: file"
+          span uk-icon="icon: file-text"
           = " #{name}"
       - counter += 1
   - render_structure.call(structure)
