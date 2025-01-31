@@ -130,7 +130,7 @@ javascript:
                                   .path_container
                                     span= node_link[:path].join('/')
                                     - if node_is_current
-                                      span uk-icon="icon: check"
+                                      span uk-icon="icon: check" style="color: green"
                                 - if node_link[:node].node_type.to_s =~ /json/
                                   td
                                     a href="/json/#{node_link[:node].sha256}"= node_link[:node].sha256
