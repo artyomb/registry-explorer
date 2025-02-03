@@ -38,25 +38,39 @@ sass:
       transform: rotate(0deg)
       &.rotate-arrow
         transform: rotate(90deg)
-javascript:
-    document.addEventListener("DOMContentLoaded", function() {
-        document.querySelectorAll(".expandable-element").forEach(function(expandableObject) {
-            const childElements = document.querySelectorAll(`[data-parent="${expandableObject.id}"]`);
-            childElements.forEach(element => {
-                element.style.display = 'none';
-            });
-            expandableObject.addEventListener("click", function() {
-                expandableObject.querySelector(".hide-show-arrow").classList.toggle("rotate-arrow");
-                childElements.forEach(element => {
-                    if (element.style.display === 'none') {
-                        element.style.display = 'table-row';
-                    } else {element.style.display = 'none';}
-                });
-            });
-        });
-    });
 
-h1 Registry explorer
+  .clickable-row, tr[data-href]
+    cursor: pointer
+    &:hover
+      background-color: rgba(115, 209, 230, 0.22)
+
+javascript:
+  document.addEventListener("DOMContentLoaded", function() {
+
+      document.querySelector('body').addEventListener('click', function(event) {
+          const row = event.target.closest('tr[data-href]');
+          if (row) {
+              window.location.href = row.dataset.href;
+          }
+      });
+
+      document.querySelectorAll(".expandable-element").forEach(function(expandableObject) {
+          const childElements = document.querySelectorAll(`[data-parent="${expandableObject.id}"]`);
+          childElements.forEach(element => {
+              element.style.display = 'none';
+          });
+          expandableObject.addEventListener("click", function() {
+              expandableObject.querySelector(".hide-show-arrow").classList.toggle("rotate-arrow");
+              childElements.forEach(element => {
+                  if (element.style.display === 'none') {
+                      element.style.display = 'table-row';
+                  } else {element.style.display = 'none';}
+              });
+          });
+      });
+  });
+
+h1 Registry
 table
   tr
     th
@@ -80,16 +94,12 @@ table
           table style="margin: 0;margin-bottom: 2rem"
             thead
               tr
-                th
                 th Tag name
                 th Total Nodes amount
                 th Created at
             tbody
               - image[:tags].each do |tag|
-                tr.expandable-tag
-                  td
-                    / img.hide-show-arrow src='/images/chevron-right.svg' alt="Toggle Example"
-                  td
-                    a href="/tag-exploring#{image[:name]}/#{tag[:name]}"="#{tag[:name]}"
+                tr data-href="/tag-exploring#{image[:name]}/#{tag[:name]}"
+                  td #{tag[:name]}
                   td #{tag[:index_Nodes].size}
                   td #{(tag[:index_Nodes].map { |index_node| index_node[:node].created_at.nil? ? -1 : index_node[:node].created_at }).min}
