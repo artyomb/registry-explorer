@@ -8,18 +8,10 @@ body
   == slim :style
 
   .service-navigation-container
-    a.navig-element href="/index" Home
-    a.navig-element href="/documentation" Documentation
-    .has-inner-list.navig-element
-      span Navigation
-      img.chevron-down src='/images/chevron-right.svg' alt="expand list"
-      .inner-list
-        li.inner-element
-          a href="/index" Home
-        li.inner-element
-          a href="/all-info" All info
-    a.navig-element href="/all-info" All info
+    a.navig-element href="/index" Registry
   #notificationPopup.popup
     button.close-button onclick="closeNotification()" ×public
-  == yield
+
+  .further-layout-container
+    == yield
 

@@ -1,8 +1,13 @@
+link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/css/uikit.min.css"
+script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit.min.js"
+script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit-icons.min.js"
 ruby:
   require_relative '../utils/Node'
   margin_coef=1.5
   possible_statuses = ['error', 'ok', 'warning']
+
   base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../docker/data') + "/docker/registry/v2"
+
   path_to_repositories = base_path + "/repositories"
   repositories_path_list = Dir.glob(path_to_repositories + "/*").select { |f| File.directory?(f) }
   images = []
@@ -20,36 +25,19 @@ ruby:
     image_name = "/" + subfolders[subfolders.find_index('repositories') + 1..].join('/')
     current_img = { name: image_name, tags: [], total_size: "-", total_layers: "-", status: "-" }
     images << current_img
-    Dir.glob(image_path + "/_manifests/tags/*").select{ |f| File.directory?(f) }.each do |tag_path|
-      puts("Image #{image_name}")
-      puts("Founded tag #{tag_path}")
-      current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: File.read(tag_path + "/current/link").split(':').last }
-      current_img[:tags] << current_tag
-      indexes_paths = Dir.glob(tag_path + "/index/sha256/*")
-      indexes_paths.each do |index_path|
-        index_sha256 = index_path.split('/').last
-        outer_index_path = base_path + "/blobs/sha256/#{index_sha256[0..1]}/#{index_sha256}/data"
-        index_content = JSON.parse(File.read(outer_index_path))
-        puts("Tag has index #{index_sha256} with content in blob: #{JSON.pretty_generate(index_content)}")
-        current_Node_link = { path: ["Image"], node: Node.new(index_content["mediaType"], index_sha256, index_content[:size]) }
-        current_tag[:index_Nodes] << current_Node_link
-      end
-      puts
+    Dir.glob(image_path + "/_manifests/tags/*").select { |f| File.directory?(f) }.each do |tag_path|
+      extract_tag(tag_path, image_name, current_img, base_path)
     end
   end
 sass:
-  .macro_container
-    display: flex
-    flex-direction: column
-    padding: 2rem
-    .expandable-element
+  .expandable-element
+    cursor: pointer
+    .hide-show-arrow
       cursor: pointer
-      .hide-show-arrow
-        cursor: pointer
-        transition: transform 0.3s ease
-        transform: rotate(0deg)
-        &.rotate-arrow
-          transform: rotate(90deg)
+      transition: transform 0.3s ease
+      transform: rotate(0deg)
+      &.rotate-arrow
+        transform: rotate(90deg)
 javascript:
     document.addEventListener("DOMContentLoaded", function() {
         document.querySelectorAll(".expandable-element").forEach(function(expandableObject) {
@@ -68,40 +56,40 @@ javascript:
         });
     });
 
-.macro_container
-  h1 Exploring images
-  table
-    tr
-      th
-      th Image name
-      th Image tags
-      th Total size
-      th Total amount of layers
-      th Image status
-    - images.each do |image|
-      tr.expandable-element id="#{image[:name]}"
-        td
-          img.hide-show-arrow src='/images/chevron-right.svg' alt="Toggle Example" style="display: #{image[:tags].size > 0 ? 'flex' : 'none' }"
-        td #{image[:name]}
-        td #{image[:tags].size > 0 ? image[:tags].map{|t| t[:name]}.join(', ') : 'No tags'}
-        td #{image[:total_size]}
-        td #{image[:total_layers]}
-        td #{image[:status]}
-      - if image[:tags].size > 0
-        tr data-parent="#{image[:name]}"
-          td style="padding: 0" colspan="6"
-            table style="margin: 0;margin-bottom: 2rem"
-              thead
-                tr
-                  th
-                  th Tag name
-                  th Total Nodes amount
-                  th Created at
-              tbody
-                - image[:tags].each do |tag|
-                  tr.expandable-tag
-                    td
-                      / img.hide-show-arrow src='/images/chevron-right.svg' alt="Toggle Example"
-                    td #{tag[:name]}
-                    td #{tag[:index_Nodes].size}
-                    td #{(tag[:index_Nodes].map { |index_node| index_node[:node].created_at.nil? ? -1 : index_node[:node].created_at }).min}
+h1 Registry explorer
+table
+  tr
+    th
+    th Image name
+    th Image tags
+    th Total size
+    th Total amount of layers
+    th Image status
+  - images.each do |image|
+    tr.expandable-element id="#{image[:name]}"
+      td
+        img.hide-show-arrow src='/images/chevron-right.svg' alt="Toggle Example" style="display: #{image[:tags].size > 0 ? 'flex' : 'none' }"
+      td #{image[:name]}
+      td #{image[:tags].size > 0 ? image[:tags].map{|t| t[:name]}.join(', ') : 'No tags'}
+      td #{image[:total_size]}
+      td #{image[:total_layers]}
+      td #{image[:status]}
+    - if image[:tags].size > 0
+      tr data-parent="#{image[:name]}"
+        td style="padding: 0" colspan="6"
+          table style="margin: 0;margin-bottom: 2rem"
+            thead
+              tr
+                th
+                th Tag name
+                th Total Nodes amount
+                th Created at
+            tbody
+              - image[:tags].each do |tag|
+                tr.expandable-tag
+                  td
+                    / img.hide-show-arrow src='/images/chevron-right.svg' alt="Toggle Example"
+                  td
+                    a href="/tag-exploring#{image[:name]}/#{tag[:name]}"="#{tag[:name]}"
+                  td #{tag[:index_Nodes].size}
+                  td #{(tag[:index_Nodes].map { |index_node| index_node[:node].created_at.nil? ? -1 : index_node[:node].created_at }).min}

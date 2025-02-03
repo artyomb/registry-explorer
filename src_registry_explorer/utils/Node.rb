@@ -50,6 +50,19 @@ def extract_tag(tag_path, image_name, current_img, base_path)
   puts
 end
 
+def extract_tag(tag_path, base_path)
+  current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: File.read(tag_path + "/current/link").split(':').last }
+  indexes_paths = Dir.glob(tag_path + "/index/sha256/*")
+  extract_index(current_tag[:current_index_sha256], base_path, current_tag)
+  indexes_paths.each do |index_path|
+    index_sha256 = index_path.split('/').last
+    next if index_sha256 == current_tag[:current_index_sha256]
+    extract_index(index_sha256, base_path, current_tag)
+  end
+  puts
+  current_tag
+end
+
 def extract_index(index_sha256, base_path, current_tag)
   outer_index_path = base_path + "/blobs/sha256/#{index_sha256[0..1]}/#{index_sha256}/data"
   index_content = JSON.parse(File.read(outer_index_path))
@@ -75,6 +88,8 @@ class Node
     @node_size = node_size
     @created_at = define_create_time sha256
     @links = []
+    @created_at = nil
+    @created_by = nil
     begin
       @actual_blob_size = blob_size(@sha256)
     rescue Exception => e
@@ -135,5 +150,9 @@ class Node
 
   def created_at
     @created_at
+  end
+
+  def created_by
+    @created_by
   end
 end

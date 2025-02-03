@@ -11,7 +11,11 @@ class RegistryExplorerFront < Sinatra::Base
   set :root, '.' #File.dirname(__FILE__)
   get '/',         &->() { slim :index }
   get '/index',         &->() { slim :index }
-  get '/all-info',         &->() { slim :all_info }
+  # get '/tag-exploring/*', &->() { slim :tag_exploring }
+  get '/tag-exploring/*' do
+    full_tag_path = params[:splat].first || ''
+    slim :tag_exploring, locals: { full_tag_path: full_tag_path }
+  end
   get '/json/:sha256', &->() { slim :json }
   get '/tar-gz/:sha256', &->() { slim :targz }
   get '/healthcheck', &-> { 'Healthy' }

@@ -1,0 +1,95 @@
+link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/css/uikit.min.css"
+script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit.min.js"
+script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit-icons.min.js"
+ruby:
+  require_relative '../utils/Node'
+  margin_coef=1.5
+  possible_statuses = ['error', 'ok', 'warning']
+
+  base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../docker/data') + "/docker/registry/v2"
+
+  img_pth_param = full_tag_path[0..(full_tag_path.rindex('/') - 1)]
+  image_in_registry_path = "/" + img_pth_param
+  tag_string = full_tag_path[(full_tag_path.rindex('/') + 1)..]
+  path_to_repositories = base_path + "/repositories"
+  full_path_to_image_tag = path_to_repositories + image_in_registry_path + '/_manifests/tags/' + tag_string
+  tag= extract_tag(full_path_to_image_tag, base_path)
+sass:
+  .expandable-element
+    cursor: pointer
+    .hide-show-arrow
+      cursor: pointer
+      transition: transform 0.3s ease
+      transform: rotate(0deg)
+      &.rotate-arrow
+        transform: rotate(90deg)
+  .path_container
+    display: flex
+    flex-direction: row
+    align-items: center
+    column-gap: 1rem
+javascript:
+    document.addEventListener("DOMContentLoaded", function() {
+        document.querySelectorAll(".expandable-element").forEach(function(expandableObject) {
+            const childElements = document.querySelectorAll(`[data-parent="${expandableObject.id}"]`);
+            childElements.forEach(element => {
+                element.style.display = 'none';
+            });
+            expandableObject.addEventListener("click", function() {
+                expandableObject.querySelector(".hide-show-arrow").classList.toggle("rotate-arrow");
+                childElements.forEach(element => {
+                    if (element.dataset.parent === expandableObject.id) {
+                        if (element.style.display === 'none') {
+                            element.style.display = 'table-row';
+                        } else {
+                            element.style.display = 'none';
+                        }
+                    }
+                });
+            });
+        });
+    });
+
+h1 Exploring #{image_in_registry_path + '/' + tag_string}
+table
+  thead
+    tr
+      th
+      th Node path
+      th Node sha256
+      th Node type
+      th Node size
+      th Actucal blob size
+      th Node created at
+      th Created by
+  tbody
+    - render_node_links = ->(node_links, depth=0, parent_sha256) do
+      - node_links.each do |node_link|
+        - node_is_current = node_link[:node].sha256 == tag[:current_index_sha256]
+        tr.expandable-element.node-row id="#{img_pth_param}/#{tag_string}/#{node_link[:node].sha256}" data-parent="#{img_pth_param}/#{tag_string}#{parent_sha256.size > 0 ? "/#{parent_sha256}" : ''}"
+          - if node_link[:node].node_type.to_s =~ /json/ && node_link[:node].links.any?
+            td
+              img.hide-show-arrow src='/images/chevron-right.svg' alt="Toggle Example"
+          - else
+            td
+          td style="padding-left: #{depth * margin_coef}rem "
+            .path_container
+              - if node_is_current
+                span uk-icon="icon: check" style="color: green"
+              span= node_link[:path].join('/')
+          - if node_link[:node].node_type.to_s =~ /json/
+            td
+              a href="/json/#{node_link[:node].sha256}"= node_link[:node].sha256
+          - elsif node_link[:node].node_type.to_s =~ /gzip/
+            td
+              a href="/tar-gz/#{node_link[:node].sha256}"= node_link[:node].sha256
+          - else
+            td= node_link[:node].sha256
+          td= node_link[:node].node_type
+          td= node_link[:node].node_size.nil? ? "Size unknown" : node_link[:node].node_size
+          td= node_link[:node].actual_blob_size.nil? ? "Size unknown" : node_link[:node].actual_blob_size
+          td= node_link[:node].created_at.nil? ? "Date unknown" : node_link[:node].created_at
+          td= node_link[:node].created_by.nil? ? "Unknown" : node_link[:node].created_by
+        - if node_link[:node].links.any?
+          - render_node_links.call(node_link[:node].links, depth + 1, node_link[:node].sha256)
+    - render_node_links.call(tag[:index_Nodes], 0, '')
