@@ -35,7 +35,7 @@ def extract_tar_gz_structure(tar_gz_sha256)
   structure
 end
 
-def extract_tag(tag_path, image_name, current_img, base_path)
+def extract_tag_with_image(tag_path, base_path, image_name, current_img)
   puts("Image #{image_name}")
   puts("Founded tag #{tag_path}")
   current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: File.read(tag_path + "/current/link").split(':').last }

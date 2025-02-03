@@ -26,7 +26,7 @@ ruby:
     current_img = { name: image_name, tags: [], total_size: "-", total_layers: "-", status: "-" }
     images << current_img
     Dir.glob(image_path + "/_manifests/tags/*").select { |f| File.directory?(f) }.each do |tag_path|
-      extract_tag(tag_path, image_name, current_img, base_path)
+      extract_tag_with_image(tag_path, base_path, image_name, current_img)
     end
   end
 sass:
