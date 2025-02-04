@@ -29,6 +29,29 @@ ruby:
       extract_tag_with_image(tag_path, base_path, image_name, current_img)
     end
   end
+
+  tree = {children: {}, image: {} }
+  # suppose images has name attribute. The name should split by '/'. Build a tree from it.
+  images.each do |image|
+    path_parts = image[:name].split('/')[1..]  # Skip first empty element from leading '/'
+    current = tree
+    path_parts.each do |part|
+      current[:children][part] ||= { children: {}, image: {} }
+      current = current[:children][part]
+    end
+    current[:image] = image
+  end
+
+  # deep flatten tree
+  flatten_tree = lambda do |node, level = 0, pname = nil|
+    result = []
+    node[:children].each do |name, child|
+      result << { name: [pname, name].flatten.compact.join('/'), level: level, image: child[:image], children_count: child[:children].size }
+      result.concat(flatten_tree[child, level + 1, [pname, name]])
+    end
+    result
+  end
+  flattened = flatten_tree[tree]
 sass:
   .expandable-element
     cursor: pointer
@@ -43,63 +66,49 @@ sass:
     cursor: pointer
     &:hover
       background-color: rgba(115, 209, 230, 0.22)
+  .hidden
+    display: none
 
 javascript:
   document.addEventListener("DOMContentLoaded", function() {
-
       document.querySelector('body').addEventListener('click', function(event) {
           const row = event.target.closest('tr[data-href]');
-          if (row) {
-              window.location.href = row.dataset.href;
-          }
-      });
+          if (row) window.location.href = row.dataset.href;
 
-      document.querySelectorAll(".expandable-element").forEach(function(expandableObject) {
-          const childElements = document.querySelectorAll(`[data-parent="${expandableObject.id}"]`);
-          childElements.forEach(element => {
-              element.style.display = 'none';
-          });
-          expandableObject.addEventListener("click", function() {
-              expandableObject.querySelector(".hide-show-arrow").classList.toggle("rotate-arrow");
-              childElements.forEach(element => {
-                  if (element.style.display === 'none') {
-                      element.style.display = 'table-row';
-                  } else {element.style.display = 'none';}
-              });
-          });
+          const eroot = event.target.closest('.expandable-root');
+          if (eroot) {
+              let currentElement = eroot.nextElementSibling;
+              while (currentElement && parseInt(currentElement.dataset.imageLevel) > parseInt(eroot.dataset.imageLevel)) {
+                currentElement.classList.toggle('hidden');
+                currentElement = currentElement.nextElementSibling;
+              }
+
+              eroot.querySelector(".hide-show-arrow")?.classList.toggle("rotate-arrow");
+          }
       });
   });
 
 h1 Registry
 table
   tr
-    th
+    th style="width: 20px"
     th Image name
-    th Image tags
-    th Total size
-    th Total amount of layers
-    th Image status
-  - images.each do |image|
-    tr.expandable-element id="#{image[:name]}"
+    th
+    th style="width: 120px" Created at
+  - flattened.each do |node|
+    tr.expandable-root.expandable-element data-image-level="#{node[:level]}"
       td
-        img.hide-show-arrow src='/images/chevron-right.svg' alt="Toggle Example" style="display: #{image[:tags].size > 0 ? 'flex' : 'none' }"
-      td #{image[:name]}
-      td #{image[:tags].size > 0 ? image[:tags].map{|t| t[:name]}.join(', ') : 'No tags'}
-      td #{image[:total_size]}
-      td #{image[:total_layers]}
-      td #{image[:status]}
-    - if image[:tags].size > 0
-      tr data-parent="#{image[:name]}"
-        td style="padding: 0" colspan="6"
-          table style="margin: 0;margin-bottom: 2rem"
-            thead
-              tr
-                th Tag name
-                th Total Nodes amount
-                th Created at
-            tbody
-              - image[:tags].each do |tag|
-                tr data-href="/tag-exploring#{image[:name]}/#{tag[:name]}"
-                  td #{tag[:name]}
-                  td #{tag[:index_Nodes].size}
-                  td #{(tag[:index_Nodes].map { |index_node| index_node[:node].created_at.nil? ? -1 : index_node[:node].created_at }).min}
+        - unless node[:children_count] == 0 && (node[:image][:tags] || []).empty?
+          img.hide-show-arrow.rotate-arrow src='/images/chevron-right.svg' alt="Toggle Example"
+      /style="display: #{image[:tags].size > 0 ? 'flex' : 'none' }"
+      td style="padding-left: #{node[:level]}em" = node[:name]
+      td
+        /#{image[:tags].size > 0 ? image[:tags].map { |t| t[:name] }.join(', ') : 'No tags'}
+      td Created at
+    - node[:image][:tags]&.each do |tag|
+      tr.expandable-root data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-image-level="#{node[:level]+1}"
+        td
+        td = tag[:name]
+        td
+          /#{(tag[:index_Nodes].map { |index_node| index_node[:node].created_at.nil? ? -1 : index_node[:node].created_at }).min}
+        td Created at

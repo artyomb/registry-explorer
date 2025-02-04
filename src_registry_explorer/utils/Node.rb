@@ -51,7 +51,13 @@ def extract_tag_with_image(tag_path, base_path, image_name, current_img)
 end
 
 def extract_tag(tag_path, base_path)
-  current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: File.read(tag_path + "/current/link").split(':').last }
+  current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: nil, size: nil, created_at: nil }
+  begin
+    current_tag[:current_index_sha256] = File.read(tag_path + "/current/link").split(':').last
+  rescue Exception => e
+    puts("Error: #{e.message}")
+    return current_tag
+  end
   indexes_paths = Dir.glob(tag_path + "/index/sha256/*")
   extract_index(current_tag[:current_index_sha256], base_path, current_tag)
   indexes_paths.each do |index_path|
