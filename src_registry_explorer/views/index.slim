@@ -54,6 +54,15 @@ ruby:
   end
   flattened = flatten_tree[tree]
 sass:
+  .header-container
+    display: flex
+    justify-content: space-between
+    align-items: center
+  .btns-container
+    display: flex
+    justify-content: space-between
+    column-gap: 1rem
+
   .tree-node
     cursor: pointer
   .hide-show-arrow
@@ -70,6 +79,15 @@ sass:
   .hidden
     display: none
 
+  .switch-btn
+    background-color: #EDF1F9
+    color: black
+    &:hover
+      color: white
+      background-color: #4D7DD0
+  .active
+    color: white
+    background-color: #4D7DD0
 javascript:
   document.addEventListener("DOMContentLoaded", function() {
       document.querySelector('body').addEventListener('click', function(event) {
@@ -87,8 +105,38 @@ javascript:
               eroot.querySelector(".hide-show-arrow")?.classList.toggle("rotate-arrow");
           }
       });
+      document.querySelectorAll('.switch-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+              const isActive = btn.classList.contains('active');
+              if (!isActive) {
+                  const btnText = btn.textContent;
+                  if (btnText === "Tree view") {
+                      document.querySelectorAll('.tree-view').forEach(elem =>{
+                          elem.classList.remove('hidden');
+                      });
+                      document.querySelectorAll('.table-view').forEach(elem => {
+                          elem.classList.add('hidden');
+                      });
+                  } else {
+                      document.querySelectorAll('.tree-view').forEach(elem => {
+                          elem.classList.add('hidden');
+                      });
+                      document.querySelectorAll('.table-view').forEach(elem => {
+                          elem.classList.remove('hidden');
+                      });
+                  }
+                  btn.classList.add('active');
+                  if (btn.nextElementSibling) btn.nextElementSibling.classList.remove('active');
+                  else btn.previousElementSibling.classList.remove('active');
+              }
+          });
+      });
   });
-h1 Registry
+.header-container
+  h1 Registry
+  .btns-container
+    button.switch-btn.active= "Tree view"
+    button.switch-btn= "Table view"
 table
   tr
     th style="width: 20px"
@@ -96,19 +144,19 @@ table
     th
     th style="width: 120px" Created at
   - flattened.each do |node|
-    tr.tree-node data-level="#{node[:level]}"
+    tr.tree-node.tree-view data-level="#{node[:level]}"
       td
         - unless node[:children_count] == 0 && (node[:image][:tags] || []).empty?
           img.hide-show-arrow.rotate-arrow src='/images/chevron-right.svg' alt="Toggle Example"
-      /style="display: #{image[:tags].size > 0 ? 'flex' : 'none' }"
       td style="padding-left: #{node[:level]}em" = node[:name]
       td
-        /#{image[:tags].size > 0 ? image[:tags].map { |t| t[:name] }.join(', ') : 'No tags'}
       td Created at
     - node[:image][:tags]&.each do |tag|
       tr.tree-node.table-view data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}"
         td
-        td  <span class="table-view" style="display: none">#{node[:image][:name]}</span> #{tag[:name]}
+        td
+          span.table-view.hidden #{node[:image][:name][1..]}/
+          span #{tag[:name]}
         td
           / #{(tag[:index_Nodes].map { |index_node| index_node[:node].created_at.nil? ? -1 : index_node[:node].created_at }).min}
         td Created at
