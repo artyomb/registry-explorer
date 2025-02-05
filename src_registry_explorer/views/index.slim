@@ -105,9 +105,9 @@ table
         /#{image[:tags].size > 0 ? image[:tags].map { |t| t[:name] }.join(', ') : 'No tags'}
       td Created at
     - node[:image][:tags]&.each do |tag|
-      tr.tree-node.table_view data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}"
+      tr.tree-node.table-view data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}"
         td
-        td  <span class="table_view">#{node[:image][:name]}</span> #{tag[:name]}
+        td  <span class="table-view" style="display: none">#{node[:image][:name]}</span> #{tag[:name]}
         td
-          /#{(tag[:index_Nodes].map { |index_node| index_node[:node].created_at.nil? ? -1 : index_node[:node].created_at }).min}
+          / #{(tag[:index_Nodes].map { |index_node| index_node[:node].created_at.nil? ? -1 : index_node[:node].created_at }).min}
         td Created at

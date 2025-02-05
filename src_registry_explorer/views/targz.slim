@@ -14,10 +14,22 @@ ruby:
 javascript:
   document.addEventListener("DOMContentLoaded", function() {
       const fileViewArea = document.getElementById("file-area");
-      document.querySelector(".file-element").addEventListener("click", function() {
-          const fileElement = this;
-      }
-  }
+
+      document.querySelectorAll(".file-element").forEach(function(fileElement) {
+          fileElement.addEventListener("click", async function () {
+              console.log("Clicked on file element with data-href:", fileElement.dataset.href);
+              const url = eval(fileElement.dataset.href);
+              try {
+                  const response = await fetch(url);
+                  const htmlContent = await response.text();
+                  fileViewArea.innerHTML = htmlContent;
+              } catch (error) {
+                  console.error("Error loading file content:", error);
+                  fileViewArea.innerHTML = "Error loading file content";
+              }
+          });
+      });
+  });
 sass:
 
   .split-container
@@ -48,21 +60,24 @@ h1= "Archive blob #{params[:sha256]} content"
 .split-container
   .left-container
     .file-structure
-      - render_structure = ->(structure, parent_id = 'root', counter = 0) do
+      - render_structure = ->(structure, parent_path = '', parent_id = 'root', counter = 0) do
         - structure.each do |name, content|
           li
+            - current_path = "#{parent_path}/#{name}"
             - current_id = "node_#{parent_id}_#{counter}"
             - if content.is_a?(Hash) && content[:is_dir]
               a.uk-toggle href="#" uk-toggle="target: ##{current_id}"
                 span uk-icon="icon: folder"
                 = " #{name}"
               span.size= "Size: #{content[:size]}"
-              ul.uk-list.uk-margin-left id=current_id hidden=true
-                - render_structure.call(content, current_id, 0)
+              ul.uk-list.uk-margin-left id=current_id hidden=false
+                - render_structure.call(content, current_path, current_id, 0)
             - elsif name != :size && content.is_a?(Hash)
-              span.file-element uk-icon="icon: file-text"
-              = " #{name}"
-              span.size= "Size: #{content[:size]}"
+              / a href="/file-in-archive/#{params[:sha256]}/$path/#{parent_path}/#{name}"
+              .file-element data-href="'/file-in-archive/#{params[:sha256]}/$path/#{parent_path}/#{name}'"
+                span uk-icon="icon: file-text"
+                = " #{name}"
+                span.size= "Size: #{content[:size]}"
           - counter += 1
       - render_structure.call(structure)
   .right-container

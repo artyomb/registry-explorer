@@ -18,6 +18,13 @@ class RegistryExplorerFront < Sinatra::Base
   end
   get '/json/:sha256', &->() { slim :json }
   get '/tar-gz/:sha256', &->() { slim :targz }
+  get '/file-in-archive/:sha256', &->() { slim :file_in_archive }
+
+  get '/file-in-archive/*/$path/*' do
+    blob_sha256 = params[:splat].first
+    file_path = params[:splat][1..]
+    "<style>span {color:blue;}</style><span>Blob SHA256: #{blob_sha256}</span><br><span>File path: #{file_path}</span>"
+  end
   get '/healthcheck', &-> { 'Healthy' }
 
   error do
