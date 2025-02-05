@@ -23,6 +23,7 @@ javascript:
                   const response = await fetch(url);
                   const htmlContent = await response.text();
                   fileViewArea.innerHTML = htmlContent;
+                  fileViewArea.style.textAlign = "left";
               } catch (error) {
                   console.error("Error loading file content:", error);
                   fileViewArea.innerHTML = "Error loading file content";
@@ -31,7 +32,6 @@ javascript:
       });
   });
 sass:
-
   .split-container
     display: flex
     flex-direction: row
@@ -56,7 +56,13 @@ sass:
         background-color: #F3F2F3
     .size
       float: right
-h1= "Archive blob #{params[:sha256]} content"
+    #file-area
+      display: flex
+      flex-direction: column
+      justify-content: center
+      align-items: center
+      text-align: center
+h1= "Archive blob #{params[:sha256]} content. Total size: #{structure[:size]}"
 .split-container
   .left-container
     .file-structure
@@ -70,7 +76,7 @@ h1= "Archive blob #{params[:sha256]} content"
                 span uk-icon="icon: folder"
                 = " #{name}"
               span.size= "Size: #{content[:size]}"
-              ul.uk-list.uk-margin-left id=current_id hidden=false
+              ul.uk-list.uk-margin-left id=current_id hidden=true
                 - render_structure.call(content, current_path, current_id, 0)
             - elsif name != :size && content.is_a?(Hash)
               / a href="/file-in-archive/#{params[:sha256]}/$path/#{parent_path}/#{name}"
@@ -81,7 +87,7 @@ h1= "Archive blob #{params[:sha256]} content"
           - counter += 1
       - render_structure.call(structure)
   .right-container
-    #file-area
+    #file-area Choose some file to view it's content
 
 //javascript:
 //  document.addEventListener('DOMContentLoaded', function() {

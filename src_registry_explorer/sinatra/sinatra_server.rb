@@ -2,6 +2,7 @@
 require 'sinatra/base'
 require 'slim'
 require 'rack/sassc'
+require_relative '../utils/file_utils'
 
 class RegistryExplorerFront < Sinatra::Base
   use Rack::SassC, css_location: "#{__dir__}/../public/css", scss_location: "#{__dir__}/../css",
@@ -22,8 +23,8 @@ class RegistryExplorerFront < Sinatra::Base
 
   get '/file-in-archive/*/$path/*' do
     blob_sha256 = params[:splat].first
-    file_path = params[:splat][1..]
-    "<style>span {color:blue;}</style><span>Blob SHA256: #{blob_sha256}</span><br><span>File path: #{file_path}</span>"
+    file_path = params[:splat][1]
+    "<pre>#{extract_file_content_from_archive_by_path(blob_sha256, file_path)}</pre>"
   end
   get '/healthcheck', &-> { 'Healthy' }
 
