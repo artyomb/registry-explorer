@@ -13,27 +13,40 @@ end
 
 def extract_tar_gz_structure(tar_gz_sha256)
   file_path = $base_path + "/blobs/sha256/#{tar_gz_sha256[0..1]}/#{tar_gz_sha256}/data"
-  structure = {}
+  structure = {size: 0, is_dir: true }
 
   Zlib::GzipReader.open(file_path) do |gz|
     Archive::Tar::Minitar::Reader.open(gz) do |tar|
       tar.each_entry do |entry|
+        # puts "#{entry.directory? ? 'DIRECTORY ' : 'FILE'} #{entry.size} #{entry.name}"
         parts = entry.name.split('/')
         current_level = structure
 
         parts.each_with_index do |part, index|
-          if index == parts.length - 1 # Last part is a file
-            current_level[part] = entry.directory? ? {} : 'file'
-          else
-            current_level[part] ||= {}
+          if index == parts.length - 1 # Last part is a file or directory
+            if !(entry.directory?)
+              entry_size = entry.size
+              current_level[part] = { size: entry_size, is_dir: false }
+              tmp = structure
+              parts.each do |tmp_part|
+                tmp[:size] += entry_size
+                tmp = tmp[tmp_part]
+              end
+            else
+              current_level[part] = { size: 0 , is_dir: true} # Mark of Directory
+            end
+          else # Intermediate part is a directory
+            current_level[part] ||= { size: 0, is_dir: true }
             current_level = current_level[part]
           end
         end
+        structure[:size] += entry.size unless entry.directory?
       end
     end
   end
   structure
 end
+
 
 def extract_tag_with_image(tag_path, base_path, image_name, current_img)
   puts("Image #{image_name}")

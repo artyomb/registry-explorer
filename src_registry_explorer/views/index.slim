@@ -53,16 +53,16 @@ ruby:
   end
   flattened = flatten_tree[tree]
 sass:
-  .expandable-element
+  .tree-node
     cursor: pointer
-    .hide-show-arrow
-      cursor: pointer
-      transition: transform 0.3s ease
-      transform: rotate(0deg)
-      &.rotate-arrow
-        transform: rotate(90deg)
+  .hide-show-arrow
+    cursor: pointer
+    transition: transform 0.3s ease
+    transform: rotate(0deg)
+    &.rotate-arrow
+      transform: rotate(90deg)
 
-  .clickable-row, tr[data-href]
+  .tr[data-href]
     cursor: pointer
     &:hover
       background-color: rgba(115, 209, 230, 0.22)
@@ -75,10 +75,10 @@ javascript:
           const row = event.target.closest('tr[data-href]');
           if (row) window.location.href = row.dataset.href;
 
-          const eroot = event.target.closest('.expandable-root');
+          const eroot = event.target.closest('.tree-node');
           if (eroot) {
               let currentElement = eroot.nextElementSibling;
-              while (currentElement && parseInt(currentElement.dataset.imageLevel) > parseInt(eroot.dataset.imageLevel)) {
+              while (currentElement && parseInt(currentElement.dataset.level) > parseInt(eroot.dataset.level)) {
                 currentElement.classList.toggle('hidden');
                 currentElement = currentElement.nextElementSibling;
               }
@@ -87,7 +87,6 @@ javascript:
           }
       });
   });
-
 h1 Registry
 table
   tr
@@ -96,7 +95,7 @@ table
     th
     th style="width: 120px" Created at
   - flattened.each do |node|
-    tr.expandable-root.expandable-element data-image-level="#{node[:level]}"
+    tr.tree-node data-level="#{node[:level]}"
       td
         - unless node[:children_count] == 0 && (node[:image][:tags] || []).empty?
           img.hide-show-arrow.rotate-arrow src='/images/chevron-right.svg' alt="Toggle Example"
@@ -106,9 +105,9 @@ table
         /#{image[:tags].size > 0 ? image[:tags].map { |t| t[:name] }.join(', ') : 'No tags'}
       td Created at
     - node[:image][:tags]&.each do |tag|
-      tr.expandable-root data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-image-level="#{node[:level]+1}"
+      tr.tree-node.table_view data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}"
         td
-        td = tag[:name]
+        td  <span class="table_view">#{node[:image][:name]}</span> #{tag[:name]}
         td
           /#{(tag[:index_Nodes].map { |index_node| index_node[:node].created_at.nil? ? -1 : index_node[:node].created_at }).min}
         td Created at

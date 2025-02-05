@@ -42,6 +42,8 @@ sass:
         width: 100%
         height: 100%
         background-color: #F3F2F3
+    .size
+      float: right
 h1= "Archive blob #{params[:sha256]} content"
 .split-container
   .left-container
@@ -50,15 +52,17 @@ h1= "Archive blob #{params[:sha256]} content"
         - structure.each do |name, content|
           li
             - current_id = "node_#{parent_id}_#{counter}"
-            - if content.is_a?(Hash) && content != 'file'
+            - if content.is_a?(Hash) && content[:is_dir]
               a.uk-toggle href="#" uk-toggle="target: ##{current_id}"
                 span uk-icon="icon: folder"
                 = " #{name}"
+              span.size= "Size: #{content[:size]}"
               ul.uk-list.uk-margin-left id=current_id hidden=true
                 - render_structure.call(content, current_id, 0)
-            - else
+            - elsif name != :size && content.is_a?(Hash)
               span.file-element uk-icon="icon: file-text"
               = " #{name}"
+              span.size= "Size: #{content[:size]}"
           - counter += 1
       - render_structure.call(structure)
   .right-container
