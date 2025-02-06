@@ -28,10 +28,12 @@ def extract_tar_gz_structure(tar_gz_sha256)
               entry_size = entry.size
               current_level[part] = { size: entry_size, is_dir: false }
               tmp = structure
-              parts.each do |tmp_part|
-                tmp[:size] += entry_size
+
+              parts.each_with_index do |tmp_part, id|
+                tmp[:size] += entry_size unless id == 0
                 tmp = tmp[tmp_part]
               end
+
             else
               current_level[part] = { size: 0 , is_dir: true} # Mark of Directory
             end
