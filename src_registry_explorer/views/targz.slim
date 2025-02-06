@@ -30,9 +30,25 @@ javascript:
               }
           });
       });
+
+      document.getElementById("directory-structure-container").querySelectorAll("li").forEach(function(directoryElement) {
+          directoryElement.addEventListener("mouseover", function(event) {
+              event.stopPropagation();
+              if (!this.querySelector('ul[hidden="false"]')) {
+                  this.style.backgroundColor = "#f0f0f0";
+              }
+          });
+
+          directoryElement.addEventListener("mouseout", function(event) {
+              event.stopPropagation();
+              this.style.backgroundColor = "";
+          });
+      });
+
   });
 sass:
   .split-container
+    height: 82vh
     display: flex
     flex-direction: row
     column-gap: 1rem
@@ -40,31 +56,30 @@ sass:
     border: 0.1rem solid #ccc
     border-radius: 0.5rem
 
-    .left-container
+    .hdr-container
+      padding: 1rem 0rem
+    #directory-structure-container
       flex: 1
       flex-basis: 50%
       overflow-y: auto
+      overflow-x: auto
+      padding: 1rem
 
-    .right-container
+    #file-area
       flex: 1
       flex-basis: 50%
       overflow-y: auto
-
-      #file-area
-        width: 100%
-        height: 100%
-        background-color: #F3F2F3
+      overflow-x: auto
     .size
       float: right
-    #file-area
-      display: flex
-      flex-direction: column
-      justify-content: center
-      align-items: center
-      text-align: center
-h1= "Archive blob #{params[:sha256]} content. Total size: #{structure[:size]}"
+
+p= "Archive blob #{params[:sha256]} content."
+p= "Total size: #{structure[:size]}"
 .split-container
-  .left-container
+  #directory-structure-container
+    .hdr-container
+      span= "Files"
+      span.size= "Size"
     .file-structure
       - render_structure = ->(structure, parent_path = '', parent_id = 'root', counter = 0) do
         - structure.each do |name, content|
@@ -75,7 +90,7 @@ h1= "Archive blob #{params[:sha256]} content. Total size: #{structure[:size]}"
               a.uk-toggle href="#" uk-toggle="target: ##{current_id}"
                 span uk-icon="icon: folder"
                 = " #{name}"
-              span.size= "Size: #{content[:size]}"
+              span.size #{content[:size]}
               ul.uk-list.uk-margin-left id=current_id hidden=true
                 - render_structure.call(content, current_path, current_id, 0)
             - elsif name != :size && content.is_a?(Hash)
@@ -83,11 +98,10 @@ h1= "Archive blob #{params[:sha256]} content. Total size: #{structure[:size]}"
               .file-element data-href="'/file-in-archive/#{params[:sha256]}/$path/#{parent_path}/#{name}'"
                 span uk-icon="icon: file-text"
                 = " #{name}"
-                span.size= "Size: #{content[:size]}"
+                span.size #{content[:size]}
           - counter += 1
       - render_structure.call(structure)
-  .right-container
-    #file-area Choose some file to view it's content
+  #file-area Choose some file to view it's content
 
 //javascript:
 //  document.addEventListener('DOMContentLoaded', function() {
