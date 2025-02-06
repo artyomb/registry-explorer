@@ -22,29 +22,18 @@ javascript:
               try {
                   const response = await fetch(url);
                   const htmlContent = await response.text();
+                  fileViewArea.style.opacity = 1;
                   fileViewArea.innerHTML = htmlContent;
                   fileViewArea.style.textAlign = "left";
+                  document.querySelector(".chosen")?.classList.toggle("chosen");
+                  fileElement.classList.toggle("chosen");
+
               } catch (error) {
                   console.error("Error loading file content:", error);
                   fileViewArea.innerHTML = "Error loading file content";
               }
           });
       });
-
-      document.getElementById("directory-structure-container").querySelectorAll("li").forEach(function(directoryElement) {
-          directoryElement.addEventListener("mouseover", function(event) {
-              event.stopPropagation();
-              if (!this.querySelector('ul[hidden="false"]')) {
-                  this.style.backgroundColor = "#f0f0f0";
-              }
-          });
-
-          directoryElement.addEventListener("mouseout", function(event) {
-              event.stopPropagation();
-              this.style.backgroundColor = "";
-          });
-      });
-
   });
 sass:
   .split-container
@@ -52,29 +41,44 @@ sass:
     display: flex
     flex-direction: row
     column-gap: 1rem
-    padding: 2rem
+    padding: 1rem
     border: 0.1rem solid #ccc
     border-radius: 0.5rem
 
     .hdr-container
-      padding: 1rem 0rem
+      padding-bottom: 1rem
     #directory-structure-container
       flex: 1
       flex-basis: 50%
       overflow-y: auto
       overflow-x: auto
-      padding: 1rem
-
+      padding-right: 1rem
+      ul
+        margin: 0
+        margin-left: 1rem
+      .dir-element
+        &:hover
+          background-color: #f0f0f0
+      .file-element
+        &:hover
+          cursor: pointer
+          background-color: #f0f0f0
+          color: black
     #file-area
       flex: 1
       flex-basis: 50%
       overflow-y: auto
       overflow-x: auto
+      opacity: 0.5
+
     .size
       float: right
+    .chosen
+      background-color: rgba(77, 125, 208, 0.3)
+      color: black
 
 p= "Archive blob #{params[:sha256]} content."
-p= "Total size: #{structure[:size]}"
+p= "Total size: #{structure[:size].to_s.gsub(/(\d)(?=(\d{3})+(?!\d))/, '\\1,')}"
 .split-container
   #directory-structure-container
     .hdr-container
@@ -87,10 +91,11 @@ p= "Total size: #{structure[:size]}"
             - current_path = "#{parent_path}/#{name}"
             - current_id = "node_#{parent_id}_#{counter}"
             - if content.is_a?(Hash) && content[:is_dir]
-              a.uk-toggle href="#" uk-toggle="target: ##{current_id}"
-                span uk-icon="icon: folder"
-                = " #{name}"
-              span.size #{content[:size]}
+              .dir-element
+                a.uk-toggle href="#" uk-toggle="target: ##{current_id}"
+                  span uk-icon="icon: folder"
+                  = " #{name}"
+                span.size #{content[:size].to_s.gsub(/(\d)(?=(\d{3})+(?!\d))/, '\\1,')}
               ul.uk-list.uk-margin-left id=current_id hidden=true
                 - render_structure.call(content, current_path, current_id, 0)
             - elsif name != :size && content.is_a?(Hash)
@@ -98,7 +103,7 @@ p= "Total size: #{structure[:size]}"
               .file-element data-href="'/file-in-archive/#{params[:sha256]}/$path/#{parent_path}/#{name}'"
                 span uk-icon="icon: file-text"
                 = " #{name}"
-                span.size #{content[:size]}
+                span.size #{content[:size].to_s.gsub(/(\d)(?=(\d{3})+(?!\d))/, '\\1,')}
           - counter += 1
       - render_structure.call(structure)
   #file-area Choose some file to view it's content
