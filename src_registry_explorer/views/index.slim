@@ -113,10 +113,11 @@ javascript:
                   if (btnText === "Tree view") {
                       document.querySelectorAll('.tree-view').forEach(elem =>{
                           elem.classList.remove('hidden');
+                          elem.querySelector('.hide-show-arrow')?.classList.add('rotate-arrow');
                       });
-                      document.querySelectorAll('.table-view').forEach(elem => {
-                          elem.classList.add('hidden');
-                      });
+                      // document.querySelectorAll('.table-view').forEach(elem => {
+                      //     elem.classList.add('hidden');
+                      // });
                   } else {
                       document.querySelectorAll('.tree-view').forEach(elem => {
                           elem.classList.add('hidden');

@@ -36,7 +36,7 @@ javascript:
                 element.style.display = 'none';
             });
             expandableObject.addEventListener("click", function() {
-                expandableObject.querySelector(".hide-show-arrow").classList.toggle("rotate-arrow");
+                expandableObject.querySelector(".hide-show-arrow")?.classList.toggle("rotate-arrow");
                 childElements.forEach(element => {
                     if (element.dataset.parent === expandableObject.id) {
                         if (element.style.display === 'none') {
