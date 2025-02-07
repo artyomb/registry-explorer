@@ -103,6 +103,21 @@ javascript:
     }
   }
 
+  function showAllChildren(currentNode) {
+      let childElem = currentNode.nextElementSibling;
+      let closestArrow = currentNode?.querySelector(".hide-show-arrow");
+      closestArrow?.classList.add("rotate-arrow");
+      closestArrow = childElem?.querySelector(".hide-show-arrow");
+      let levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
+      while (childElem && levelDifference > 0) {
+          closestArrow?.classList.add("rotate-arrow");
+          childElem.classList.remove('hidden');
+          childElem = childElem.nextElementSibling;
+          closestArrow = childElem?.querySelector(".hide-show-arrow");
+          levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
+      }
+  }
+
   function hideAllChildren(currentNode) {
     let childElem = currentNode.nextElementSibling;
     let closestArrow = currentNode?.querySelector(".hide-show-arrow");
@@ -121,6 +136,7 @@ javascript:
               treeNode.querySelector(".hide-show-arrow")?.classList.remove("rotate-arrow");
           }
       });
+
       document.querySelector('body').addEventListener('click', function(event) {
           const row = event.target.closest('tr[data-href]');
           if (row) window.location.href = row.dataset.href;
@@ -129,8 +145,15 @@ javascript:
           if (currentNode) {
               if (!closestArrow) return;
               const branchExpanded = closestArrow.classList.contains("rotate-arrow");
-              if (branchExpanded) { hideAllChildren(currentNode); }
-              else { showAllChildrenLevelOne(currentNode); }
+              if (branchExpanded) {
+                  hideAllChildren(currentNode);
+              } else {
+                  if (event.ctrlKey) {
+                      showAllChildren(currentNode);
+                  } else {
+                      showAllChildrenLevelOne(currentNode);
+                  }
+              }
           }
       });
 
