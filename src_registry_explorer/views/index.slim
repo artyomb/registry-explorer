@@ -50,41 +50,6 @@ ruby:
     result
   end
   flattened = flatten_tree[tree]
-sass:
-  .header-container
-    display: flex
-    justify-content: space-between
-    align-items: center
-  .btns-container
-    display: flex
-    justify-content: space-between
-    column-gap: 1rem
-
-  .tree-node
-    cursor: pointer
-  .hide-show-arrow
-    cursor: pointer
-    transition: transform 0.3s ease
-    transform: rotate(0deg)
-    &.rotate-arrow
-      transform: rotate(90deg)
-
-  .tr[data-href]
-    cursor: pointer
-    &:hover
-      background-color: rgba(115, 209, 230, 0.22)
-  .hidden
-    display: none
-
-  .switch-btn
-    background-color: #EDF1F9
-    color: black
-    &:hover
-      color: white
-      background-color: #4D7DD0
-  .active
-    color: white
-    background-color: #4D7DD0
 javascript:
   function showAllChildrenLevelOne(currentNode) {
     let childElem = currentNode.nextElementSibling;
@@ -146,7 +111,9 @@ javascript:
               if (!closestArrow) return;
               const branchExpanded = closestArrow.classList.contains("rotate-arrow");
               if (branchExpanded) {
-                  hideAllChildren(currentNode);
+                  if (event.ctrlKey) {
+                      showAllChildren(currentNode);
+                  } else { hideAllChildren(currentNode);}
               } else {
                   if (event.ctrlKey) {
                       showAllChildren(currentNode);
@@ -159,7 +126,7 @@ javascript:
 
       document.querySelectorAll('.switch-btn').forEach(btn => {
           btn.addEventListener('click', function() {
-              const isActive = btn.classList.contains('active');
+              const isActive = btn.classList.contains('uk-button-primary');
               if (!isActive) {
                   const btnText = btn.textContent;
                   if (btnText === "Tree view") {
@@ -184,40 +151,40 @@ javascript:
                           elem.classList.remove('hidden');
                       });
                   }
-                  btn.classList.add('active');
-                  if (btn.nextElementSibling) btn.nextElementSibling.classList.remove('active');
-                  else btn.previousElementSibling.classList.remove('active');
+                  btn.classList.add('uk-button-primary');
+                  if (btn.nextElementSibling) btn.nextElementSibling.classList.remove('uk-button-primary');
+                  else btn.previousElementSibling.classList.remove('uk-button-primary');
               }
           });
       });
   });
-.header-container
-  h1 Registry
-  .btns-container
-    button.switch-btn.active= "Tree view"
-    button.switch-btn= "Table view"
-table
+
+h1.uk-h1 Registry
+.uk-button-group
+  button.switch-btn.uk-button.uk-button-primary style=""= "Tree view"
+  button.switch-btn.uk-button.uk-button-default style=""= "Table view"
+table.uk-table.uk-table-hover
   tr
-    th style="width: 20px"
-    th style="padding: 0" Image name
-    th
-    th style="width: 120px" Created at
+    th Image name
+    th Images amount
+    th Size
+    th  Created at
   - flattened.each do |node|
     tr.tree-node.tree-view.hidden data-level="#{node[:level]}"
       td
         - unless node[:children_count] == 0 && (node[:image][:tags] || []).empty?
-          img.hide-show-arrow.rotate-arrow src='/images/chevron-right.svg' alt="Toggle Example"
-      td style="padding-left: #{node[:level]}em" = node[:name]
-      td
-      td Created at
+          span.hide-show-arrow uk-icon="icon: chevron-right"
+        span style="padding-left: #{node[:level]}em" = node[:name]
+      td Image amount (unimplemented)
+      td Size data (unimplemented)
+      td Created at (unimplemented)
     - node[:image][:tags]&.each do |tag|
       tr.tree-node.hidden data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}"
         td
-          span uk-icon="icon: tag"
-        td
           span.tree-view style="padding-left: #{node[:level] + 1}em"
+          span uk-icon="icon: tag"
           span.table-view.hidden #{node[:image][:name][1..]}:
           span #{tag[:name]}
-        td
-          / #{(tag[:index_Nodes].map { |index_node| index_node[:node].created_at.nil? ? -1 : index_node[:node].created_at }).min}
-        td Created at
+        td Images amount (unimplemented)
+        td Tag size (unimplemented)
+        td Created at (unimplemented)

@@ -20,35 +20,54 @@ sass:
       transform: rotate(0deg)
       &.rotate-arrow
         transform: rotate(90deg)
-  .path_container
-    display: flex
-    flex-direction: row
-    align-items: center
-    column-gap: 1rem
 javascript:
     document.addEventListener("DOMContentLoaded", function() {
+
         document.querySelectorAll(".expandable-element").forEach(function(expandableObject) {
-            const childElements = document.querySelectorAll(`[data-parent="${expandableObject.id}"]`);
-            childElements.forEach(element => {
+            // Initially hide all child elements
+            const allChildElements = document.querySelectorAll(`[data-parent^="${expandableObject.id}"]`);
+            allChildElements.forEach(element => {
                 element.style.display = 'none';
+                const arrow = element.querySelector(".hide-show-arrow");
+                if (arrow) {
+                    arrow.classList.remove("rotate-arrow");
+                }
             });
-            expandableObject.addEventListener("click", function() {
-                expandableObject.querySelector(".hide-show-arrow")?.classList.toggle("rotate-arrow");
-                childElements.forEach(element => {
-                    if (element.dataset.parent === expandableObject.id) {
-                        if (element.style.display === 'none') {
-                            element.style.display = 'table-row';
-                        } else {
-                            element.style.display = 'none';
-                        }
+
+            expandableObject.addEventListener("click", function(event) {
+                event.stopPropagation();
+                const arrow = expandableObject.querySelector(".hide-show-arrow");
+                const directChildren = document.querySelectorAll(`[data-parent="${expandableObject.id}"]`);
+                const isExpanded = arrow && arrow.classList.contains("rotate-arrow");
+
+                if (!isExpanded) {
+                    // Show only direct children
+                    directChildren.forEach(element => {
+                        element.style.display = 'table-row';
+                    });
+                    if (arrow) {
+                        arrow.classList.add("rotate-arrow");
                     }
-                });
+                } else {
+                    // Hide all descendants
+                    const allDescendants = document.querySelectorAll(`[data-parent^="${expandableObject.id}"]`);
+                    allDescendants.forEach(element => {
+                        element.style.display = 'none';
+                        const elementArrow = element.querySelector(".hide-show-arrow");
+                        if (elementArrow) {
+                            elementArrow.classList.remove("rotate-arrow");
+                        }
+                    });
+                    if (arrow) {
+                        arrow.classList.remove("rotate-arrow");
+                    }
+                }
             });
         });
     });
 
-h1 Exploring #{image_in_registry_path + '/' + tag_string}
-table
+h1.uk-h1 Exploring #{image_in_registry_path + '/' + tag_string}
+table.uk-table.uk-table-hover
   thead
     tr
       th
@@ -67,7 +86,7 @@ table
         tr.expandable-element.node-row id="#{img_pth_param}/#{tag_string}/#{node_link[:node].sha256}" data-parent="#{img_pth_param}/#{tag_string}#{parent_sha256.size > 0 ? "/#{parent_sha256}" : ''}"
           - if node_link[:node].node_type.to_s =~ /json/ && node_link[:node].links.any?
             td
-              img.hide-show-arrow src='/images/chevron-right.svg' alt="Toggle Example"
+              span.hide-show-arrow uk-icon="icon: chevron-right"
           - else
             td
           - if node_is_current
@@ -76,7 +95,7 @@ table
           - else
             td
           td style="padding-left: #{depth * margin_coef}rem "
-              span= node_link[:path].join('/')
+            span= node_link[:path].join('/')
           - if node_link[:node].node_type.to_s =~ /json/
             td
               a href="/json/#{node_link[:node].sha256}"= node_link[:node].sha256

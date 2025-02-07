@@ -117,3 +117,7 @@ def extract_file_content_from_archive_by_path(blob_sha256, file_path)
   end
   "File not found"
 end
+
+def represent_size(size_in_bytes)
+  size_in_bytes.to_s.gsub(/(\d)(?=(\d{3})+(?!\d))/, '\\1,')
+end

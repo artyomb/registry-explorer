@@ -2,7 +2,5 @@ ruby:
   require_relative '../utils/Node'
   json_blob_content = JSON.parse(blob_content(params[:sha256]))
 
-sass:
-  pre
 h1= "JSON blob #{params[:sha256]} content"
-.content-container style="white-space: pre-wrap; overflow-y: auto"= JSON.pretty_generate(json_blob_content)
+div style="white-space: pre-wrap; overflow-y: auto"= JSON.pretty_generate(json_blob_content)

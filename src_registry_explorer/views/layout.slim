@@ -9,12 +9,12 @@ html lang="en"
   meta name="viewport" content="width=device-width, initial-scale=1.0"
 body
   == slim :style
+  nav.uk-navbar-container
+    .uk-container
+      .uk-navbar
+        ul.uk-navbar-nav
+          li.uk-active
+            a href="/index" Registry
 
-  .service-navigation-container
-    a.navig-element href="/index" Registry
-  #notificationPopup.popup
-    button.close-button onclick="closeNotification()" ×public
-
-  .further-layout-container
-    == yield
+  .uk-container-expand.uk-padding== yield
 
