@@ -86,44 +86,74 @@ sass:
     color: white
     background-color: #4D7DD0
 javascript:
+  function showAllChildrenLevelOne(currentNode) {
+    let childElem = currentNode.nextElementSibling;
+    let closestArrow = currentNode?.querySelector(".hide-show-arrow");
+    closestArrow?.classList.add("rotate-arrow");
+    closestArrow = childElem?.querySelector(".hide-show-arrow");
+    let levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
+    while (childElem && levelDifference > 0) {
+      if (levelDifference === 1) {
+        closestArrow?.classList.remove("rotate-arrow");
+        childElem.classList.remove('hidden');
+      }
+      childElem = childElem.nextElementSibling;
+      closestArrow = childElem?.querySelector(".hide-show-arrow");
+      levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
+    }
+  }
+
+  function hideAllChildren(currentNode) {
+    let childElem = currentNode.nextElementSibling;
+    let closestArrow = currentNode?.querySelector(".hide-show-arrow");
+    while (childElem && parseInt(childElem.dataset.level) > parseInt(currentNode.dataset.level)) {
+      closestArrow?.classList.remove("rotate-arrow");
+      childElem.classList.add('hidden');
+      childElem = childElem.nextElementSibling;
+      closestArrow = childElem?.querySelector(".hide-show-arrow");
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", function() {
+      document.querySelectorAll(".tree-node").forEach(function(treeNode) {
+          if (treeNode.dataset.level <= 0) {
+              treeNode.classList.remove("hidden");
+              treeNode.querySelector(".hide-show-arrow")?.classList.remove("rotate-arrow");
+          }
+      });
       document.querySelector('body').addEventListener('click', function(event) {
           const row = event.target.closest('tr[data-href]');
           if (row) window.location.href = row.dataset.href;
-
-          const eroot = event.target.closest('.tree-node');
-          let closestArrow = eroot.querySelector(".hide-show-arrow");
-          if (eroot) {
+          const currentNode = event.target.closest('.tree-node');
+          let closestArrow = currentNode?.querySelector(".hide-show-arrow");
+          if (currentNode) {
               if (!closestArrow) return;
               const branchExpanded = closestArrow.classList.contains("rotate-arrow");
-              let currentElement = eroot.nextElementSibling;
-              while (currentElement && parseInt(currentElement.dataset.level) > parseInt(eroot.dataset.level)) {
-                if (branchExpanded) {
-                    closestArrow?.classList.remove("rotate-arrow");
-                    currentElement.classList.add('hidden');
-                } else {
-                    closestArrow?.classList.add("rotate-arrow");
-                    currentElement.classList.remove('hidden');
-                }
-                currentElement = currentElement.nextElementSibling;
-                closestArrow = currentElement?.querySelector(".hide-show-arrow");
-              }
+              if (branchExpanded) { hideAllChildren(currentNode); }
+              else { showAllChildrenLevelOne(currentNode); }
           }
       });
+
       document.querySelectorAll('.switch-btn').forEach(btn => {
           btn.addEventListener('click', function() {
               const isActive = btn.classList.contains('active');
               if (!isActive) {
                   const btnText = btn.textContent;
                   if (btnText === "Tree view") {
-                      document.querySelectorAll('.tree-view').forEach(elem =>{
-                          elem.classList.remove('hidden');
-                          elem.querySelector('.hide-show-arrow')?.classList.add('rotate-arrow');
+                      document.querySelectorAll('.tree-node').forEach(elem =>{
+                          if (elem.dataset.level > 0) {
+                              elem.classList.add('hidden');
+                              elem.querySelector('.table-view')?.classList.add('hidden');
+                              elem.querySelector('.tree-view')?.classList.remove('hidden');
+                              elem.querySelector('.hide-show-arrow')?.classList.add('rotate-arrow');
+                          } else {
+                              elem.classList.remove('hidden');
+                              elem.querySelector('.hide-show-arrow')?.classList.remove('rotate-arrow'); }
                       });
-                      // document.querySelectorAll('.table-view').forEach(elem => {
-                      //     elem.classList.add('hidden');
-                      // });
                   } else {
+                      document.querySelectorAll('.tree-node').forEach(elem => {
+                         elem.classList.remove('hidden');
+                      });
                       document.querySelectorAll('.tree-view').forEach(elem => {
                           elem.classList.add('hidden');
                       });
@@ -150,7 +180,7 @@ table
     th
     th style="width: 120px" Created at
   - flattened.each do |node|
-    tr.tree-node.tree-view data-level="#{node[:level]}"
+    tr.tree-node.tree-view.hidden data-level="#{node[:level]}"
       td
         - unless node[:children_count] == 0 && (node[:image][:tags] || []).empty?
           img.hide-show-arrow.rotate-arrow src='/images/chevron-right.svg' alt="Toggle Example"
@@ -158,8 +188,9 @@ table
       td
       td Created at
     - node[:image][:tags]&.each do |tag|
-      tr.tree-node.table-view data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}"
+      tr.tree-node.hidden data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}"
         td
+          span uk-icon="icon: tag"
         td
           span.tree-view style="padding-left: #{node[:level] + 1}em"
           span.table-view.hidden #{node[:image][:name][1..]}:
