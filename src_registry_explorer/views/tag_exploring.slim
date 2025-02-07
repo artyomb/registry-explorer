@@ -1,12 +1,9 @@
-link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/css/uikit.min.css"
-script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit.min.js"
-script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit-icons.min.js"
 ruby:
   require_relative '../utils/Node'
   margin_coef=1.5
   possible_statuses = ['error', 'ok', 'warning']
 
-  base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../docker/data') + "/docker/registry/v2"
+  base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../temp') + "/docker/registry/v2"
 
   img_pth_param = full_tag_path[0..(full_tag_path.rindex('/') - 1)]
   image_in_registry_path = "/" + img_pth_param
@@ -55,6 +52,7 @@ table
   thead
     tr
       th
+      th
       th Node path
       th Node sha256
       th Node type
@@ -72,10 +70,12 @@ table
               img.hide-show-arrow src='/images/chevron-right.svg' alt="Toggle Example"
           - else
             td
+          - if node_is_current
+            td
+              span uk-icon="icon: check" style="color: green"
+          - else
+            td
           td style="padding-left: #{depth * margin_coef}rem "
-            .path_container
-              - if node_is_current
-                span uk-icon="icon: check" style="color: green"
               span= node_link[:path].join('/')
           - if node_link[:node].node_type.to_s =~ /json/
             td

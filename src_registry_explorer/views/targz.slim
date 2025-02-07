@@ -3,9 +3,6 @@ sass:
     list-style: none
   ul
     list-style: none
-link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/css/uikit.min.css"
-script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit.min.js"
-script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit-icons.min.js"
 
 ruby:
   require_relative '../utils/Node'
@@ -36,15 +33,6 @@ javascript:
       });
   });
 sass:
-  .split-container
-    height: 82vh
-    display: flex
-    flex-direction: row
-    column-gap: 1rem
-    padding: 1rem
-    border: 0.1rem solid #ccc
-    border-radius: 0.5rem
-
     .hdr-container
       padding-bottom: 1rem
     #directory-structure-container
@@ -79,7 +67,7 @@ sass:
 
 p= "Archive blob #{params[:sha256]} content."
 p= "Total size: #{structure[:size].to_s.gsub(/(\d)(?=(\d{3})+(?!\d))/, '\\1,')}"
-.split-container
+.content-container
   #directory-structure-container
     .hdr-container
       span= "Files"

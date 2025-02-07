@@ -1,13 +1,10 @@
-link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/css/uikit.min.css"
-script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit.min.js"
-script src="https://cdn.jsdelivr.net/npm/uikit@3.17.4/dist/js/uikit-icons.min.js"
 ruby:
   require_relative '../utils/Node'
   require_relative '../utils/file_utils'
   margin_coef=1.5
   possible_statuses = ['error', 'ok', 'warning']
 
-  base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../docker/data') + "/docker/registry/v2"
+  base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../temp') + "/docker/registry/v2"
 
   path_to_repositories = base_path + "/repositories"
   repositories_path_list = Dir.glob(path_to_repositories + "/*").select { |f| File.directory?(f) }
@@ -95,14 +92,22 @@ javascript:
           if (row) window.location.href = row.dataset.href;
 
           const eroot = event.target.closest('.tree-node');
+          let closestArrow = eroot.querySelector(".hide-show-arrow");
           if (eroot) {
+              if (!closestArrow) return;
+              const branchExpanded = closestArrow.classList.contains("rotate-arrow");
               let currentElement = eroot.nextElementSibling;
               while (currentElement && parseInt(currentElement.dataset.level) > parseInt(eroot.dataset.level)) {
-                currentElement.classList.toggle('hidden');
+                if (branchExpanded) {
+                    closestArrow?.classList.remove("rotate-arrow");
+                    currentElement.classList.add('hidden');
+                } else {
+                    closestArrow?.classList.add("rotate-arrow");
+                    currentElement.classList.remove('hidden');
+                }
                 currentElement = currentElement.nextElementSibling;
+                closestArrow = currentElement?.querySelector(".hide-show-arrow");
               }
-
-              eroot.querySelector(".hide-show-arrow")?.classList.toggle("rotate-arrow");
           }
       });
       document.querySelectorAll('.switch-btn').forEach(btn => {
@@ -141,7 +146,7 @@ javascript:
 table
   tr
     th style="width: 20px"
-    th Image name
+    th style="padding: 0" Image name
     th
     th style="width: 120px" Created at
   - flattened.each do |node|
@@ -156,7 +161,8 @@ table
       tr.tree-node.table-view data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}"
         td
         td
-          span.table-view.hidden #{node[:image][:name][1..]}/
+          span.tree-view style="padding-left: #{node[:level] + 1}em"
+          span.table-view.hidden #{node[:image][:name][1..]}:
           span #{tag[:name]}
         td
           / #{(tag[:index_Nodes].map { |index_node| index_node[:node].created_at.nil? ? -1 : index_node[:node].created_at }).min}

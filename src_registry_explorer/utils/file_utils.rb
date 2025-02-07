@@ -1,7 +1,7 @@
 require 'zlib'
 require 'archive-tar-minitar'
 
-$base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../docker/data') + "/docker/registry/v2"
+$base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../temp') + "/docker/registry/v2"
 
 def blob_content(sha256)
   File.read $base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data"

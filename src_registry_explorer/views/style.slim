@@ -39,7 +39,6 @@ sass:
     margin: 0 auto
     padding: 0
     background-color: white
-    //background-color: #F3F2F3
 
     .further-layout-container
       display: block
@@ -68,11 +67,8 @@ sass:
         color: white
         padding: 1.25rem
         transition: background-color 0.3s ease, text-decoration 0.3s ease
-
-
         &:hover
           background-color: #2b61c5
-
       .has-inner-list
         display: flex
         flex-direction: row
@@ -80,7 +76,6 @@ sass:
         align-items: center
         justify-content: center
         position: relative
-
         &:hover
           background-color: #2b61c5
           .inner-list
@@ -89,13 +84,11 @@ sass:
           .chevron-down
             transform: rotate(180deg)
             transition: transform 0.3s ease
-
         .chevron-down
           filter: sepia(100%) hue-rotate(180deg) brightness(200%) contrast(100%)
           rotate: 90deg
           transform: rotate(0deg)
           transition: transform 0.3s ease
-
         .inner-list
           display: none
           position: absolute
@@ -104,7 +97,6 @@ sass:
           right: 0
           transform: none
           z-index: 1000
-
         .inner-element
           display: flex
           text-align: center
@@ -114,7 +106,6 @@ sass:
           background-color: #4d7DD0
           &:hover
             background-color: #2b61c5
-
     form
       display: flex
       flex-direction: column
@@ -250,19 +241,37 @@ sass:
         text-align: left
         text-transform: uppercase
       tr
+        background-color: #fff
+        &:hover
+          background-color: #e4e4e4
+          transition: background-color 0.3s ease
+      tr
+        .coloring-row
+          &:nth-child(even)
+            background-color: #fff
+            .common-table-cell
+              background-color: #f9f9f9
+            &:hover
+              background-color: #e4e4e4
+              transition: background-color 0.3s ease
 
-        &:nth-child(even)
-          background-color: #fff
+          &:nth-child(odd)
+            background-color: #f9f9f9
+            .common-table-cell
+              background-color: #f9f9f9
 
-          &:hover
-            background-color: #e4e4e4
-            transition: background-color 0.3s ease
-
-        &:nth-child(odd)
-          background-color: #f9f9f9
-
-          &:hover
-            background-color: #e4e4e4
-            transition: background-color 0.3s ease
+            &:hover
+              background-color: #e4e4e4
+              transition: background-color 0.3s ease
       td
         color: #666
+
+  body
+    .content-container
+      height: 80vh
+      display: flex
+      flex-direction: row
+      column-gap: 1rem
+      padding: 1rem
+      border: 0.1rem solid #ccc
+      border-radius: 0.5rem
