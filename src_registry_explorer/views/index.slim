@@ -6,6 +6,7 @@ ruby:
 
   base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../temp') + "/docker/registry/v2"
 
+  unique_blobs_sizes = {}
   path_to_repositories = base_path + "/repositories"
   repositories_path_list = Dir.glob(path_to_repositories + "/*").select { |f| File.directory?(f) }
   images = []
@@ -24,11 +25,11 @@ ruby:
     current_img = { name: image_name, tags: [], total_size: "-", total_layers: "-", status: "-" }
     images << current_img
     Dir.glob(image_path + "/_manifests/tags/*").select { |f| File.directory?(f) }.each do |tag_path|
-      extract_tag_with_image(tag_path, base_path, image_name, current_img)
+      extract_tag_with_image(tag_path, base_path, image_name, current_img, unique_blobs_sizes)
     end
   end
 
-  tree = {children: {}, image: {} }
+  tree = { children: {}, image: {} }
   # suppose images has name attribute. The name should split by '/'. Build a tree from it.
   images.each do |image|
     path_parts = image[:name].split('/')[1..]  # Skip first empty element from leading '/'
@@ -50,6 +51,13 @@ ruby:
     result
   end
   flattened = flatten_tree[tree]
+
+sass:
+  .warning-background
+    background-color: #ffa01aa6
+    &:hover
+      background-color: #ffa01a
+
 javascript:
   function showAllChildrenLevelOne(currentNode) {
     let childElem = currentNode.nextElementSibling;
@@ -166,8 +174,8 @@ h1.uk-h1 Registry
 table.uk-table.uk-table-hover
   thead
     tr
-      th Image name
-      th Images amount
+      th Image/tag name
+      th Images/tags amount
       th Size
       th  Created at
   tbody
@@ -181,12 +189,13 @@ table.uk-table.uk-table-hover
         td Size data (unimplemented)
         td Created at (unimplemented)
       - node[:image][:tags]&.each do |tag|
-        tr.tree-node.hidden data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}"
+        tr.tree-node.hidden class="#{tag[:problem_blobs].size > 0 ? 'warning-background' : ''}" data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}"
+
           td
             span.tree-view style="padding-left: #{node[:level] + 1}em"
             span uk-icon="icon: tag"
             span.table-view.hidden #{node[:image][:name][1..]}:
             span #{tag[:name]}
-          td Images amount (unimplemented)
-          td Tag size (unimplemented)
+          td #{tag[:index_Nodes].size}
+          td uk-tooltip="title: #{(tag[:problem_blobs].size == 0) ? 'Full size of tag' : "Some layers of tag not found: " + tag[:problem_blobs].join('-----') + " Actial size without problem blobs: " + represent_size(tag[:size])}; delay: 500;" #{represent_size(tag[:size]).to_s + (tag[:problem_blobs].size > 0 ? ' (some blobs not found)' : '')}
           td Created at (unimplemented)

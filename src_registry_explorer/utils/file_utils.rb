@@ -8,7 +8,12 @@ def blob_content(sha256)
 end
 
 def blob_size(sha256)
-  File.size $base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data"
+  begin
+    File.size $base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data"
+  rescue Exception => e
+    puts "Error: #{e}"
+    -1
+  end
 end
 
 def extract_tar_gz_structure(tar_gz_sha256)
@@ -50,23 +55,24 @@ def extract_tar_gz_structure(tar_gz_sha256)
 end
 
 
-def extract_tag_with_image(tag_path, base_path, image_name, current_img)
+def extract_tag_with_image(tag_path, base_path, image_name, current_img, unique_blobs_sizes=nil)
   puts("Image #{image_name}")
   puts("Founded tag #{tag_path}")
-  current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: File.read(tag_path + "/current/link").split(':').last }
+  current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: File.read(tag_path + "/current/link").split(':').last, required_blobs: Set.new, size: -1, problem_blobs: [] }
   current_img[:tags] << current_tag
   indexes_paths = Dir.glob(tag_path + "/index/sha256/*")
-  extract_index(current_tag[:current_index_sha256], base_path, current_tag)
+  extract_index(current_tag[:current_index_sha256], base_path, current_tag, unique_blobs_sizes)
   indexes_paths.each do |index_path|
     index_sha256 = index_path.split('/').last
     next if index_sha256 == current_tag[:current_index_sha256]
-    extract_index(index_sha256, base_path, current_tag)
+    extract_index(index_sha256, base_path, current_tag, unique_blobs_sizes)
   end
-  puts
+  calculate_tag_size(current_tag)
+  current_tag
 end
 
-def extract_tag(tag_path, base_path)
-  current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: nil, size: nil, created_at: nil }
+def extract_tag_without_image(tag_path, base_path)
+  current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: nil, created_at: nil, required_blobs: Set.new, size: -1, problem_blobs: [] }
   begin
     current_tag[:current_index_sha256] = File.read(tag_path + "/current/link").split(':').last
   rescue Exception => e
@@ -80,16 +86,16 @@ def extract_tag(tag_path, base_path)
     next if index_sha256 == current_tag[:current_index_sha256]
     extract_index(index_sha256, base_path, current_tag)
   end
-  puts
+  calculate_tag_size(current_tag)
   current_tag
 end
 
-def extract_index(index_sha256, base_path, current_tag)
+def extract_index(index_sha256, base_path, current_tag, unique_blobs_sizes = nil)
   outer_index_path = base_path + "/blobs/sha256/#{index_sha256[0..1]}/#{index_sha256}/data"
   index_content = JSON.parse(File.read(outer_index_path))
-  puts("Tag has index #{index_sha256} with content in blob: #{JSON.pretty_generate(index_content)}")
-  current_Node_link = { path: ["Image"], node: Node.new(index_content["mediaType"], index_sha256, index_content[:size]), parent_sha256: index_sha256 }
+  current_Node_link = { path: ["Image"], node: Node.new(index_content["mediaType"], index_sha256, index_content[:size], nil, unique_blobs_sizes), parent_sha256: index_sha256 }
   current_tag[:index_Nodes] << current_Node_link
+  current_tag[:required_blobs].merge(current_Node_link[:node].get_included_blobs)
 end
 
 def define_create_time(sha256)
@@ -120,4 +126,22 @@ end
 
 def represent_size(size_in_bytes)
   size_in_bytes.to_s.gsub(/(\d)(?=(\d{3})+(?!\d))/, '\\1,')
+end
+
+def calculate_tag_size(current_tag)
+  size_of_tag = 0
+  current_tag[:required_blobs].each do |blob|
+    begin
+      current_blob_size = blob_size(blob)
+      if current_blob_size == -1
+        current_tag[:problem_blobs] << blob
+        raise Exception.new("Blob #{blob} not founded")
+      end
+      size_of_tag += current_blob_size
+    rescue Exception => e
+      puts("Error: #{e.message}")
+    end
+  end
+  current_tag[:size] = size_of_tag
+  size_of_tag
 end
