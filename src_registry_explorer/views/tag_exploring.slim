@@ -11,58 +11,80 @@ ruby:
   path_to_repositories = base_path + "/repositories"
   full_path_to_image_tag = path_to_repositories + image_in_registry_path + '/_manifests/tags/' + tag_string
   tag= extract_tag(full_path_to_image_tag, base_path)
-sass:
-  .expandable-element
-    cursor: pointer
-    .hide-show-arrow
-      cursor: pointer
-      transition: transform 0.3s ease
-      transform: rotate(0deg)
-      &.rotate-arrow
-        transform: rotate(90deg)
 javascript:
     document.addEventListener("DOMContentLoaded", function() {
-
-        document.querySelectorAll(".expandable-element").forEach(function(expandableObject) {
-            // Initially hide all child elements
-            const allChildElements = document.querySelectorAll(`[data-parent^="${expandableObject.id}"]`);
-            allChildElements.forEach(element => {
-                element.style.display = 'none';
-                const arrow = element.querySelector(".hide-show-arrow");
-                if (arrow) {
-                    arrow.classList.remove("rotate-arrow");
+        function showAllChildrenLevelOne(currentNode) {
+            let childElem = currentNode.nextElementSibling;
+            let closestArrow = currentNode?.querySelector(".hide-show-arrow");
+            closestArrow?.classList.add("rotate-arrow");
+            closestArrow = childElem?.querySelector(".hide-show-arrow");
+            let levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
+            while (childElem && levelDifference > 0) {
+                if (levelDifference === 1) {
+                    closestArrow?.classList.remove("rotate-arrow");
+                    childElem.classList.remove('hidden');
                 }
-            });
+                childElem = childElem.nextElementSibling;
+                closestArrow = childElem?.querySelector(".hide-show-arrow");
+                levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
+            }
+        }
 
-            expandableObject.addEventListener("click", function(event) {
-                event.stopPropagation();
-                const arrow = expandableObject.querySelector(".hide-show-arrow");
-                const directChildren = document.querySelectorAll(`[data-parent="${expandableObject.id}"]`);
-                const isExpanded = arrow && arrow.classList.contains("rotate-arrow");
+        function showAllChildren(currentNode) {
+            let childElem = currentNode.nextElementSibling;
+            let closestArrow = currentNode?.querySelector(".hide-show-arrow");
+            closestArrow?.classList.add("rotate-arrow");
+            closestArrow = childElem?.querySelector(".hide-show-arrow");
+            let levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
+            while (childElem && levelDifference > 0) {
+                closestArrow?.classList.add("rotate-arrow");
+                childElem.classList.remove('hidden');
+                childElem = childElem.nextElementSibling;
+                closestArrow = childElem?.querySelector(".hide-show-arrow");
+                levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
+            }
+        }
 
-                if (!isExpanded) {
-                    // Show only direct children
-                    directChildren.forEach(element => {
-                        element.style.display = 'table-row';
-                    });
-                    if (arrow) {
-                        arrow.classList.add("rotate-arrow");
+        function hideAllChildren(currentNode) {
+            let childElem = currentNode.nextElementSibling;
+            let closestArrow = currentNode?.querySelector(".hide-show-arrow");
+            while (childElem && parseInt(childElem.dataset.level) > parseInt(currentNode.dataset.level)) {
+                closestArrow?.classList.remove("rotate-arrow");
+                childElem.classList.add('hidden');
+                childElem = childElem.nextElementSibling;
+                closestArrow = childElem?.querySelector(".hide-show-arrow");
+            }
+        }
+
+        document.querySelectorAll(".tree-node").forEach(function(treeNode) {
+            if (treeNode.dataset.level <= 0) {
+                treeNode.classList.remove("hidden");
+                treeNode.querySelector(".hide-show-arrow")?.classList.remove("rotate-arrow");
+            }
+        });
+
+        document.querySelector('body').addEventListener('click', function (event) {
+            const row = event.target.closest('tr[data-href]');
+            if (row) window.location.href = row.dataset.href;
+            const currentNode = event.target.closest('.tree-node');
+            let closestArrow = currentNode?.querySelector(".hide-show-arrow");
+            if (currentNode) {
+                if (!closestArrow) return;
+                const branchExpanded = closestArrow.classList.contains("rotate-arrow");
+                if (branchExpanded) {
+                    if (event.ctrlKey) {
+                        showAllChildren(currentNode);
+                    } else {
+                        hideAllChildren(currentNode);
                     }
                 } else {
-                    // Hide all descendants
-                    const allDescendants = document.querySelectorAll(`[data-parent^="${expandableObject.id}"]`);
-                    allDescendants.forEach(element => {
-                        element.style.display = 'none';
-                        const elementArrow = element.querySelector(".hide-show-arrow");
-                        if (elementArrow) {
-                            elementArrow.classList.remove("rotate-arrow");
-                        }
-                    });
-                    if (arrow) {
-                        arrow.classList.remove("rotate-arrow");
+                    if (event.ctrlKey) {
+                        showAllChildren(currentNode);
+                    } else {
+                        showAllChildrenLevelOne(currentNode);
                     }
                 }
-            });
+            }
         });
     });
 
@@ -80,10 +102,10 @@ table.uk-table.uk-table-hover
       th Node created at
       th Created by
   tbody
-    - render_node_links = ->(node_links, depth=0, parent_sha256) do
+    - render_node_links = ->(node_links, depth=0) do
       - node_links.each do |node_link|
         - node_is_current = node_link[:node].sha256 == tag[:current_index_sha256]
-        tr.expandable-element.node-row id="#{img_pth_param}/#{tag_string}/#{node_link[:node].sha256}" data-parent="#{img_pth_param}/#{tag_string}#{parent_sha256.size > 0 ? "/#{parent_sha256}" : ''}"
+        tr.tree-node.hidden id="#{img_pth_param}/#{tag_string}/#{node_link[:node].sha256}" data-level="#{depth}"
           - if node_link[:node].node_type.to_s =~ /json/ && node_link[:node].links.any?
             td
               span.hide-show-arrow uk-icon="icon: chevron-right"
@@ -110,5 +132,5 @@ table.uk-table.uk-table-hover
           td= node_link[:node].created_at.nil? ? "Date unknown" : node_link[:node].created_at
           td= node_link[:node].created_by.nil? ? "Unknown" : node_link[:node].created_by
         - if node_link[:node].links.any?
-          - render_node_links.call(node_link[:node].links, depth + 1, node_link[:node].sha256)
-    - render_node_links.call(tag[:index_Nodes], 0, '')
+          - render_node_links.call(node_link[:node].links, depth + 1)
+    - render_node_links.call(tag[:index_Nodes], 0)

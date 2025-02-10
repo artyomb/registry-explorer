@@ -24,11 +24,11 @@ class RegistryExplorerFront < Sinatra::Base
   get '/file-in-archive/*/$path/*' do
     blob_sha256 = params[:splat].first
     file_path = params[:splat][1]
-    "<pre>#{extract_file_content_from_archive_by_path(blob_sha256, file_path)}</pre>"
+    "<pre style='margin-bottom: 0; height: -webkit-fill-available;'>#{extract_file_content_from_archive_by_path(blob_sha256, file_path)}</pre>"
   end
   get '/healthcheck', &-> { 'Healthy' }
 
   error do
-    "<h1>Error: #{env['sinatra.error']}</h1> <pre>#{env['sinatra.error'].backtrace.join("\n")}</pre>"
+    "<h1>Error: #{env['sinatra.error']}</h1> <pre style='margin-bottom: 0; height: -webkit-fill-available;'>#{env['sinatra.error'].backtrace.join("\n")}</pre>"
   end
 end

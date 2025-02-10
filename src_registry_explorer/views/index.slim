@@ -164,27 +164,29 @@ h1.uk-h1 Registry
   button.switch-btn.uk-button.uk-button-primary style=""= "Tree view"
   button.switch-btn.uk-button.uk-button-default style=""= "Table view"
 table.uk-table.uk-table-hover
-  tr
-    th Image name
-    th Images amount
-    th Size
-    th  Created at
-  - flattened.each do |node|
-    tr.tree-node.tree-view.hidden data-level="#{node[:level]}"
-      td
-        - unless node[:children_count] == 0 && (node[:image][:tags] || []).empty?
-          span.hide-show-arrow uk-icon="icon: chevron-right"
-        span style="padding-left: #{node[:level]}em" = node[:name]
-      td Image amount (unimplemented)
-      td Size data (unimplemented)
-      td Created at (unimplemented)
-    - node[:image][:tags]&.each do |tag|
-      tr.tree-node.hidden data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}"
+  thead
+    tr
+      th Image name
+      th Images amount
+      th Size
+      th  Created at
+  tbody
+    - flattened.each do |node|
+      tr.tree-node.tree-view.hidden data-level="#{node[:level]}"
         td
-          span.tree-view style="padding-left: #{node[:level] + 1}em"
-          span uk-icon="icon: tag"
-          span.table-view.hidden #{node[:image][:name][1..]}:
-          span #{tag[:name]}
-        td Images amount (unimplemented)
-        td Tag size (unimplemented)
+          - unless node[:children_count] == 0 && (node[:image][:tags] || []).empty?
+            span.hide-show-arrow uk-icon="icon: chevron-right"
+          span style="padding-left: #{node[:level]}em" = node[:name]
+        td Image amount (unimplemented)
+        td Size data (unimplemented)
         td Created at (unimplemented)
+      - node[:image][:tags]&.each do |tag|
+        tr.tree-node.hidden data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}"
+          td
+            span.tree-view style="padding-left: #{node[:level] + 1}em"
+            span uk-icon="icon: tag"
+            span.table-view.hidden #{node[:image][:name][1..]}:
+            span #{tag[:name]}
+          td Images amount (unimplemented)
+          td Tag size (unimplemented)
+          td Created at (unimplemented)
