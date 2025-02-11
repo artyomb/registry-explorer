@@ -22,20 +22,39 @@ ruby:
   images_path_list.each do |image_path|
     subfolders = image_path.split('/')
     image_name = "/" + subfolders[subfolders.find_index('repositories') + 1..].join('/')
-    current_img = { name: image_name, tags: [], total_size: "-", total_layers: "-", status: "-" }
+    current_img = { name: image_name, tags: [], total_size: -1, required_blobs: Set.new, problem_blobs: [] }
     images << current_img
     Dir.glob(image_path + "/_manifests/tags/*").select { |f| File.directory?(f) }.each do |tag_path|
       extract_tag_with_image(tag_path, base_path, image_name, current_img, unique_blobs_sizes)
     end
+    current_img[:tags].each do |tag|
+      current_img[:required_blobs].merge(tag[:required_blobs])
+    end
+    full_size_of_img = 0
+    current_img[:required_blobs].each do |blob|
+      begin
+        current_blob_size = blob_size(blob)
+        if current_blob_size == -1
+          current_img[:problem_blobs] << blob
+          raise Exception.new("Blob #{blob} not founded")
+        end
+        full_size_of_img += current_blob_size
+      rescue Exception => e
+        puts("Error: #{e.message}")
+      end
+    end
+    current_img[:total_size] = full_size_of_img
   end
 
-  tree = { children: {}, image: {} }
+  # TODO: implement calculation of total size of subfolders and amount of images in them
+  tree = { children: {}, image: {}, total_images_amount: 0 }
   # suppose images has name attribute. The name should split by '/'. Build a tree from it.
   images.each do |image|
     path_parts = image[:name].split('/')[1..]  # Skip first empty element from leading '/'
     current = tree
     path_parts.each do |part|
-      current[:children][part] ||= { children: {}, image: {} }
+      current[:total_images_amount] += 1
+      current[:children][part] ||= { children: {}, image: {}, total_images_amount: 0 }
       current = current[:children][part]
     end
     current[:image] = image
@@ -45,7 +64,7 @@ ruby:
   flatten_tree = lambda do |node, level = 0, pname = nil|
     result = []
     node[:children].each do |name, child|
-      result << { name: [pname, name].flatten.compact.join('/'), level: level, image: child[:image], children_count: child[:children].size }
+      result << { name: [pname, name].flatten.compact.join('/'), level: level, image: child[:image], children_count: child[:total_images_amount] }
       result.concat(flatten_tree[child, level + 1, [pname, name]])
     end
     result
@@ -185,8 +204,8 @@ table.uk-table.uk-table-hover
           - unless node[:children_count] == 0 && (node[:image][:tags] || []).empty?
             span.hide-show-arrow uk-icon="icon: chevron-right"
           span style="padding-left: #{node[:level]}em" = node[:name]
-        td Image amount (unimplemented)
-        td Size data (unimplemented)
+        td #{node[:children_count] == 0 ? (node[:image][:tags] || []).size : node[:children_count]}
+        td #{node[:children_count] == 0 ? represent_size(node[:image][:total_size]) : node[:children_count]}
         td Created at (unimplemented)
       - node[:image][:tags]&.each do |tag|
         tr.tree-node.hidden class="#{tag[:problem_blobs].size > 0 ? 'warning-background' : ''}" data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}"
@@ -197,5 +216,5 @@ table.uk-table.uk-table-hover
             span.table-view.hidden #{node[:image][:name][1..]}:
             span #{tag[:name]}
           td #{tag[:index_Nodes].size}
-          td uk-tooltip="title: #{(tag[:problem_blobs].size == 0) ? 'Full size of tag' : "Some layers of tag not found: " + tag[:problem_blobs].join('-----') + " Actial size without problem blobs: " + represent_size(tag[:size])}; delay: 500;" #{represent_size(tag[:size]).to_s + (tag[:problem_blobs].size > 0 ? ' (some blobs not found)' : '')}
+          td uk-tooltip="title: #{(tag[:problem_blobs].size == 0) ? 'Full size of tag' : "Some layers of tag not found: " + tag[:problem_blobs].join('-' * 48) + " Actial size without problem blobs: " + represent_size(tag[:size])}; delay: 500;" #{represent_size(tag[:size]).to_s + (tag[:problem_blobs].size > 0 ? ' (some blobs not found)' : '')}
           td Created at (unimplemented)
