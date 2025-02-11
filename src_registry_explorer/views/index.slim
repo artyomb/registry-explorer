@@ -47,14 +47,18 @@ ruby:
   end
 
   # TODO: implement calculation of total size of subfolders and amount of images in them
-  tree = { children: {}, image: {}, total_images_amount: 0 }
+  tree = { children: {}, image: {}, total_images_amount: 0, required_blobs: Set.new, problem_blobs: [] }
   # suppose images has name attribute. The name should split by '/'. Build a tree from it.
   images.each do |image|
     path_parts = image[:name].split('/')[1..]  # Skip first empty element from leading '/'
     current = tree
     path_parts.each do |part|
       current[:total_images_amount] += 1
-      current[:children][part] ||= { children: {}, image: {}, total_images_amount: 0 }
+      current[:required_blobs].merge(image[:required_blobs])
+      if image[:problem_blobs].size > 0
+        current[:problem_blobs] += image[:problem_blobs]
+      end
+      current[:children][part] ||= { children: {}, image: {}, total_images_amount: 0, required_blobs: Set.new, problem_blobs: [] }
       current = current[:children][part]
     end
     current[:image] = image
@@ -64,7 +68,7 @@ ruby:
   flatten_tree = lambda do |node, level = 0, pname = nil|
     result = []
     node[:children].each do |name, child|
-      result << { name: [pname, name].flatten.compact.join('/'), level: level, image: child[:image], children_count: child[:total_images_amount] }
+      result << { name: [pname, name].flatten.compact.join('/'), level: level, image: child[:image], children_count: child[:total_images_amount], required_blobs: child[:required_blobs], problem_blobs: child[:problem_blobs] }
       result.concat(flatten_tree[child, level + 1, [pname, name]])
     end
     result
@@ -205,7 +209,7 @@ table.uk-table.uk-table-hover
             span.hide-show-arrow uk-icon="icon: chevron-right"
           span style="padding-left: #{node[:level]}em" = node[:name]
         td #{node[:children_count] == 0 ? (node[:image][:tags] || []).size : node[:children_count]}
-        td #{node[:children_count] == 0 ? represent_size(node[:image][:total_size]) : node[:children_count]}
+        td #{node[:children_count] == 0 ? represent_size(node[:image][:total_size]) : represent_size(node[:required_blobs].sum { |blob| begin; size = blob_size(blob); size == -1 ? (node[:problem_blobs] << blob; 0) : size; rescue; 0; end })}
         td Created at (unimplemented)
       - node[:image][:tags]&.each do |tag|
         tr.tree-node.hidden class="#{tag[:problem_blobs].size > 0 ? 'warning-background' : ''}" data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}"
