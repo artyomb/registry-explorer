@@ -215,10 +215,12 @@ table.uk-table.uk-table-hover
         tr.tree-node.hidden class="#{tag[:problem_blobs].size > 0 ? 'warning-background' : ''}" data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}"
 
           td
+            - if tag[:problem_blobs].size != 0
+              span uk-tooltip="title: #{(tag[:problem_blobs].size == 0) ? 'Full size of tag' : "Some layers of tag not found: " + tag[:problem_blobs].join('-' * 48) + " Actial size without problem blobs: " + represent_size(tag[:size])}; delay: 500;"  uk-icon="icon: warning"
             span.tree-view style="padding-left: #{node[:level] + 1}em"
             span uk-icon="icon: tag"
             span.table-view.hidden #{node[:image][:name][1..]}:
             span #{tag[:name]}
           td #{tag[:index_Nodes].size}
-          td uk-tooltip="title: #{(tag[:problem_blobs].size == 0) ? 'Full size of tag' : "Some layers of tag not found: " + tag[:problem_blobs].join('-' * 48) + " Actial size without problem blobs: " + represent_size(tag[:size])}; delay: 500;" #{represent_size(tag[:size]).to_s + (tag[:problem_blobs].size > 0 ? ' (some blobs not found)' : '')}
+          td #{represent_size(tag[:size]).to_s + (tag[:problem_blobs].size > 0 ? ' (some blobs not found)' : '')}
           td Created at (unimplemented)
