@@ -15,19 +15,23 @@ class Node
       @actual_blob_size = -1
     end
     return unless @type.to_s =~ /json/
-    find_links(JSON.parse(blob_content(@sha256), symbolize_names: true).merge( {unique_blobs_sizes: unique_blobs_sizes} ))
+    find_links(JSON.parse(blob_content(@sha256), symbolize_names: true), [], unique_blobs_sizes)
   end
 
   def find_links(n, path = [], unique_blobs_sizes = nil)
     return unless (n.is_a? Hash or n.is_a? Array)
     if n.is_a? Hash
-      n.each do |key, value|
-        if value.is_a? Hash
-          add_link(path + [key], value, unique_blobs_sizes) if value.key? :digest
-          find_links(value, path + [key])
-        elsif value.is_a? Array
-          find_links(value, path + [key])
+      if !(n.key?(:config) && n[:config].key?(:digest) && n.key?(:layers))
+        n.each do |key, value|
+          if value.is_a? Hash
+            add_link(path + [key], value, unique_blobs_sizes) if value.key? :digest
+            find_links(value, path + [key])
+          elsif value.is_a? Array
+            find_links(value, path + [key])
+          end
         end
+      else
+        add_links_by_config(n, path, unique_blobs_sizes)
       end
     elsif n.is_a? Array
       n.each_with_index do |sub_hash, id|
@@ -74,6 +78,14 @@ class Node
     @created_by
   end
 
+  def set_created_at(new_created_at)
+    @created_at = new_created_at
+  end
+
+  def set_created_by(new_created_by)
+    @created_by = new_created_by
+  end
+
   def get_included_blobs(included_blobs = Set.new)
     included_blobs.add(@sha256)
     @links.each do |link|
@@ -89,5 +101,23 @@ class Node
       size_deep += unique_blobs_sizes[blob_sha256] unless unique_blobs_sizes.nil?
     end
     size_deep
+  end
+
+  def add_links_by_config(n, path, unique_blobs_sizes)
+    config_sha256 = n[:config][:digest].split(':').last
+    @links << { path: path.nil? ? ['config'] : path + ['config'], node: Node.new(n[:config][:mediaType], config_sha256, n[:config][:size], nil, unique_blobs_sizes) }
+    config_json = JSON.parse(blob_content(config_sha256), symbolize_names: true)
+    if !config_json[:history].nil? && config_json[:history].size > 0
+      history_without_empty_layers = config_json[:history].reject { |h| !h[:empty_layer].nil? && h[:empty_layer] }
+      n[:layers].each_with_index do |layer, id|
+        @links << { path: path.nil? ? ["layers/#{id}"] : path + ["layers/[#{id}]"], node: Node.new(layer[:mediaType], layer[:digest].split(':').last, layer[:size], nil, unique_blobs_sizes) }
+        @links.last[:node].set_created_by history_without_empty_layers[id][:created_by]
+        @links.last[:node].set_created_at history_without_empty_layers[id][:created]
+      end
+    else
+      n[:layers].each_with_index do |layer, id|
+        @links << { path: path.nil? ? ["layers/#{id}"] : path + ["layers/[#{id}]"], node: Node.new(layer[:mediaType], layer[:digest].split(':').last, layer[:size], nil, unique_blobs_sizes) }
+      end
+    end
   end
 end
