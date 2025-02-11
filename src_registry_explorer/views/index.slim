@@ -81,6 +81,7 @@ sass:
     &:hover
       background-color: #ffa01a
 
+
 javascript:
   function showAllChildrenLevelOne(currentNode) {
     let childElem = currentNode.nextElementSibling;
@@ -205,22 +206,23 @@ table.uk-table.uk-table-hover
     - flattened.each do |node|
       tr.tree-node.tree-view.hidden data-level="#{node[:level]}"
         td
+          span style="padding-left: #{node[:level]}em"
           - unless node[:children_count] == 0 && (node[:image][:tags] || []).empty?
             span.hide-show-arrow uk-icon="icon: chevron-right"
-          span style="padding-left: #{node[:level]}em" = node[:name]
-        td #{node[:children_count] == 0 ? (node[:image][:tags] || []).size : node[:children_count]}
-        td #{node[:children_count] == 0 ? represent_size(node[:image][:total_size]) : represent_size(node[:required_blobs].sum { |blob| begin; size = blob_size(blob); size == -1 ? (node[:problem_blobs] << blob; 0) : size; rescue; 0; end })}
+          span = node[:name]
+        td.alight-text-right #{node[:children_count] == 0 ? (node[:image][:tags] || []).size : node[:children_count]}
+        td.alight-text-right #{node[:children_count] == 0 ? represent_size(node[:image][:total_size]) : represent_size(node[:required_blobs].sum { |blob| begin; size = blob_size(blob); size == -1 ? (node[:problem_blobs] << blob; 0) : size; rescue; 0; end })}
         td Created at (unimplemented)
       - node[:image][:tags]&.each do |tag|
         tr.tree-node.hidden class="#{tag[:problem_blobs].size > 0 ? 'warning-background' : ''}" data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}"
 
           td
             - if tag[:problem_blobs].size != 0
-              span uk-tooltip="title: #{(tag[:problem_blobs].size == 0) ? 'Full size of tag' : "Some layers of tag not found: " + tag[:problem_blobs].join('-' * 48) + " Actial size without problem blobs: " + represent_size(tag[:size])}; delay: 500;"  uk-icon="icon: warning"
+              span   uk-icon="icon: warning"
             span.tree-view style="padding-left: #{node[:level] + 1}em"
             span uk-icon="icon: tag"
             span.table-view.hidden #{node[:image][:name][1..]}:
             span #{tag[:name]}
-          td #{tag[:index_Nodes].size}
-          td #{represent_size(tag[:size]).to_s + (tag[:problem_blobs].size > 0 ? ' (some blobs not found)' : '')}
+          td.alight-text-right #{tag[:index_Nodes].size}
+          td.alight-text-right #{represent_size(tag[:size]).to_s + (tag[:problem_blobs].size > 0 ? ' (some blobs not found)' : '')}
           td Created at (unimplemented)

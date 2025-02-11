@@ -6,12 +6,13 @@ ruby:
 
   base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../temp') + "/docker/registry/v2"
 
+  unique_blobs_sizes = {}
   img_pth_param = full_tag_path[0..(full_tag_path.rindex('/') - 1)]
   image_in_registry_path = "/" + img_pth_param
   tag_string = full_tag_path[(full_tag_path.rindex('/') + 1)..]
   path_to_repositories = base_path + "/repositories"
   full_path_to_image_tag = path_to_repositories + image_in_registry_path + '/_manifests/tags/' + tag_string
-  tag= extract_tag_without_image(full_path_to_image_tag, base_path)
+  tag= extract_tag_without_image(full_path_to_image_tag, base_path, unique_blobs_sizes)
 javascript:
     document.addEventListener("DOMContentLoaded", function() {
         function showAllChildrenLevelOne(currentNode) {
@@ -99,7 +100,7 @@ table.uk-table.uk-table-hover
       th Node sha256
       th Node type
       th Node size
-      th Actucal blob size
+      th Actucal blob / image size
       th Node created at
       th Created by
   tbody
@@ -127,11 +128,14 @@ table.uk-table.uk-table-hover
               a href="/tar-gz/#{node_link[:node].sha256}"= node_link[:node].sha256
           - else
             td= node_link[:node].sha256
-          td= node_link[:node].node_type
-          td= node_link[:node].node_size.nil? ? "Size unknown" : represent_size(node_link[:node].node_size)
-          td= node_link[:node].actual_blob_size.nil? ? "Size unknown" : represent_size(node_link[:node].actual_blob_size)
-          td= node_link[:node].created_at.nil? ? "Date unknown" : node_link[:node].created_at
-          td= node_link[:node].created_by.nil? ? "Unknown" : node_link[:node].created_by
+          - current_node_size = node_link[:node].actual_blob_size.nil? ? "Actual size unknown" : represent_size(node_link[:node].actual_blob_size)
+          - current_image_node_size = represent_size(node_link[:node].get_size_deep(unique_blobs_sizes))
+          - is_image_node = node_link[:node].sha256 == tag[:current_index_sha256]
+          td uk-tooltip="title: #{node_link[:node].node_type}; delay: 500;"= node_link[:node].node_type.nil? ? "Type unknown" : node_link[:node].node_type.split('.')[-2..-1].join('.')
+          td.alight-text-right= node_link[:node].node_size.nil? ? "Size unknown" : represent_size(node_link[:node].node_size)
+          td.alight-text-right= is_image_node ? current_image_node_size : current_node_size
+          td= node_link[:node].created_at.nil? ? "-" : node_link[:node].created_at
+          td= node_link[:node].created_by.nil? ? "" : node_link[:node].created_by
         - if node_link[:node].links.any?
           - render_node_links.call(node_link[:node].links, depth + 1)
     - render_node_links.call(tag[:index_Nodes], 0)

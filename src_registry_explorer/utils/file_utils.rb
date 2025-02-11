@@ -18,7 +18,7 @@ end
 
 def extract_tar_gz_structure(tar_gz_sha256)
   file_path = $base_path + "/blobs/sha256/#{tar_gz_sha256[0..1]}/#{tar_gz_sha256}/data"
-  structure = {size: 0, is_dir: true }
+  structure = { size: 0, is_dir: true }
 
   Zlib::GzipReader.open(file_path) do |gz|
     Archive::Tar::Minitar::Reader.open(gz) do |tar|
@@ -38,7 +38,6 @@ def extract_tar_gz_structure(tar_gz_sha256)
                 tmp[:size] += entry_size unless id == 0
                 tmp = tmp[tmp_part]
               end
-
             else
               current_level[part] = { size: 0 , is_dir: true} # Mark of Directory
             end
@@ -56,8 +55,6 @@ end
 
 
 def extract_tag_with_image(tag_path, base_path, image_name, current_img, unique_blobs_sizes=nil)
-  puts("Image #{image_name}")
-  puts("Founded tag #{tag_path}")
   current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: File.read(tag_path + "/current/link").split(':').last, required_blobs: Set.new, size: -1, problem_blobs: [] }
   current_img[:tags] << current_tag
   indexes_paths = Dir.glob(tag_path + "/index/sha256/*")
@@ -71,7 +68,7 @@ def extract_tag_with_image(tag_path, base_path, image_name, current_img, unique_
   current_tag
 end
 
-def extract_tag_without_image(tag_path, base_path)
+def extract_tag_without_image(tag_path, base_path, unique_blobs_sizes=nil)
   current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: nil, created_at: nil, required_blobs: Set.new, size: -1, problem_blobs: [] }
   begin
     current_tag[:current_index_sha256] = File.read(tag_path + "/current/link").split(':').last
@@ -80,11 +77,11 @@ def extract_tag_without_image(tag_path, base_path)
     return current_tag
   end
   indexes_paths = Dir.glob(tag_path + "/index/sha256/*")
-  extract_index(current_tag[:current_index_sha256], base_path, current_tag)
+  extract_index(current_tag[:current_index_sha256], base_path, current_tag, unique_blobs_sizes)
   indexes_paths.each do |index_path|
     index_sha256 = index_path.split('/').last
     next if index_sha256 == current_tag[:current_index_sha256]
-    extract_index(index_sha256, base_path, current_tag)
+    extract_index(index_sha256, base_path, current_tag, unique_blobs_sizes)
   end
   calculate_tag_size(current_tag)
   current_tag
@@ -95,6 +92,7 @@ def extract_index(index_sha256, base_path, current_tag, unique_blobs_sizes = nil
   index_content = JSON.parse(File.read(outer_index_path))
   current_Node_link = { path: ["Image"], node: Node.new(index_content["mediaType"], index_sha256, index_content[:size], nil, unique_blobs_sizes), parent_sha256: index_sha256 }
   current_tag[:index_Nodes] << current_Node_link
+  current_Node_link[:node].set_created_at(extract_index_created_at(index_sha256))
   current_tag[:required_blobs].merge(current_Node_link[:node].get_included_blobs)
 end
 
@@ -144,4 +142,21 @@ def calculate_tag_size(current_tag)
   end
   current_tag[:size] = size_of_tag
   size_of_tag
+end
+
+def extract_index_created_at(sha256)
+  puts "Extracting created_at for #{sha256}"
+  begin
+    index_json = JSON.parse(blob_content(sha256), symbolize_names: true)
+    manifest_json = JSON.parse(blob_content(index_json[:manifests]
+                                              .select { |mf| !mf[:platform][:os].nil? && mf[:platform][:os] != 'unknown'}
+                                              .map { |mf| mf[:digest].split(':').last }
+                                              .first),
+                               symbolize_names: true)
+    date = JSON.parse(blob_content(manifest_json[:config][:digest].split(':').last), symbolize_names: true)[:created]
+  rescue Exception => e
+    puts "Error: #{e}"
+    date =  nil
+  end
+  date
 end

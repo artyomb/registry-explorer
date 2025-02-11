@@ -25,9 +25,9 @@ class Node
         n.each do |key, value|
           if value.is_a? Hash
             add_link(path + [key], value, unique_blobs_sizes) if value.key? :digest
-            find_links(value, path + [key])
+            find_links(value, path + [key], unique_blobs_sizes)
           elsif value.is_a? Array
-            find_links(value, path + [key])
+            find_links(value, path + [key], unique_blobs_sizes)
           end
         end
       else
