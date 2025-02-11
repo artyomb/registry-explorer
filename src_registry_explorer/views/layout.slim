@@ -9,12 +9,11 @@ html lang="en"
   meta name="viewport" content="width=device-width, initial-scale=1.0"
 body
   == slim :style
-  nav.uk-navbar-container
-    .uk-container.uk-position-top-left.uk-width-1-1.uk-background-muted
-      .uk-navbar
-        ul.uk-navbar-nav
-          li.uk-active
-            a href="/index" Registry
+  nav.uk-navbar-container.uk-navbar.uk-background-muted.uk-width-1-1.uk-box-shadow-small
+    .uk-navbar-left.uk-margin-left
+      ul.uk-navbar-nav
+        li.uk-active
+          a href="/index" Registry
 
-  .uk-container-expand.uk-padding== yield
-
+  .uk-container-expand.uk-padding
+    == yield

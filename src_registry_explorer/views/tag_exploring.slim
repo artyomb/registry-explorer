@@ -95,7 +95,6 @@ table.uk-table.uk-table-hover
   thead
     tr
       th
-      th
       th style="padding-left: 0" Node path
       th Node sha256
       th Node type
@@ -108,29 +107,26 @@ table.uk-table.uk-table-hover
       - node_links.each do |node_link|
         - node_is_current = node_link[:node].sha256 == tag[:current_index_sha256]
         tr.tree-node.hidden id="#{img_pth_param}/#{tag_string}/#{node_link[:node].sha256}" data-level="#{depth}"
-          - if node_link[:node].node_type.to_s =~ /json/ && node_link[:node].links.any?
-            td
-              span.hide-show-arrow uk-icon="icon: chevron-right"
-          - else
-            td
-          - if node_is_current
-            td
+          td
+            - if node_is_current
               span uk-icon="icon: check" style="color: green"
-          - else
-            td
           td style="padding-left: #{depth * margin_coef}rem "
+            - if node_link[:node].node_type.to_s =~ /json/ && node_link[:node].links.any?
+              span.hide-show-arrow uk-icon="icon: chevron-right"
             span= node_link[:path].join('/')
-          - if node_link[:node].node_type.to_s =~ /json/
-            td
-              a href="/json/#{node_link[:node].sha256}"= node_link[:node].sha256
-          - elsif node_link[:node].node_type.to_s =~ /gzip/
-            td
-              a href="/tar-gz/#{node_link[:node].sha256}"= node_link[:node].sha256
-          - else
-            td= node_link[:node].sha256
+          td
+            - if node_link[:node].node_type.to_s =~ /json/
+              a href="/json/#{node_link[:node].sha256}"= node_link[:node].sha256[0..4] + "..."
+              span uk-icon="icon: copy"
+            - elsif node_link[:node].node_type.to_s =~ /gzip/
+              a href="/tar-gz/#{node_link[:node].sha256}"= node_link[:node].sha256[0..4] + "..."
+              span uk-icon="icon: copy"
+            - else
+              = node_link[:node].sha256[0..4] + "..."
+              span uk-icon="icon: copy"
           - current_node_size = node_link[:node].actual_blob_size.nil? ? "Actual size unknown" : represent_size(node_link[:node].actual_blob_size)
           - current_image_node_size = represent_size(node_link[:node].get_size_deep(unique_blobs_sizes))
-          - is_image_node = node_link[:node].sha256 == tag[:current_index_sha256]
+          - is_image_node = depth == 0
           td uk-tooltip="title: #{node_link[:node].node_type}; delay: 500;"= node_link[:node].node_type.nil? ? "Type unknown" : node_link[:node].node_type.split('.')[-2..-1].join('.')
           td.alight-text-right= node_link[:node].node_size.nil? ? "Size unknown" : represent_size(node_link[:node].node_size)
           td.alight-text-right= is_image_node ? current_image_node_size : current_node_size
