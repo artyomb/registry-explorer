@@ -37,16 +37,17 @@ javascript:
 sass:
     .hdr-container
       padding-bottom: 1rem
+      padding-right: 1rem
       position: sticky
       top: 0
     #directory-structure-container
       flex: 1
       flex-basis: 50%
-      padding-right: 1rem
       .file-structure
         height: 90%
         overflow-y: auto
         overflow-x: auto
+        padding-right: 0.5rem
       ul
         margin: 0
         margin-left: 1rem
@@ -64,6 +65,7 @@ sass:
       overflow-y: auto
       overflow-x: auto
       opacity: 0.5
+      background-color: #e4e4e4
 
     .chosen
       background-color: rgba(77, 125, 208, 0.3)
@@ -82,7 +84,7 @@ p= "Images, referring to this archive:"
 ul
   - image_entries.each do |entry|
     li
-      a href="/tag-exploring#{entry[:image_name]}/#{entry[:tag_name]}" #{entry[:image_name] + ':' + entry[:tag_name] + ' with sha256 = ' + entry[:index_node].sha256}
+      a href="/tag-exploring#{entry[:image_name]}/#{entry[:tag_name]}" #{entry[:image_name] + ':' + entry[:tag_name] + '@sha256:' + entry[:index_node].sha256}
 p= "Archive blob #{params[:sha256]} content."
 p= "Total size: #{represent_size(structure[:size])}"
 .content-container
