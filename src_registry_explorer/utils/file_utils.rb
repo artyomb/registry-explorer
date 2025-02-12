@@ -24,9 +24,8 @@ def extract_tar_gz_structure(tar_gz_sha256)
     Archive::Tar::Minitar::Reader.open(gz) do |tar|
       tar.each_entry do |entry|
         # puts "#{entry.directory? ? 'DIRECTORY ' : 'FILE'} #{entry.size} #{entry.name}"
-        parts = entry.name.split('/')
+        parts = entry.prefix.split('/') + entry.name.split('/')
         current_level = structure
-
         parts.each_with_index do |part, index|
           if index == parts.length - 1 # Last part is a file or directory
             if !(entry.directory?)
@@ -108,18 +107,21 @@ end
 
 def extract_file_content_from_archive_by_path(blob_sha256, file_path)
   blob_path = $base_path + "/blobs/sha256/#{blob_sha256[0..1]}/#{blob_sha256}/data"
+  result = "File not found"
+  founded = false
   Zlib::GzipReader.open(blob_path) do |gz|
     Archive::Tar::Minitar::Reader.open(gz) do |tar|
       tar.each_entry do |entry|
-        if entry.name == file_path
-
+        entry_path = (entry.prefix.split('/') + entry.name.split('/')).join('/')
+        if !founded && entry_path == file_path
           content = entry.read
-          return content.force_encoding('UTF-8').encode('UTF-8', invalid: :replace, undef: :replace, replace: '?') rescue "Couldn't read content in file"
+          result =  content.force_encoding('UTF-8').encode('UTF-8', invalid: :replace, undef: :replace, replace: '?') rescue "Couldn't read content in file"
+          break
         end
       end
     end
   end
-  "File not found"
+  result
 end
 
 def represent_size(size_in_bytes)

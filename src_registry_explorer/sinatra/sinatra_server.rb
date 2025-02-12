@@ -21,9 +21,13 @@ class RegistryExplorerFront < Sinatra::Base
   get '/tar-gz/:sha256', &->() { slim :targz }
   get '/file-in-archive/:sha256', &->() { slim :file_in_archive }
 
-  get '/file-in-archive/*/$path/*' do
-    blob_sha256 = params[:splat].first
-    file_path = params[:splat][1]
+  # get '/file-in-archive/*/$path/*' do
+  #   blob_sha256 = params[:splat].first
+  #   file_path = '/' + params[:splat][1]
+  get '/file-in-archive/*' do
+    path_data = params[:splat].first.split('/$path/')
+    blob_sha256 = path_data[0]
+    file_path = path_data[1]
     "<pre style='margin-bottom: 0; height: -webkit-fill-available;'>#{extract_file_content_from_archive_by_path(blob_sha256, file_path)}</pre>"
   end
   get '/healthcheck', &-> { 'Healthy' }

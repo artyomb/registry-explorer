@@ -101,7 +101,7 @@ p= "Total size: #{represent_size(structure[:size])}"
                 - render_structure.call(content, current_path, current_id, 0)
             - elsif name != :size && content.is_a?(Hash)
               / a href="/file-in-archive/#{params[:sha256]}/$path/#{parent_path}/#{name}"
-              .file-element data-href="'/file-in-archive/#{params[:sha256]}/$path/#{parent_path}/#{name}'"
+              .file-element data-href="'/file-in-archive/#{params[:sha256]}/$path#{parent_path}/#{name}'"
                 span uk-icon="icon: file-text"
                 = " #{name}"
                 span.float-right #{represent_size(content[:size])}
