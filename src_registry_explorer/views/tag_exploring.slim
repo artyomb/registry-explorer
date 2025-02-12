@@ -115,7 +115,7 @@ table.uk-table.uk-table-hover
     - render_node_links = ->(node_links, depth=0) do
       - node_links.each do |node_link|
         - node_is_current = node_link[:node].sha256 == tag[:current_index_sha256]
-        tr.tree-node.hidden id="#{img_pth_param}/#{tag_string}/#{node_link[:node].sha256}" data-level="#{depth}"
+        tr.tree-node.hidden id="#{img_pth_param}/#{tag_string}/#{node_link[:node].sha256}" data-level="#{depth}" class="#{(node_link[:node].node_type.to_s =~ /json/ && node_link[:node].links.any?) ? '' : 'default-cursor'}"
           td
             - if node_is_current
               span uk-icon="icon: check" style="color: green"
@@ -130,7 +130,7 @@ table.uk-table.uk-table-hover
               a uk-tooltip="title: #{node_link[:node].sha256}; delay: 500;" href="/tar-gz/#{node_link[:node].sha256}"= node_link[:node].sha256[0..4] + "..."
             - else
               div uk-tooltip="title: #{node_link[:node].sha256}; delay: 500;" = node_link[:node].sha256[0..4] + "..."
-            span.uk-icon-button.copy-btn data-buffervalue="#{node_link[:node].sha256}" uk-icon="icon: copy"
+            span.uk-icon-button.copy-btn.cursor-pointer data-buffervalue="#{node_link[:node].sha256}" uk-icon="icon: copy"
           - current_node_size = node_link[:node].actual_blob_size.nil? ? "Actual size unknown" : represent_size(node_link[:node].actual_blob_size)
           - current_image_node_size = represent_size(node_link[:node].get_size_deep(unique_blobs_sizes))
           - is_image_node = depth == 0
