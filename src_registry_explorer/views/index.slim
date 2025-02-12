@@ -218,7 +218,7 @@ table.uk-table.uk-table-hover
 
           td
             - if tag[:problem_blobs].size != 0
-              span uk-tooltip="title: #{(tag[:problem_blobs].size == 0) ? 'Full size of tag' : "Some layers of tag not found: " + tag[:problem_blobs].join('-' * 48) + " Actial size without problem blobs: " + represent_size(tag[:size])}; delay: 500;"  uk-icon="icon: warning"
+              span uk-tooltip="title: #{(tag[:problem_blobs].size == 0) ? 'Full size of tag' : "Some layers of tag not found:<br>" + tag[:problem_blobs].map{|s| s[0..25] + '...' }.join('<br>') + " Actual size without problem blobs: " + represent_size(tag[:size])}; delay: 500;"  uk-icon="icon: warning"
             span.tree-view style="padding-left: #{node[:level] + 1}em"
             span uk-icon="icon: tag"
             span.table-view.hidden #{node[:image][:name][1..]}:
