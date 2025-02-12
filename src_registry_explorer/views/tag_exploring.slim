@@ -65,6 +65,15 @@ javascript:
             }
         });
 
+        document.querySelectorAll('.copy-btn').forEach(function(copyBtn) {
+            copyBtn.addEventListener('click', function(event) {
+                event.stopPropagation();
+                const textToCopy = copyBtn.dataset.buffervalue;
+                navigator.clipboard.writeText(textToCopy).then(function() {
+                    UIkit.notification({message: 'sha256 copied to clipboard', status: 'primary'});
+                });
+            });
+        });
         document.querySelector('body').addEventListener('click', function (event) {
             const row = event.target.closest('tr[data-href]');
             if (row) window.location.href = row.dataset.href;
@@ -116,14 +125,12 @@ table.uk-table.uk-table-hover
             span= node_link[:path].join('/')
           td
             - if node_link[:node].node_type.to_s =~ /json/
-              a href="/json/#{node_link[:node].sha256}"= node_link[:node].sha256[0..4] + "..."
-              span uk-icon="icon: copy"
+              a uk-tooltip="title: #{node_link[:node].sha256}; delay: 500;" href="/json/#{node_link[:node].sha256}"= node_link[:node].sha256[0..4] + "..."
             - elsif node_link[:node].node_type.to_s =~ /gzip/
-              a href="/tar-gz/#{node_link[:node].sha256}"= node_link[:node].sha256[0..4] + "..."
-              span uk-icon="icon: copy"
+              a uk-tooltip="title: #{node_link[:node].sha256}; delay: 500;" href="/tar-gz/#{node_link[:node].sha256}"= node_link[:node].sha256[0..4] + "..."
             - else
-              = node_link[:node].sha256[0..4] + "..."
-              span uk-icon="icon: copy"
+              div uk-tooltip="title: #{node_link[:node].sha256}; delay: 500;" = node_link[:node].sha256[0..4] + "..."
+            span.uk-icon-button.copy-btn data-buffervalue="#{node_link[:node].sha256}" uk-icon="icon: copy"
           - current_node_size = node_link[:node].actual_blob_size.nil? ? "Actual size unknown" : represent_size(node_link[:node].actual_blob_size)
           - current_image_node_size = represent_size(node_link[:node].get_size_deep(unique_blobs_sizes))
           - is_image_node = depth == 0
