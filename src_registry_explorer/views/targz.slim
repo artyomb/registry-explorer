@@ -7,6 +7,7 @@ sass:
 ruby:
   require_relative '../utils/Node'
   require_relative '../utils/file_utils'
+  referensing_images = get_referring_images(params[:sha256])
   structure = extract_tar_gz_structure(params[:sha256])
 
 javascript:
@@ -77,7 +78,10 @@ sass:
       border: 0.1rem solid #ccc
       border-radius: 0.5rem
 
-
+p= "Images, refering to this archive:"
+ul
+  - referensing_images.each do |image|
+    li= image[:name]
 p= "Archive blob #{params[:sha256]} content."
 p= "Total size: #{represent_size(structure[:size])}"
 .content-container

@@ -4,47 +4,9 @@ ruby:
   margin_coef=1.5
   possible_statuses = ['error', 'ok', 'warning']
 
-  base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../temp') + "/docker/registry/v2"
-
-  unique_blobs_sizes = {}
-  path_to_repositories = base_path + "/repositories"
-  repositories_path_list = Dir.glob(path_to_repositories + "/*").select { |f| File.directory?(f) }
   images = []
-  images_path_list = Dir.glob("#{path_to_repositories}/**/*")
-                        .select do |f|
-    File.directory?(f) &&
-            Dir.exist?(File.join(f, "_layers")) &&
-            Dir.exist?(File.join(f, "_manifests")) &&
-            Dir.exist?(File.join(f, "_uploads"))
-  end
-  puts("Founded following images:\n #{images_path_list}")
-  puts
-  images_path_list.each do |image_path|
-    subfolders = image_path.split('/')
-    image_name = "/" + subfolders[subfolders.find_index('repositories') + 1..].join('/')
-    current_img = { name: image_name, tags: [], total_size: -1, required_blobs: Set.new, problem_blobs: [] }
-    images << current_img
-    Dir.glob(image_path + "/_manifests/tags/*").select { |f| File.directory?(f) }.each do |tag_path|
-      extract_tag_with_image(tag_path, base_path, image_name, current_img, unique_blobs_sizes)
-    end
-    current_img[:tags].each do |tag|
-      current_img[:required_blobs].merge(tag[:required_blobs])
-    end
-    full_size_of_img = 0
-    current_img[:required_blobs].each do |blob|
-      begin
-        current_blob_size = blob_size(blob)
-        if current_blob_size == -1
-          current_img[:problem_blobs] << blob
-          raise Exception.new("Blob #{blob} not founded")
-        end
-        full_size_of_img += current_blob_size
-      rescue Exception => e
-        puts("Error: #{e.message}")
-      end
-    end
-    current_img[:total_size] = full_size_of_img
-  end
+  unique_blobs_sizes = {}
+  extract_images(images, unique_blobs_sizes)
 
   # TODO: implement calculation of total size of subfolders and amount of images in them
   tree = { children: {}, image: {}, total_images_amount: 0, required_blobs: Set.new, problem_blobs: [] }

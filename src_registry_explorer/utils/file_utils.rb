@@ -52,6 +52,43 @@ def extract_tar_gz_structure(tar_gz_sha256)
   structure
 end
 
+def extract_images(images=[], unique_blobs_sizes=nil)
+  path_to_repositories = $base_path + "/repositories"
+  images_path_list = Dir.glob("#{path_to_repositories}/**/*")
+                        .select do |f|
+    File.directory?(f) &&
+      Dir.exist?(File.join(f, "_layers")) &&
+      Dir.exist?(File.join(f, "_manifests")) &&
+      Dir.exist?(File.join(f, "_uploads"))
+  end
+  images_path_list.each do |image_path|
+    subfolders = image_path.split('/')
+    image_name = "/" + subfolders[subfolders.find_index('repositories') + 1..].join('/')
+    current_img = { name: image_name, tags: [], total_size: -1, required_blobs: Set.new, problem_blobs: [] }
+    images << current_img
+    Dir.glob(image_path + "/_manifests/tags/*").select { |f| File.directory?(f) }.each do |tag_path|
+      extract_tag_with_image(tag_path, $base_path, image_name, current_img, unique_blobs_sizes)
+    end
+    current_img[:tags].each do |tag|
+      current_img[:required_blobs].merge(tag[:required_blobs])
+    end
+    full_size_of_img = 0
+    current_img[:required_blobs].each do |blob|
+      begin
+        current_blob_size = blob_size(blob)
+        if current_blob_size == -1
+          current_img[:problem_blobs] << blob
+          raise Exception.new("Blob #{blob} not founded")
+        end
+        full_size_of_img += current_blob_size
+      rescue Exception => e
+        puts("Error: #{e.message}")
+      end
+    end
+    current_img[:total_size] = full_size_of_img
+  end
+  images
+end
 
 def extract_tag_with_image(tag_path, base_path, image_name, current_img, unique_blobs_sizes=nil)
   current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: File.read(tag_path + "/current/link").split(':').last, required_blobs: Set.new, size: -1, problem_blobs: [] }
@@ -161,4 +198,11 @@ def extract_index_created_at(sha256)
     date =  nil
   end
   date
+end
+
+def get_referring_images(blob_sha256)
+  images = []
+  extract_images(images)
+  result = images.select { |image| image[:required_blobs].include?(blob_sha256) }
+  result
 end
