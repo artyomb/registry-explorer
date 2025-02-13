@@ -9,7 +9,7 @@ ruby:
   extract_images(images, unique_blobs_sizes)
 
   # TODO: implement calculation of total size of subfolders and amount of images in them
-  tree = { children: {}, image: {}, total_images_amount: 0, required_blobs: Set.new, problem_blobs: [] }
+  tree = { children: {}, image: {}, total_images_amount: 0, required_blobs: Set.new, problem_blobs: Set.new }
   # suppose images has name attribute. The name should split by '/'. Build a tree from it.
   images.each do |image|
     path_parts = image[:name].split('/')[1..]  # Skip first empty element from leading '/'
@@ -18,9 +18,9 @@ ruby:
       current[:total_images_amount] += 1
       current[:required_blobs].merge(image[:required_blobs])
       if image[:problem_blobs].size > 0
-        current[:problem_blobs] += image[:problem_blobs]
+        current[:problem_blobs].merge(image[:problem_blobs])
       end
-      current[:children][part] ||= { children: {}, image: {}, total_images_amount: 0, required_blobs: Set.new, problem_blobs: [] }
+      current[:children][part] ||= { children: {}, image: {}, total_images_amount: 0, required_blobs: Set.new, problem_blobs: Set.new }
       current = current[:children][part]
     end
     current[:image] = image
@@ -166,8 +166,11 @@ table.uk-table.uk-table-hover
       th Created at
   tbody
     - flattened.each do |node|
-      tr.tree-node.tree-view.hidden data-level="#{node[:level]}"
+      - warn_node_condition = node[:problem_blobs].size > 0 || (!node[:image].nil? && node[:image][:problem_blobs].size > 0)
+      tr.tree-node.tree-view.hidden class="#{warn_node_condition ? 'warning-background' : ''}" data-level="#{node[:level]}"
         td
+          - if warn_node_condition
+            span uk-tooltip="title: #{(node[:problem_blobs].size == 0) ? 'Full size of tag' : "Some layers of tag not found:<br>" + node[:problem_blobs].map { |s| s[0..25] + '...' }.join('<br>') + " Actual size without problem blobs: " + represent_size(node[:size])}; delay: 500;" uk-icon="icon: warning"
           span style="padding-left: #{node[:level]}em"
           - unless node[:children_count] == 0 && (node[:image][:tags] || []).empty?
             span.hide-show-arrow uk-icon="icon: chevron-right"

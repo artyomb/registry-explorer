@@ -4,6 +4,7 @@ class Node
     @sha256 = sha256
     @node_size = node_size
     @created_at = define_create_time sha256
+    @problem_blobs = Set.new
     @links = []
     @created_at = nil
     @created_by = nil
@@ -16,6 +17,13 @@ class Node
     end
     return unless @type.to_s =~ /json/
     find_links(JSON.parse(blob_content(@sha256), symbolize_names: true), [], unique_blobs_sizes)
+    @links.each do |link|
+      if link[:node].actual_blob_size == -1
+        @problem_blobs.add(link[:node].sha256)
+      else
+        @problem_blobs.merge(link[:node].get_problem_blobs)
+      end
+    end
   end
 
   def find_links(n, path = [], unique_blobs_sizes = nil)
@@ -91,6 +99,10 @@ class Node
       link[:node].get_included_blobs(included_blobs)
     end
     included_blobs
+  end
+
+  def get_problem_blobs
+    @problem_blobs
   end
 
   def get_size_deep(unique_blobs_sizes = nil)

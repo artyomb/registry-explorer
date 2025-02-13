@@ -64,7 +64,7 @@ def extract_images(images=[], unique_blobs_sizes=nil)
   images_path_list.each do |image_path|
     subfolders = image_path.split('/')
     image_name = "/" + subfolders[subfolders.find_index('repositories') + 1..].join('/')
-    current_img = { name: image_name, tags: [], total_size: -1, required_blobs: Set.new, problem_blobs: [] }
+    current_img = { name: image_name, tags: [], total_size: -1, required_blobs: Set.new, problem_blobs: Set.new }
     images << current_img
     Dir.glob(image_path + "/_manifests/tags/*").select { |f| File.directory?(f) }.each do |tag_path|
       extract_tag_with_image(tag_path, $base_path, image_name, current_img, unique_blobs_sizes)
@@ -77,7 +77,7 @@ def extract_images(images=[], unique_blobs_sizes=nil)
       begin
         current_blob_size = blob_size(blob)
         if current_blob_size == -1
-          current_img[:problem_blobs] << blob
+          current_img[:problem_blobs].add(blob)
           raise Exception.new("Blob #{blob} not founded")
         end
         full_size_of_img += current_blob_size
@@ -91,7 +91,7 @@ def extract_images(images=[], unique_blobs_sizes=nil)
 end
 
 def extract_tag_with_image(tag_path, base_path, image_name, current_img, unique_blobs_sizes=nil)
-  current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: File.read(tag_path + "/current/link").split(':').last, required_blobs: Set.new, size: -1, problem_blobs: [] }
+  current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: File.read(tag_path + "/current/link").split(':').last, required_blobs: Set.new, size: -1, problem_blobs: Set.new }
   current_img[:tags] << current_tag
   indexes_paths = Dir.glob(tag_path + "/index/sha256/*")
   extract_index(current_tag[:current_index_sha256], base_path, current_tag, unique_blobs_sizes)
@@ -105,7 +105,7 @@ def extract_tag_with_image(tag_path, base_path, image_name, current_img, unique_
 end
 
 def extract_tag_without_image(tag_path, base_path, unique_blobs_sizes=nil)
-  current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: nil, created_at: nil, required_blobs: Set.new, size: -1, problem_blobs: [] }
+  current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: nil, created_at: nil, required_blobs: Set.new, size: -1, problem_blobs: Set.new }
   begin
     current_tag[:current_index_sha256] = File.read(tag_path + "/current/link").split(':').last
   rescue Exception => e
@@ -130,6 +130,7 @@ def extract_index(index_sha256, base_path, current_tag, unique_blobs_sizes = nil
   current_tag[:index_Nodes] << current_Node_link
   current_Node_link[:node].set_created_at(extract_index_created_at(index_sha256))
   current_tag[:required_blobs].merge(current_Node_link[:node].get_included_blobs)
+  current_tag[:problem_blobs].merge(current_Node_link[:node].get_problem_blobs)
 end
 
 def define_create_time(sha256)
@@ -171,7 +172,7 @@ def calculate_tag_size(current_tag)
     begin
       current_blob_size = blob_size(blob)
       if current_blob_size == -1
-        current_tag[:problem_blobs] << blob
+        current_tag[:problem_blobs].add(blob)
         raise Exception.new("Blob #{blob} not founded")
       end
       size_of_tag += current_blob_size
