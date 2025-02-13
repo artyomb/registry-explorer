@@ -1,5 +1,6 @@
 require 'zlib'
 require 'archive-tar-minitar'
+require 'time'
 
 $base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../temp') + "/docker/registry/v2"
 
@@ -162,8 +163,16 @@ def extract_file_content_from_archive_by_path(blob_sha256, file_path)
   result
 end
 
-def represent_size(size_in_bytes)
-  size_in_bytes.to_s.gsub(/(\d)(?=(\d{3})+(?!\d))/, '\\1,')
+def represent_size(bytes)
+  # bytes.to_s.gsub(/(\d)(?=(\d{3})+(?!\d))/, '\\1,')
+  units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
+  return '0 B' if bytes == 0
+
+  exp = (Math.log(bytes) / Math.log(1024)).to_i
+  exp = units.size - 1 if exp > units.size - 1
+  size = bytes.to_f / (1024 ** exp)
+
+  format('%.2f %s', size, units[exp])
 end
 
 def calculate_tag_size(current_tag)
@@ -214,6 +223,14 @@ def get_referring_image_entries(blob_sha256)
   end
   result_list
 end
+
+def transform_datetime(datetime_str)
+  # Parse the datetime string into a Time object
+  time_obj = Time.parse(datetime_str)
+  # Format the Time object into the desired format
+  time_obj.strftime('%Y-%m-%d %H:%M:%S')
+end
+
 
 # def check_flattened(fl)
 #   puts "Checking flattened is nil?: #{fl.nil?}"

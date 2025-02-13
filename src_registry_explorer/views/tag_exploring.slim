@@ -139,7 +139,7 @@ table.uk-table.uk-table-hover
           td uk-tooltip="title: #{node_link[:node].node_type}; delay: 500;"= node_link[:node].node_type.nil? ? "-" : node_link[:node].node_type.split('.')[-2..-1].join('.')
           td.align-text-right= node_link[:node].node_size.nil? ? "-" : represent_size(node_link[:node].node_size)
           td.align-text-right= is_image_node ? current_image_node_size : current_node_size
-          td= node_link[:node].created_at.nil? ? "-" : node_link[:node].created_at
+          td= node_link[:node].created_at.nil? ? "-" : transform_datetime(node_link[:node].created_at)
           td.limit-max-width= node_link[:node].created_by.nil? ? "" : node_link[:node].created_by
         - if node_link[:node].links.any?
           - render_node_links.call(node_link[:node].links, depth + 1)

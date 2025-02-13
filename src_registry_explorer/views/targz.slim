@@ -94,25 +94,28 @@ p= "Total size: #{represent_size(structure[:size])}"
       span.float-right= "Size"
     .file-structure
       - render_structure = ->(structure, parent_path = '', parent_id = 'root', counter = 0) do
-        - structure.each do |name, content|
+        - structure.select{|n, c| c.is_a?(Hash) && c[:is_dir] }.each do |name, content|
           li
             - current_path = "#{parent_path}/#{name}"
             - current_id = "node_#{parent_id}_#{counter}"
-            - if content.is_a?(Hash) && content[:is_dir]
-              .dir-element
-                a.uk-toggle href="#" uk-toggle="target: ##{current_id}"
-                  span uk-icon="icon: folder"
-                  = " #{name}"
-                span.float-right #{represent_size(content[:size])}
-              ul.uk-list.uk-margin-left id=current_id hidden=true
-                - render_structure.call(content, current_path, current_id, 0)
-            - elsif name != :size && content.is_a?(Hash)
-              / a href="/file-in-archive/#{params[:sha256]}/$path/#{parent_path}/#{name}"
-              .file-element data-href="'/file-in-archive/#{params[:sha256]}/$path#{parent_path}/#{name}'"
-                span uk-icon="icon: file-text"
+            .dir-element
+              a.uk-toggle href="#" uk-toggle="target: ##{current_id}"
+                span uk-icon="icon: folder"
                 = " #{name}"
-                span.float-right #{represent_size(content[:size])}
+              span.float-right #{represent_size(content[:size])}
+            ul.uk-list.uk-margin-left id=current_id hidden=true
+              - render_structure.call(content, current_path, current_id, 0)
           - counter += 1
+        - structure.select{|n, c| !(c.is_a?(Hash) && c[:is_dir]) && n != :size && c.is_a?(Hash) }.each do |name, content|
+          li
+            - current_path = "#{parent_path}/#{name}"
+            - current_id = "node_#{parent_id}_#{counter}"
+            .file-element data-href="'/file-in-archive/#{params[:sha256]}/$path#{parent_path}/#{name}'"
+              span uk-icon="icon: file-text"
+              = " #{name}"
+              span.float-right #{represent_size(content[:size])}
+          - counter += 1
+
       - render_structure.call(structure)
   #file-area Choose some file to view it's content
 

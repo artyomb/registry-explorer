@@ -186,4 +186,4 @@ table.uk-table.uk-table-hover
             span #{tag[:name]}
           td.align-text-right #{tag[:index_Nodes].size}
           td.align-text-right #{represent_size(tag[:size]).to_s + (tag[:problem_blobs].size > 0 ? ' (some blobs not found)' : '')}
-          td #{tag[:index_Nodes].select{|nd| tag[:current_idnex_sha256] == nd[:index_sha256]}.first[:node].created_at}
+          td #{transform_datetime(tag[:index_Nodes].select{|nd| tag[:current_idnex_sha256] == nd[:index_sha256]}.first[:node].created_at)}
