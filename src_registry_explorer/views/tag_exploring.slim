@@ -115,21 +115,20 @@ table.uk-table.uk-table-hover
     - render_node_links = ->(node_links, depth=0) do
       - node_links.each do |node_link|
         - node_is_current = node_link[:node].sha256 == tag[:current_index_sha256]
-        - class_string_cursor = (node_link[:node].node_type.to_s =~ /json/ && node_link[:node].links.any?) ? '' : 'default-cursor'
+        - class_string_cursor = (!(node_link[:node].node_type.to_s =~ /zip/) && node_link[:node].links.any?) ? '' : 'default-cursor'
         - class_string_warning = node_link[:node].get_problem_blobs.size > 0 || node_link[:node].get_problem_blobs.nil? ? 'warning-background' : ''
-        - puts class_string_warning
         tr.tree-node.hidden id="#{img_pth_param}/#{tag_string}/#{node_link[:node].sha256}" data-level="#{depth}" class="#{class_string_cursor + ' ' + class_string_warning}"
           td
             - if node_is_current
               span uk-icon="icon: check" style="color: green; min-width: max-content"
           td style="padding-left: #{depth * margin_coef}rem "
-            - if node_link[:node].node_type.to_s =~ /json/ && node_link[:node].links.any?
+            - if !(node_link[:node].node_type.to_s =~ /zip/) && node_link[:node].links.any?
               span.hide-show-arrow uk-icon="icon: chevron-right"
             span=" #{node_link[:path].join('/')}"
           td
-            - if node_link[:node].node_type.to_s =~ /json/
+            - if !(node_link[:node].node_type.to_s =~ /zip/)
               a uk-tooltip="title: #{node_link[:node].sha256}; delay: 500;" href="/json/#{node_link[:node].sha256}"= node_link[:node].sha256[0..4] + "..."
-            - elsif node_link[:node].node_type.to_s =~ /gzip/
+            - elsif node_link[:node].node_type.to_s =~ /zip/
               a uk-tooltip="title: #{node_link[:node].sha256}; delay: 500;" href="/tar-gz/#{node_link[:node].sha256}"= node_link[:node].sha256[0..4] + "..."
             - else
               span uk-tooltip="title: #{node_link[:node].sha256}; delay: 500;" = node_link[:node].sha256[0..4] + "..."

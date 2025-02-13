@@ -36,6 +36,7 @@ ruby:
     result
   end
   flattened = flatten_tree[tree]
+  #check_flattened(flattened)
 
 sass:
 
@@ -162,7 +163,7 @@ table.uk-table.uk-table-hover
       th Created at
   tbody
     - flattened.each do |node|
-      - warn_node_condition = node[:problem_blobs].size > 0 || (!node[:image].nil? && node[:image][:problem_blobs].size > 0)
+      - warn_node_condition = node[:problem_blobs].size > 0 || (!node[:image].nil? && node[:image].size > 0 && node[:image][:problem_blobs].size > 0)
       tr.tree-node.tree-view.hidden class="#{warn_node_condition ? 'warning-background' : ''}" data-level="#{node[:level]}"
         td
           - if warn_node_condition

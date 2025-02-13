@@ -19,8 +19,16 @@ class Node
       @problem_blobs.add(@sha256)
       @actual_blob_size = -1
     end
-    return unless @type.to_s =~ /json/
-    find_links(JSON.parse(blob_content(@sha256), symbolize_names: true), [], unique_blobs_sizes)
+    return unless !(@type.to_s =~ /zip/)
+    json_blob_content = JSON.parse(blob_content(@sha256), symbolize_names: true)
+
+    # Check if the keys exist and delete the :materials key
+    if @type.to_s =~ /toto/ && @type.to_s =~ /json/
+      if json_blob_content[:predicate] && json_blob_content[:predicate].is_a?(Hash)
+        json_blob_content[:predicate].delete(:materials)
+      end
+    end
+    find_links(json_blob_content, [], unique_blobs_sizes)
     @links.each do |link|
       if link[:node].actual_blob_size == -1
         @problem_blobs.add(link[:node].sha256)

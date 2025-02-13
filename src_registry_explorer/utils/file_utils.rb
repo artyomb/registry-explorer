@@ -214,3 +214,8 @@ def get_referring_image_entries(blob_sha256)
   end
   result_list
 end
+
+# def check_flattened(fl)
+#   puts "Checking flattened is nil?: #{fl.nil?}"
+#   fl
+# end
