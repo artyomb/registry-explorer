@@ -225,10 +225,15 @@ def get_referring_image_entries(blob_sha256)
 end
 
 def transform_datetime(datetime_str)
-  # Parse the datetime string into a Time object
-  time_obj = Time.parse(datetime_str)
-  # Format the Time object into the desired format
-  time_obj.strftime('%Y-%m-%d %H:%M:%S')
+  begin
+    # Parse the datetime string into a Time object
+    time_obj = Time.parse(datetime_str)
+    # Format the Time object into the desired format
+    time_obj.strftime('%Y-%m-%d %H:%M:%S')
+  rescue Error => e
+    puts "Error: #{e}"
+    "-"
+  end
 end
 
 
