@@ -91,7 +91,7 @@ p= "Total size: #{represent_size(structure[:size])}"
   #directory-structure-container
     .hdr-container
       span= "Files"
-      span.float-right= "Size"
+      span.uk-float-right= "Size"
     .file-structure
       - render_structure = ->(structure, parent_path = '', parent_id = 'root', counter = 0) do
         - structure.select{|n, c| c.is_a?(Hash) && c[:is_dir] }.each do |name, content|
@@ -102,7 +102,7 @@ p= "Total size: #{represent_size(structure[:size])}"
               a.uk-toggle href="#" uk-toggle="target: ##{current_id}"
                 span uk-icon="icon: folder"
                 = " #{name}"
-              span.float-right #{represent_size(content[:size])}
+              span.uk-float-right #{represent_size(content[:size])}
             ul.uk-list.uk-margin-left id=current_id hidden=true
               - render_structure.call(content, current_path, current_id, 0)
           - counter += 1
@@ -113,7 +113,7 @@ p= "Total size: #{represent_size(structure[:size])}"
             .file-element data-href="'/file-in-archive/#{params[:sha256]}/$path#{parent_path}/#{name}'"
               span uk-icon="icon: file-text"
               = " #{name}"
-              span.float-right #{represent_size(content[:size])}
+              span.uk-float-right #{represent_size(content[:size])}
           - counter += 1
 
       - render_structure.call(structure)

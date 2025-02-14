@@ -119,7 +119,9 @@ javascript:
 sass:
   .copy-btn
     margin-left: 0.5rem
-
+  .sha256-container
+    display: inline-block
+    width: 3.5rem
 h1.uk-h1 Exploring #{image_in_registry_path + '/' + tag_string}
 table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
   thead
@@ -147,12 +149,13 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
               span.hide-show-arrow uk-icon="icon: chevron-right"
             span=" #{node_link[:path].join('/')}"
           td
-            - if !(node_link[:node].node_type.to_s =~ /zip/)
-              a uk-tooltip="title: #{node_link[:node].sha256}; delay: 500;" href="/json/#{node_link[:node].sha256}"= node_link[:node].sha256[0..4] + "..."
-            - elsif node_link[:node].node_type.to_s =~ /zip/
-              a uk-tooltip="title: #{node_link[:node].sha256}; delay: 500;" href="/tar-gz/#{node_link[:node].sha256}"= node_link[:node].sha256[0..4] + "..."
-            - else
-              span uk-tooltip="title: #{node_link[:node].sha256}; delay: 500;" = node_link[:node].sha256[0..4] + "..."
+            .sha256-container
+              - if !(node_link[:node].node_type.to_s =~ /zip/)
+                a uk-tooltip="title: #{node_link[:node].sha256}; delay: 500;" href="/json/#{node_link[:node].sha256}"= node_link[:node].sha256[0..4] + "..."
+              - elsif node_link[:node].node_type.to_s =~ /zip/
+                a uk-tooltip="title: #{node_link[:node].sha256}; delay: 500;" href="/tar-gz/#{node_link[:node].sha256}"= node_link[:node].sha256[0..4] + "..."
+              - else
+                span uk-tooltip="title: #{node_link[:node].sha256}; delay: 500;" = node_link[:node].sha256[0..4] + "..."
             span.uk-icon-button.copy-btn.cursor-pointer data-buffervalue="#{node_link[:node].sha256}" uk-icon="icon: copy"
           - current_node_size = node_link[:node].actual_blob_size.nil? ? "-" : represent_size(node_link[:node].actual_blob_size)
           - current_image_node_size = represent_size(node_link[:node].get_size_deep(unique_blobs_sizes))
