@@ -11,29 +11,29 @@ ruby:
   structure = extract_tar_gz_structure(params[:sha256])
 
 javascript:
-  document.addEventListener("DOMContentLoaded", function() {
-      const fileViewArea = document.getElementById("file-area");
+    document.addEventListener("DOMContentLoaded", function() {
+        const fileViewArea = document.getElementById("file-area");
 
-      document.querySelectorAll(".file-element").forEach(function(fileElement) {
-          fileElement.addEventListener("click", async function () {
-              console.log("Clicked on file element with data-href:", fileElement.dataset.href);
-              const url = eval(fileElement.dataset.href);
-              try {
-                  const response = await fetch(url);
-                  const htmlContent = await response.text();
-                  fileViewArea.style.opacity = 1;
-                  fileViewArea.innerHTML = htmlContent;
-                  fileViewArea.style.textAlign = "left";
-                  document.querySelector(".chosen")?.classList.toggle("chosen");
-                  fileElement.classList.toggle("chosen");
+        document.querySelectorAll(".file-element").forEach(function(fileElement) {
+            fileElement.addEventListener("click", async function () {
+                console.log("Clicked on file element with data-href:", fileElement.dataset.href);
+                const url = eval(fileElement.dataset.href);
+                try {
+                    const response = await fetch(url);
+                    const htmlContent = await response.text();
+                    fileViewArea.style.opacity = 1;
+                    fileViewArea.innerHTML = htmlContent;
+                    fileViewArea.style.textAlign = "left";
+                    document.querySelector(".chosen")?.classList.toggle("chosen");
+                    fileElement.classList.toggle("chosen");
 
-              } catch (error) {
-                  console.error("Error loading file content:", error);
-                  fileViewArea.innerHTML = "Error loading file content";
-              }
-          });
-      });
-  });
+                } catch (error) {
+                    console.error("Error loading file content:", error);
+                    fileViewArea.innerHTML = "Error loading file content";
+                }
+            });
+        });
+    });
 sass:
     .hdr-container
       padding-bottom: 1rem
@@ -66,6 +66,12 @@ sass:
       overflow-x: auto
       opacity: 0.5
       background-color: #e4e4e4
+
+      code
+        background-color: #e4e4e4
+        margin-bottom: 0
+        height: -webkit-fill-available
+        white-space: pre
 
     .chosen
       background-color: rgba(77, 125, 208, 0.3)
