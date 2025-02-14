@@ -26,6 +26,7 @@ javascript:
                     fileViewArea.style.textAlign = "left";
                     document.querySelector(".chosen")?.classList.toggle("chosen");
                     fileElement.classList.toggle("chosen");
+                    Prism.highlightAll();
 
                 } catch (error) {
                     console.error("Error loading file content:", error);

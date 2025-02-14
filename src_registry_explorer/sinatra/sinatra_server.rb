@@ -28,7 +28,7 @@ class RegistryExplorerFront < Sinatra::Base
     path_data = params[:splat].first.split('/$path/')
     blob_sha256 = path_data[0]
     file_path = path_data[1]
-    "<code class='language-#{file_path.split('.').last}'>#{extract_file_content_from_archive_by_path(blob_sha256, file_path)}</code>"
+    "<code class='language-#{File.extname(file_path).delete_prefix('.')}'>#{extract_file_content_from_archive_by_path(blob_sha256, file_path)}</code>"
   end
   get '/healthcheck', &-> { 'Healthy' }
 
