@@ -141,7 +141,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
         tr.tree-node.hidden id="#{img_pth_param}/#{tag_string}/#{node_link[:node].sha256}" data-level="#{depth}" class="#{class_string_cursor + ' ' + class_string_warning}"
           td
             - if node_is_current
-              span uk-icon="icon: check" style="color: green; min-width: max-content"
+              span uk-icon="icon: check" style="color: green; min-width: max-content; padding: 0.5rem"
           td style="padding-left: #{depth * margin_coef}rem "
             - if !(node_link[:node].node_type.to_s =~ /zip/) && node_link[:node].links.any?
               span.hide-show-arrow uk-icon="icon: chevron-right"
