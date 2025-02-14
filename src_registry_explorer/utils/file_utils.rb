@@ -194,7 +194,6 @@ def calculate_tag_size(current_tag)
 end
 
 def extract_index_created_at(sha256)
-  puts "Extracting created_at for #{sha256}"
   begin
     index_json = JSON.parse(blob_content(sha256), symbolize_names: true)
     manifest_json = JSON.parse(blob_content(index_json[:manifests]

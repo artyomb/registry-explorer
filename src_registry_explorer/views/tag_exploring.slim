@@ -86,7 +86,7 @@ javascript:
                 event.stopPropagation();
                 const textToCopy = copyBtn.dataset.buffervalue;
                 navigator.clipboard.writeText(textToCopy).then(function() {
-                    UIkit.notification({message: 'sha256 copied to clipboard', status: 'primary'});
+                    UIkit.notification({message: 'sha256 copied to clipboard', status: 'success', pos: 'top-right'});
                 });
             });
         });
@@ -112,6 +112,9 @@ javascript:
                     }
                 }
             }
+        });
+        UIkit.util.on(document, 'beforeshow', '.uk-tooltip.uk-active', function () {
+            this.classList.add('uk-width-auto');
         });
         updateRowStripes();
     });
@@ -151,7 +154,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
           td
             .sha256-container
               - if !(node_link[:node].node_type.to_s =~ /zip/)
-                a uk-tooltip="title: #{node_link[:node].sha256}; delay: 500;" href="/json/#{node_link[:node].sha256}"= node_link[:node].sha256[0..4] + "..."
+                a uk-tooltip="title: #{node_link[:node].sha256}; cls: uk-active; delay: 500;" href="/json/#{node_link[:node].sha256}"= node_link[:node].sha256[0..4] + "..."
               - elsif node_link[:node].node_type.to_s =~ /zip/
                 a uk-tooltip="title: #{node_link[:node].sha256}; delay: 500;" href="/tar-gz/#{node_link[:node].sha256}"= node_link[:node].sha256[0..4] + "..."
               - else
