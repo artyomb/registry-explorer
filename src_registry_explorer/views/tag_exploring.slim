@@ -14,50 +14,67 @@ ruby:
   full_path_to_image_tag = path_to_repositories + image_in_registry_path + '/_manifests/tags/' + tag_string
   tag= extract_tag_without_image(full_path_to_image_tag, base_path, unique_blobs_sizes)
 javascript:
-    document.addEventListener("DOMContentLoaded", function() {
-        function showAllChildrenLevelOne(currentNode) {
-            let childElem = currentNode.nextElementSibling;
-            let closestArrow = currentNode?.querySelector(".hide-show-arrow");
-            closestArrow?.classList.add("rotate-arrow");
-            closestArrow = childElem?.querySelector(".hide-show-arrow");
-            let levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
-            while (childElem && levelDifference > 0) {
-                if (levelDifference === 1) {
-                    closestArrow?.classList.remove("rotate-arrow");
-                    childElem.classList.remove('hidden');
-                }
-                childElem = childElem.nextElementSibling;
-                closestArrow = childElem?.querySelector(".hide-show-arrow");
-                levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
-            }
-        }
+    function updateRowStripes() {
+        const visibleRows = [...document.querySelectorAll('tbody tr.tree-node:not(.hidden)')];
 
-        function showAllChildren(currentNode) {
-            let childElem = currentNode.nextElementSibling;
-            let closestArrow = currentNode?.querySelector(".hide-show-arrow");
-            closestArrow?.classList.add("rotate-arrow");
-            closestArrow = childElem?.querySelector(".hide-show-arrow");
-            let levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
-            while (childElem && levelDifference > 0) {
-                closestArrow?.classList.add("rotate-arrow");
-                childElem.classList.remove('hidden');
-                childElem = childElem.nextElementSibling;
-                closestArrow = childElem?.querySelector(".hide-show-arrow");
-                levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
+        visibleRows.forEach((row, index) => {
+            if (index % 2 === 0) {
+                row.classList.add('striped-even');
+                row.classList.remove('striped-odd');
+            } else {
+                row.classList.add('striped-odd');
+                row.classList.remove('striped-even');
             }
-        }
+        });
+        updateRowStripes();
+    }
 
-        function hideAllChildren(currentNode) {
-            let childElem = currentNode.nextElementSibling;
-            let closestArrow = currentNode?.querySelector(".hide-show-arrow");
-            while (childElem && parseInt(childElem.dataset.level) > parseInt(currentNode.dataset.level)) {
+    function showAllChildrenLevelOne(currentNode) {
+        let childElem = currentNode.nextElementSibling;
+        let closestArrow = currentNode?.querySelector(".hide-show-arrow");
+        closestArrow?.classList.add("rotate-arrow");
+        closestArrow = childElem?.querySelector(".hide-show-arrow");
+        let levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
+        while (childElem && levelDifference > 0) {
+            if (levelDifference === 1) {
                 closestArrow?.classList.remove("rotate-arrow");
-                childElem.classList.add('hidden');
-                childElem = childElem.nextElementSibling;
-                closestArrow = childElem?.querySelector(".hide-show-arrow");
+                childElem.classList.remove('hidden');
             }
+            childElem = childElem.nextElementSibling;
+            closestArrow = childElem?.querySelector(".hide-show-arrow");
+            levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
         }
+        updateRowStripes();
+    }
 
+    function showAllChildren(currentNode) {
+        let childElem = currentNode.nextElementSibling;
+        let closestArrow = currentNode?.querySelector(".hide-show-arrow");
+        closestArrow?.classList.add("rotate-arrow");
+        closestArrow = childElem?.querySelector(".hide-show-arrow");
+        let levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
+        while (childElem && levelDifference > 0) {
+            closestArrow?.classList.add("rotate-arrow");
+            childElem.classList.remove('hidden');
+            childElem = childElem.nextElementSibling;
+            closestArrow = childElem?.querySelector(".hide-show-arrow");
+            levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
+        }
+        updateRowStripes();
+    }
+
+    function hideAllChildren(currentNode) {
+        let childElem = currentNode.nextElementSibling;
+        let closestArrow = currentNode?.querySelector(".hide-show-arrow");
+        while (childElem && parseInt(childElem.dataset.level) > parseInt(currentNode.dataset.level)) {
+            closestArrow?.classList.remove("rotate-arrow");
+            childElem.classList.add('hidden');
+            childElem = childElem.nextElementSibling;
+            closestArrow = childElem?.querySelector(".hide-show-arrow");
+        }
+        updateRowStripes();
+    }
+    document.addEventListener("DOMContentLoaded", function() {
         document.querySelectorAll(".tree-node").forEach(function(treeNode) {
             if (treeNode.dataset.level <= 0) {
                 treeNode.classList.remove("hidden");
@@ -97,6 +114,7 @@ javascript:
                 }
             }
         });
+        updateRowStripes();
     });
 
 sass:
@@ -104,7 +122,7 @@ sass:
     margin-left: 0.5rem
 
 h1.uk-h1 Exploring #{image_in_registry_path + '/' + tag_string}
-table.uk-table.uk-table-hover.uk-table-divider
+table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
   thead
     tr
       th

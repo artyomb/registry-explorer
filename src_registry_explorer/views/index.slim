@@ -38,123 +38,140 @@ ruby:
   flattened = flatten_tree[tree]
   #check_flattened(flattened)
 
-sass:
-
-
 javascript:
-  function showAllChildrenLevelOne(currentNode) {
-    let childElem = currentNode.nextElementSibling;
-    let closestArrow = currentNode?.querySelector(".hide-show-arrow");
-    closestArrow?.classList.add("rotate-arrow");
-    closestArrow = childElem?.querySelector(".hide-show-arrow");
-    let levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
-    while (childElem && levelDifference > 0) {
-      if (levelDifference === 1) {
-        closestArrow?.classList.remove("rotate-arrow");
-        childElem.classList.remove('hidden');
-      }
-      childElem = childElem.nextElementSibling;
-      closestArrow = childElem?.querySelector(".hide-show-arrow");
-      levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
-    }
-  }
+    function updateRowStripes() {
+        const visibleRows = [...document.querySelectorAll('tbody tr.tree-node:not(.hidden)')];
 
-  function showAllChildren(currentNode) {
-      let childElem = currentNode.nextElementSibling;
-      let closestArrow = currentNode?.querySelector(".hide-show-arrow");
-      closestArrow?.classList.add("rotate-arrow");
-      closestArrow = childElem?.querySelector(".hide-show-arrow");
-      let levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
-      while (childElem && levelDifference > 0) {
-          closestArrow?.classList.add("rotate-arrow");
-          childElem.classList.remove('hidden');
+        visibleRows.forEach((row, index) => {
+            if (index % 2 === 0) {
+                row.classList.add('striped-even');
+                row.classList.remove('striped-odd');
+            } else {
+                row.classList.add('striped-odd');
+                row.classList.remove('striped-even');
+            }
+        });
+    }
+
+    function showAllChildrenLevelOne(currentNode) {
+        let childElem = currentNode.nextElementSibling;
+        let closestArrow = currentNode?.querySelector(".hide-show-arrow");
+        closestArrow?.classList.add("rotate-arrow");
+        closestArrow = childElem?.querySelector(".hide-show-arrow");
+        let levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
+        while (childElem && levelDifference > 0) {
+            if (levelDifference === 1) {
+              closestArrow?.classList.remove("rotate-arrow");
+              childElem.classList.remove('hidden');
+            }
+            childElem = childElem.nextElementSibling;
+            closestArrow = childElem?.querySelector(".hide-show-arrow");
+            levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
+        }
+        updateRowStripes();
+    }
+
+    function showAllChildren(currentNode) {
+        let childElem = currentNode.nextElementSibling;
+        let closestArrow = currentNode?.querySelector(".hide-show-arrow");
+        closestArrow?.classList.add("rotate-arrow");
+        closestArrow = childElem?.querySelector(".hide-show-arrow");
+        let levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
+        while (childElem && levelDifference > 0) {
+            closestArrow?.classList.add("rotate-arrow");
+            childElem.classList.remove('hidden');
+            childElem = childElem.nextElementSibling;
+            closestArrow = childElem?.querySelector(".hide-show-arrow");
+            levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
+        }
+        updateRowStripes();
+    }
+
+    function hideAllChildren(currentNode) {
+        let childElem = currentNode.nextElementSibling;
+        let closestArrow = currentNode?.querySelector(".hide-show-arrow");
+        while (childElem && parseInt(childElem.dataset.level) > parseInt(currentNode.dataset.level)) {
+          closestArrow?.classList.remove("rotate-arrow");
+          childElem.classList.add('hidden');
           childElem = childElem.nextElementSibling;
           closestArrow = childElem?.querySelector(".hide-show-arrow");
-          levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
-      }
-  }
-
-  function hideAllChildren(currentNode) {
-    let childElem = currentNode.nextElementSibling;
-    let closestArrow = currentNode?.querySelector(".hide-show-arrow");
-    while (childElem && parseInt(childElem.dataset.level) > parseInt(currentNode.dataset.level)) {
-      closestArrow?.classList.remove("rotate-arrow");
-      childElem.classList.add('hidden');
-      childElem = childElem.nextElementSibling;
-      closestArrow = childElem?.querySelector(".hide-show-arrow");
+        }
+        updateRowStripes();
     }
-  }
 
-  document.addEventListener("DOMContentLoaded", function() {
-      document.querySelectorAll(".tree-node").forEach(function(treeNode) {
-          if (treeNode.dataset.level <= 0) {
-              treeNode.classList.remove("hidden");
-              treeNode.querySelector(".hide-show-arrow")?.classList.remove("rotate-arrow");
-          }
-      });
+    document.addEventListener("DOMContentLoaded", function() {
+        updateRowStripes();
+        document.querySelectorAll(".tree-node").forEach(function(treeNode) {
+            if (treeNode.dataset.level <= 0) {
+                treeNode.classList.remove("hidden");
+                treeNode.querySelector(".hide-show-arrow")?.classList.remove("rotate-arrow");
+            }
+        });
 
-      document.querySelector('body').addEventListener('click', function(event) {
-          const row = event.target.closest('tr[data-href]');
-          if (row) window.location.href = row.dataset.href;
-          const currentNode = event.target.closest('.tree-node');
-          let closestArrow = currentNode?.querySelector(".hide-show-arrow");
-          if (currentNode) {
-              if (!closestArrow) return;
-              const branchExpanded = closestArrow.classList.contains("rotate-arrow");
-              if (branchExpanded) {
-                  if (event.ctrlKey) {
-                      showAllChildren(currentNode);
-                  } else { hideAllChildren(currentNode);}
-              } else {
-                  if (event.ctrlKey) {
-                      showAllChildren(currentNode);
-                  } else {
-                      showAllChildrenLevelOne(currentNode);
-                  }
-              }
-          }
-      });
+        document.querySelector('body').addEventListener('click', function(event) {
+            const row = event.target.closest('tr[data-href]');
+            if (row) window.location.href = row.dataset.href;
+            const currentNode = event.target.closest('.tree-node');
+            let closestArrow = currentNode?.querySelector(".hide-show-arrow");
+            if (currentNode) {
+                if (!closestArrow) return;
+                const branchExpanded = closestArrow.classList.contains("rotate-arrow");
+                if (branchExpanded) {
+                    if (event.ctrlKey) {
+                        showAllChildren(currentNode);
+                    } else { hideAllChildren(currentNode);}
+                } else {
+                    if (event.ctrlKey) {
+                        showAllChildren(currentNode);
+                    } else {
+                        showAllChildrenLevelOne(currentNode);
+                    }
+                }
+            }
+        });
 
-      document.querySelectorAll('.switch-btn').forEach(btn => {
-          btn.addEventListener('click', function() {
-              const isActive = btn.classList.contains('uk-button-primary');
-              if (!isActive) {
-                  const btnText = btn.textContent;
-                  if (btnText === "Tree view") {
-                      document.querySelectorAll('.tree-node').forEach(elem =>{
-                          if (elem.dataset.level > 0) {
-                              elem.classList.add('hidden');
-                              elem.querySelector('.table-view')?.classList.add('hidden');
-                              elem.querySelector('.tree-view')?.classList.remove('hidden');
-                              elem.querySelector('.hide-show-arrow')?.classList.add('rotate-arrow');
-                          } else {
-                              elem.classList.remove('hidden');
-                              elem.querySelector('.hide-show-arrow')?.classList.remove('rotate-arrow'); }
-                      });
-                  } else {
-                      document.querySelectorAll('.tree-node').forEach(elem => {
-                         elem.classList.remove('hidden');
-                      });
-                      document.querySelectorAll('.tree-view').forEach(elem => {
-                          elem.classList.add('hidden');
-                      });
-                      document.querySelectorAll('.table-view').forEach(elem => {
-                          elem.classList.remove('hidden');
-                      });
-                  }
-                  btn.classList.add('uk-button-primary');
-                  if (btn.nextElementSibling) btn.nextElementSibling.classList.remove('uk-button-primary');
-                  else btn.previousElementSibling.classList.remove('uk-button-primary');
-              }
-          });
+        document.querySelectorAll('.switch-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const isActive = btn.classList.contains('uk-button-primary');
+                if (!isActive) {
+                    const btnText = btn.textContent;
+                    if (btnText === "Tree view") {
+                        document.querySelectorAll('.tree-node').forEach(elem =>{
+                            if (elem.dataset.level > 0) {
+                                elem.classList.add('hidden');
+                                elem.querySelector('.table-view')?.classList.add('hidden');
+                                elem.querySelector('.tree-view')?.classList.remove('hidden');
+                                elem.querySelector('.hide-show-arrow')?.classList.add('rotate-arrow');
+                            } else {
+                                elem.classList.remove('hidden');
+                                elem.querySelector('.hide-show-arrow')?.classList.remove('rotate-arrow'); }
+                        });
+                    } else {
+                        document.querySelectorAll('.tree-node').forEach(elem => {
+                           elem.classList.remove('hidden');
+                        });
+                        document.querySelectorAll('.tree-view').forEach(elem => {
+                            elem.classList.add('hidden');
+                        });
+                        document.querySelectorAll('.table-view').forEach(elem => {
+                            elem.classList.remove('hidden');
+                        });
+                    }
+                    btn.classList.add('uk-button-primary');
+                    if (btn.nextElementSibling) btn.nextElementSibling.classList.remove('uk-button-primary');
+                    else btn.previousElementSibling.classList.remove('uk-button-primary');
+                }
+                updateRowStripes();
+            });
       });
-  });
+      updateRowStripes();
+    });
 
 h1.uk-h1 Registry
 .uk-button-group.float-right
   button.switch-btn.uk-button.uk-button-primary style=""= "Tree view"
   button.switch-btn.uk-button.uk-button-default style=""= "Table view"
-table.uk-table.uk-table-hover.uk-table-divider
+table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
   thead
     tr
       th Image/tag name
@@ -186,4 +203,4 @@ table.uk-table.uk-table-hover.uk-table-divider
             span #{tag[:name]}
           td.align-text-right #{tag[:index_Nodes].size}
           td.align-text-right #{represent_size(tag[:size]).to_s + (tag[:problem_blobs].size > 0 ? ' (some blobs not found)' : '')}
-          td #{transform_datetime(tag[:index_Nodes].select{|nd| tag[:current_idnex_sha256] == nd[:index_sha256]}.first[:node].created_at)}
+          td #{transform_datetime(tag[:index_Nodes].select{ |nd| tag[:current_index_sha256] == nd[:node].sha256 }.first[:node].created_at)}
