@@ -89,16 +89,13 @@ sass:
       border: 0.1rem solid #ccc
       border-radius: 0.5rem
 - if (!previous_tag_id.nil?)
-  a.uk-link-text href="/tag-exploring/#{previous_tag_id}"
+  a.uk-link-text href="javascript:history.back()"
     span uk-icon="icon: triangle-left"
     span Back to tag exporing
-p= "Images, referring to this archive:"
-ul.uk-list.uk-list-collapse.uk-list-divider.uk-list-disc.uk-list-primary.uk-border-rounded.uk-box-shadow-small
-  - image_entries.each do |entry|
-    li
-      a href="/tag-exploring#{entry[:image_name]}/#{entry[:tag_name]}" #{entry[:image_name] + ':' + entry[:tag_name] + '@sha256:' + entry[:index_node].sha256}
-p= "Archive blob #{params[:sha256]} content."
-p= "Total size: #{represent_size(structure[:size])}"
+h1.uk-h1
+  span Archive blob exploring
+  span.uk-text-primary uk-tooltip="title: #{params[:sha256]}; cls: uk-active; delay: 500;"= " #{params[:sha256][0..4]}..."
+h3.uk-h3= "Total size: #{represent_size(structure[:size])}"
 .content-container
   #directory-structure-container
     .hdr-container
@@ -131,5 +128,10 @@ p= "Total size: #{represent_size(structure[:size])}"
       - render_structure.call(structure)
   #file-area Choose some file to view it's content
 
+p= "Images, referring to this archive:"
+ul.uk-list.uk-list-large.uk-list-divider.uk-list-disc.uk-list-primary.uk-border-rounded.uk-box-shadow-small.uk-margin-remove-vertical.uk-padding
+  - image_entries.each do |entry|
+    li
+      a href="/tag-exploring#{entry[:image_name]}/#{entry[:tag_name]}" #{entry[:image_name] + ':' + entry[:tag_name] + '@sha256:' + entry[:index_node].sha256}
 
 / a href="/file-in-archive/#{params[:sha256]}/$path/#{parent_path}/#{name}"
