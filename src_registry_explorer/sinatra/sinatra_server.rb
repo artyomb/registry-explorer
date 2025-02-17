@@ -18,7 +18,9 @@ class RegistryExplorerFront < Sinatra::Base
     slim :tag_exploring, locals: { full_tag_path: full_tag_path }
   end
   get '/json/:sha256', &->() { slim :json }
+
   get '/tar-gz/:sha256', &->() { slim :targz }
+
   get '/file-in-archive/:sha256', &->() { slim :file_in_archive }
 
   # get '/file-in-archive/*/$path/*' do

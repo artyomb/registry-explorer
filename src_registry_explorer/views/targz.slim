@@ -9,6 +9,8 @@ ruby:
   require_relative '../utils/file_utils'
   image_entries = get_referring_image_entries(params[:sha256])
   structure = extract_tar_gz_structure(params[:sha256])
+  previous_tag_id = params[:tag_id].nil? ? nil : params[:tag_id].gsub(" ", "/")
+  puts "Previous tag id: #{previous_tag_id}"
 
 javascript:
     document.addEventListener("DOMContentLoaded", function() {
@@ -86,7 +88,10 @@ sass:
       padding: 1rem
       border: 0.1rem solid #ccc
       border-radius: 0.5rem
-
+- if (!previous_tag_id.nil?)
+  a.uk-link-text href="/tag-exploring/#{previous_tag_id}"
+    span uk-icon="icon: triangle-left"
+    span Back to tag exporing
 p= "Images, referring to this archive:"
 ul.uk-list.uk-list-collapse.uk-list-divider.uk-list-disc.uk-list-primary.uk-border-rounded.uk-box-shadow-small
   - image_entries.each do |entry|
