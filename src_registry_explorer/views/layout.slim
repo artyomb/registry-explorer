@@ -1,8 +1,6 @@
 ruby:
-  require_relative '../utils/docker_utils'
-  tag_version = get_image_tag
-  version = tag_version.nil? ? nil : tag_version.split(':').last
-  version_str = version.nil? ? '' : (' version ' + version)
+  require_relative '../utils/common_utils'
+  version = get_service_version
 doctype html
 html lang="en"
 
@@ -34,7 +32,7 @@ body
     == yield
   footer.uk-section.uk-section-small.uk-text-center.uk-background-secondary.uk-margin-auto-top
     .uk-flex.uk-flex-around
-      a.uk-link-heading href="/index" = "Registry explorer#{version_str}"
+      a.uk-link-heading href="/index" = "Registry explorer#{version.nil? ? '' : ' ' + version}"
       a.uk-link-heading href="https://github.com/artyomb/registry-explorer"
         span.uk-icon.uk-margin-small-right uk-icon="icon: github"
         span GitHub
