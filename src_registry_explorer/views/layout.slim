@@ -1,3 +1,8 @@
+ruby:
+  require_relative '../utils/docker_utils'
+  tag_version = get_image_tag
+  version = tag_version.nil? ? nil : tag_version.split(':').last
+  version_str = version.nil? ? '' : (' version ' + version)
 doctype html
 html lang="en"
 
@@ -22,8 +27,17 @@ body
   nav.uk-navbar-container.uk-navbar.uk-background-muted.uk-width-1-1.uk-box-shadow-small
     .uk-navbar-left.uk-margin-left
       ul.uk-navbar-nav
-        li.uk-active
-          a href="/index" Registry
+        li
+          a.uk-link-heading href="/index" Registry
 
   .uk-container-expand.uk-padding
     == yield
+  footer.uk-section.uk-section-small.uk-text-center.uk-background-secondary.uk-margin-auto-top
+    .uk-flex.uk-flex-around
+      a.uk-link-heading href="/index" = "Registry explorer#{version_str}"
+      a.uk-link-heading href="https://github.com/artyomb/registry-explorer"
+        span.uk-icon.uk-margin-small-right uk-icon="icon: github"
+        span GitHub
+      a.uk-link-heading href="https://github.com/artyomb/registry-explorer/blob/main/readme.md"
+        span.uk-icon.uk-margin-small
+        span.uk-margin-small-right uk-icon="icon: question"

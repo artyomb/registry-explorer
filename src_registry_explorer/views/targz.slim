@@ -88,7 +88,7 @@ sass:
       border-radius: 0.5rem
 
 p= "Images, referring to this archive:"
-ul
+ul.uk-list.uk-list-collapse.uk-list-divider.uk-list-disc.uk-list-primary.uk-border-rounded.uk-box-shadow-small
   - image_entries.each do |entry|
     li
       a href="/tag-exploring#{entry[:image_name]}/#{entry[:tag_name]}" #{entry[:image_name] + ':' + entry[:tag_name] + '@sha256:' + entry[:index_node].sha256}
