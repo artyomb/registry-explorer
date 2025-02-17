@@ -2,6 +2,7 @@
 require 'sinatra/base'
 require 'slim'
 require 'rack/sassc'
+require 'cgi'
 require_relative '../utils/file_utils'
 
 class RegistryExplorerFront < Sinatra::Base
@@ -18,20 +19,23 @@ class RegistryExplorerFront < Sinatra::Base
     slim :tag_exploring, locals: { full_tag_path: full_tag_path }
   end
   get '/json/:sha256', &->() { slim :json }
-
   get '/tar-gz/:sha256', &->() { slim :targz }
-
   get '/file-in-archive/:sha256', &->() { slim :file_in_archive }
 
   # get '/file-in-archive/*/$path/*' do
   #   blob_sha256 = params[:splat].first
   #   file_path = '/' + params[:splat][1]
+
   get '/file-in-archive/*' do
     path_data = params[:splat].first.split('/$path/')
     blob_sha256 = path_data[0]
     file_path = path_data[1]
-    "<code class='language-#{File.extname(file_path).delete_prefix('.')}'>#{extract_file_content_from_archive_by_path(blob_sha256, file_path)}</code>"
+    content = extract_file_content_from_archive_by_path(blob_sha256, file_path)
+    extention = File.extname(file_path).delete_prefix('.')
+    escaped_content = CGI.escapeHTML(content)
+    "<code class='language-#{extention}'>#{escaped_content}</code>"
   end
+
   get '/healthcheck', &-> { 'Healthy' }
 
   error do

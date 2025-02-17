@@ -167,7 +167,7 @@ javascript:
       updateRowStripes();
     });
 
-h1.uk-h1= "Registry content (#{images.size} images within #{tree[:children].size} subrepositories)"
+h1.uk-h1= "Docker registry content (#{images.map{|img| img[:tags].size}.sum} tags in #{images.size} images)"
 .uk-button-group.uk-float-right
   button.switch-btn.uk-button.uk-button-primary style=""= "Tree view"
   button.switch-btn.uk-button.uk-button-default style=""= "Table view"
@@ -175,7 +175,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
   thead
     tr
       th Image/tag name
-      th style="text-align: right" Images/tags amount
+      th style="text-align: right" Images amount
       th style="text-align: right" Size
       th Created at
   tbody
