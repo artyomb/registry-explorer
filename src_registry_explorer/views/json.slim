@@ -4,11 +4,12 @@ ruby:
   previous_tag_id = params[:tag_id].nil? ? nil : params[:tag_id].gsub(" ", "/")
 
 - if (!previous_tag_id.nil?)
-  a.uk-link-text href="/tag-exploring/#{previous_tag_id}"
-    span uk-icon="icon: triangle-left"
-    span Back to tag
+  .uk-border-bottom.uk-padding-small.uk-padding-remove-left.uk-width-fit-content
+    a.uk-link-text href="/tag-exploring/#{previous_tag_id}"
+      span.icon-padding-right.icon-padding-left.uk-text-primary uk-icon="icon: triangle-left"
+      span Back to tag
 h1.uk-h1
   span JSON blob
-  span.uk-text-primary uk-tooltip="title: #{params[:sha256]}; cls: uk-active; delay: 500;"= " #{params[:sha256][0..4]}..."
+  span.uk-text-primary uk-tooltip="title: #{params[:sha256]}; cls: uk-active; delay: 500;"= " #{params[:sha256]}"
 pre.content-display.language-json style="opacity: 1"
   code= JSON.pretty_generate(json_blob_content)

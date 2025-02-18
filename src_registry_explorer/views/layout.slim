@@ -23,10 +23,13 @@ html lang="en"
 body
   == slim :style
   nav.uk-navbar-container.uk-navbar.uk-background-muted.uk-width-1-1.uk-box-shadow-small
-    .uk-navbar-left.uk-margin-left
+    .uk-navbar-left.uk-margin-left.uk-flex-between.uk-width-expand
       ul.uk-navbar-nav
         li
           a.uk-link-heading href="/index" Registry
+      a.uk-link-heading.uk-float-right.uk-margin-right href="https://github.com/artyomb/registry-explorer"
+        span.uk-icon.uk-margin-small-right uk-icon="icon: github"
+        span GitHub
 
   .uk-container-expand.uk-padding
     == yield
@@ -39,3 +42,4 @@ body
       a.uk-link-heading href="https://github.com/artyomb/registry-explorer/blob/main/readme.md"
         span.uk-icon.uk-margin-small
         span.uk-margin-small-right uk-icon="icon: question"
+        span Readme

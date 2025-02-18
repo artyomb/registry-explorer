@@ -125,21 +125,22 @@ sass:
   .sha256-container
     display: inline-block
     width: 3.5rem
-a.uk-link-text href="/index"
-  span uk-icon="icon: triangle-left"
-  span Back to registry
+.uk-border-bottom.uk-padding-small.uk-padding-remove-left.uk-width-fit-content
+  a.uk-link-text href="/index"
+    span.icon-padding-right.icon-padding-left.uk-text-primary uk-icon="icon: triangle-left"
+    span Back to registry
 h1.uk-h1 #{image_in_registry_path[1..-1] + ':' + tag_string}
 table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
   thead
     tr
-      th Main
-      th style="padding-left: 0" Node path
-      th Node sha256
-      th Node type
-      th style="text-align: right" Node size
-      th style="text-align: right" Actucal blob / image size
-      th Node created at
-      th Created by
+      th style="width: 1%" Main
+      th style="min-width: 15%; width: 15%; max-width: 15%; padding-left: 0" Node path
+      th style="min-width: 4%; width: 4%; max-width: 4%" Node sha256
+      th style="min-width: 10%; width: 10%; max-width: 10%" Node type
+      th style="min-width: 10%; width: 10%; max-width: 10%; text-align: right" Node size
+      th style="min-width: 10%; width: 10%; max-width: 10%; text-align: right" Actucal blob / image size
+      th style="min-width: 10%; width: 10%; max-width: 10%" Node created at
+      th style="min-width: 40%; width: 40%; max-width: 40%" Created by
   tbody
     - render_node_links = ->(node_links, depth=0) do
       - node_links.each do |node_link|
