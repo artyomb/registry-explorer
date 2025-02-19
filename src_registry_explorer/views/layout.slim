@@ -35,11 +35,14 @@ body
     == yield
   footer.uk-section.uk-section-small.uk-text-center.uk-background-secondary.uk-margin-auto-top
     .uk-flex.uk-flex-around
-      a.uk-link-heading href="/index" = "Registry explorer#{version.nil? ? '' : ' ' + version}"
-      a.uk-link-heading href="https://github.com/artyomb/registry-explorer"
+      .uk-flex
+        a.uk-link-heading.uk-padding-small href="/index" = "Registry explorer#{version.nil? ? '' : ' ' + version}#{ENV['COM_GITHUB_CI_BUILD_TIME'].nil? ? '' : ' from ' + ENV['COM_GITHUB_CI_BUILD_TIME']}"
+        a.uk-link-heading.uk-padding-small href="#{ENV['COM_GITHUB_CI_COMMITURL'].nil? ? '' : ENV['COM_GITHUB_CI_COMMITURL']}"="Commit #{ENV['COM_GITHUB_CI_COMMITURL'].split('/').last}"
+        a.uk-link-heading.uk-padding-small href="#{ENV['COM_GITHUB_CI_ACTIONURL'].nil? ? '' : ENV['COM_GITHUB_CI_ACTIONURL']}"="Action #{ENV['COM_GITHUB_CI_ACTIONURL'].split('/').last}"
+      a.uk-link-heading.uk-padding-small href="https://github.com/artyomb/registry-explorer"
         span.uk-icon.uk-margin-small-right uk-icon="icon: github"
         span GitHub
-      a.uk-link-heading href="https://github.com/artyomb/registry-explorer/blob/main/readme.md"
+      a.uk-link-heading.uk-padding-small href="https://github.com/artyomb/registry-explorer/blob/main/readme.md"
         span.uk-icon.uk-margin-small
         span.uk-margin-small-right uk-icon="icon: question"
         span Readme
