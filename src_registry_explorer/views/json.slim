@@ -13,3 +13,5 @@ h1.uk-h1
   span.uk-text-primary uk-tooltip="title: #{params[:sha256]}; cls: uk-active; delay: 500;"= " #{params[:sha256]}"
 pre.content-display.language-json style="opacity: 1"
   code= JSON.pretty_generate(json_blob_content)
+javascript:
+    hljs.highlightElement(document.querySelector('pre code'));
