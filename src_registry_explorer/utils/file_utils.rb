@@ -236,6 +236,15 @@ def transform_datetime(datetime_str)
 end
 
 
+def find_node_by_sha256_in_hierarchy(required_sha256, current_node)
+  if current_node.sha256 == required_sha256
+    return current_node
+  elsif current_node.links.nil? || current_node.links.empty?
+    return nil
+  else
+    return current_node.links.map{ |lnk| find_node_by_sha256_in_hierarchy(required_sha256, lnk[:node]) }.select{ |result| result != nil }.first
+  end
+end
 # def check_flattened(fl)
 #   puts "Checking flattened is nil?: #{fl.nil?}"
 #   fl

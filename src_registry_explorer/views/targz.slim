@@ -10,6 +10,14 @@ ruby:
   image_entries = get_referring_image_entries(params[:sha256])
   structure = extract_tar_gz_structure(params[:sha256])
   previous_tag_id = params[:tag_id].nil? ? nil : params[:tag_id].gsub(" ", "/")
+  tar_gz_node = nil
+  if !image_entries.nil? && image_entries.size > 0
+    current_node = image_entries.first[:index_node]
+    if !current_node.nil?
+      tar_gz_node = find_node_by_sha256_in_hierarchy(params[:sha256], current_node)
+    end
+  end
+
 
 javascript:
     document.addEventListener("DOMContentLoaded", function() {
@@ -92,6 +100,8 @@ h1.uk-h1
   span Archive blob exploring
   span.uk-text-primary uk-tooltip="title: #{params[:sha256]}; cls: uk-active; delay: 500;"= " #{params[:sha256]}"
 h3.uk-h3= "Total size: #{represent_size(structure[:size])}"
+-if !tar_gz_node.nil? && !tar_gz_node.created_by.nil?
+  h3.uk-h3= "Created by: #{tar_gz_node.created_by}"
 .content-container
   #directory-structure-container
     .hdr-container

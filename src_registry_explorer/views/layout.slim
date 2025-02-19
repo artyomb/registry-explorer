@@ -36,7 +36,7 @@ body
   footer.uk-section.uk-section-small.uk-text-center.uk-background-secondary.uk-margin-auto-top
     .uk-flex.uk-flex-around
       .uk-flex
-        a.uk-link-heading.uk-padding-small href="/index" = "Registry explorer#{version.nil? ? '' : ' ' + version}#{ENV['COM_GITHUB_CI_BUILD_TIME'].nil? ? '' : ' from ' + ENV['COM_GITHUB_CI_BUILD_TIME']}"
+        .uk-padding-small = "Registry explorer#{version.nil? ? '' : ' ' + version}#{ENV['COM_GITHUB_CI_BUILD_TIME'].nil? ? '' : ' from ' + ENV['COM_GITHUB_CI_BUILD_TIME']}"
         a.uk-link-heading.uk-padding-small href="#{ENV['COM_GITHUB_CI_COMMITURL'].nil? ? '' : ENV['COM_GITHUB_CI_COMMITURL']}"="Commit #{ENV['COM_GITHUB_CI_COMMITURL'].split('/').last}"
         a.uk-link-heading.uk-padding-small href="#{ENV['COM_GITHUB_CI_ACTIONURL'].nil? ? '' : ENV['COM_GITHUB_CI_ACTIONURL']}"="Action #{ENV['COM_GITHUB_CI_ACTIONURL'].split('/').last}"
       a.uk-link-heading.uk-padding-small href="https://github.com/artyomb/registry-explorer"
