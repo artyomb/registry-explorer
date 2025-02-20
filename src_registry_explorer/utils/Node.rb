@@ -3,13 +3,15 @@ class Node
     @type = type
     @sha256 = sha256
     @node_size = node_size
-    @created_at = define_create_time sha256
+    # @created_at = define_create_time sha256
     @problem_blobs = Set.new
     @links = []
     @created_at = nil
     @created_by = nil
     begin
-      @actual_blob_size = blob_size(@sha256)
+      TimeMeasurer.measure(:blob_size_time) do
+        @actual_blob_size = blob_size(@sha256)
+      end
       unique_blobs_sizes[sha256] = @actual_blob_size unless unique_blobs_sizes.nil?
       if @actual_blob_size.nil? || @actual_blob_size == -1
         @problem_blobs.add(@sha256)
@@ -28,6 +30,7 @@ class Node
         json_blob_content[:predicate].delete(:materials)
       end
     end
+    # find_links_time
     find_links(json_blob_content, [], unique_blobs_sizes)
     @links.each do |link|
       if link[:node].actual_blob_size == -1

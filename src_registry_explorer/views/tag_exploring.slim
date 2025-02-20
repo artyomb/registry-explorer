@@ -3,7 +3,7 @@ ruby:
   require_relative '../utils/file_utils'
   margin_coef=1.5
   possible_statuses = ['error', 'ok', 'warning']
-
+  TimeMeasurer.start_measurement
   base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../temp') + "/docker/registry/v2"
 
   unique_blobs_sizes = {}
@@ -13,6 +13,7 @@ ruby:
   path_to_repositories = base_path + "/repositories"
   full_path_to_image_tag = path_to_repositories + image_in_registry_path + '/_manifests/tags/' + tag_string
   tag= extract_tag_without_image(full_path_to_image_tag, base_path, unique_blobs_sizes)
+  TimeMeasurer.log_measurers
 javascript:
     function updateRowStripes() {
         const visibleRows = [...document.querySelectorAll('tbody tr.tree-node:not(.hidden)')];

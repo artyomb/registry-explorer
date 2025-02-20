@@ -1,11 +1,16 @@
 require 'zlib'
 require 'archive-tar-minitar'
 require 'time'
+require 'json'
+require_relative 'common_utils'
+require_relative 'Node'
 
 $base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../temp') + "/docker/registry/v2"
 
 def blob_content(sha256)
-  File.read $base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data"
+  TimeMeasurer.measure(:reading_files) do
+    File.read $base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data"
+  end
 end
 
 def blob_size(sha256)
@@ -20,7 +25,6 @@ end
 def extract_tar_gz_structure(tar_gz_sha256)
   file_path = $base_path + "/blobs/sha256/#{tar_gz_sha256[0..1]}/#{tar_gz_sha256}/data"
   structure = { size: 0, is_dir: true }
-
   Zlib::GzipReader.open(file_path) do |gz|
     Archive::Tar::Minitar::Reader.open(gz) do |tar|
       tar.each_entry do |entry|
@@ -53,47 +57,52 @@ def extract_tar_gz_structure(tar_gz_sha256)
   structure
 end
 
-def extract_images(images=[], unique_blobs_sizes=nil)
+def extract_images(images=Set.new, unique_blobs_sizes=nil)
   path_to_repositories = $base_path + "/repositories"
-  images_path_list = Dir.glob("#{path_to_repositories}/**/*")
-                        .select do |f|
-    File.directory?(f) &&
-      Dir.exist?(File.join(f, "_layers")) &&
-      Dir.exist?(File.join(f, "_manifests")) &&
-      Dir.exist?(File.join(f, "_uploads"))
+  images_path_list = nil
+  TimeMeasurer.measure(:extract_images_paths) do
+    images_path_list = Dir.glob("#{path_to_repositories}/**/*")
+                          .select do |f|
+      File.directory?(f) &&
+        Dir.exist?(File.join(f, "_layers")) &&
+        Dir.exist?(File.join(f, "_manifests")) &&
+        Dir.exist?(File.join(f, "_uploads"))
+    end
   end
-  images_path_list.each do |image_path|
-    subfolders = image_path.split('/')
-    image_name = "/" + subfolders[subfolders.find_index('repositories') + 1..].join('/')
-    current_img = { name: image_name, tags: [], total_size: -1, required_blobs: Set.new, problem_blobs: Set.new }
-    images << current_img
-    Dir.glob(image_path + "/_manifests/tags/*").select { |f| File.directory?(f) }.each do |tag_path|
-      extract_tag_with_image(tag_path, $base_path, image_name, current_img, unique_blobs_sizes)
-    end
-    current_img[:tags].each do |tag|
-      current_img[:required_blobs].merge(tag[:required_blobs])
-    end
-    full_size_of_img = 0
-    current_img[:required_blobs].each do |blob|
-      begin
-        current_blob_size = blob_size(blob)
-        if current_blob_size == -1
-          current_img[:problem_blobs].add(blob)
-          raise Exception.new("Blob #{blob} not founded")
-        end
-        full_size_of_img += current_blob_size
-      rescue Exception => e
-        puts("Error: #{e.message}")
+  TimeMeasurer.measure(:extract_images_after_paths_time) do
+    images_path_list.each do |image_path|
+      subfolders = image_path.split('/')
+      image_name = "/" + subfolders[subfolders.find_index('repositories') + 1..].join('/')
+      current_img = { name: image_name, tags: Set.new, total_size: -1, required_blobs: Set.new, problem_blobs: Set.new }
+      images.add current_img
+      Dir.glob(image_path + "/_manifests/tags/*").select { |f| File.directory?(f) }.each do |tag_path|
+        extract_tag_with_image(tag_path, $base_path, image_name, current_img, unique_blobs_sizes)
       end
+      current_img[:tags].each do |tag|
+        current_img[:required_blobs].merge(tag[:required_blobs])
+      end
+      full_size_of_img = 0
+      current_img[:required_blobs].each do |blob|
+        begin
+          current_blob_size = blob_size(blob)
+          if current_blob_size == -1
+            current_img[:problem_blobs].add(blob)
+            raise Exception.new("Blob #{blob} not founded")
+          end
+          full_size_of_img += current_blob_size
+        rescue Exception => e
+          puts("Error: #{e.message}")
+        end
+      end
+      current_img[:total_size] = full_size_of_img
     end
-    current_img[:total_size] = full_size_of_img
   end
   images
 end
 
 def extract_tag_with_image(tag_path, base_path, image_name, current_img, unique_blobs_sizes=nil)
   current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: File.read(tag_path + "/current/link").split(':').last, required_blobs: Set.new, size: -1, problem_blobs: Set.new }
-  current_img[:tags] << current_tag
+  current_img[:tags].add current_tag
   indexes_paths = Dir.glob(tag_path + "/index/sha256/*")
   extract_index(current_tag[:current_index_sha256], base_path, current_tag, unique_blobs_sizes)
   indexes_paths.each do |index_path|
@@ -142,6 +151,7 @@ def define_create_time(sha256)
     puts "Error: #{e}"
     return nil
   end
+  nil
 end
 
 def extract_file_content_from_archive_by_path(blob_sha256, file_path)
@@ -210,7 +220,7 @@ def extract_index_created_at(sha256)
 end
 
 def get_referring_image_entries(blob_sha256)
-  images = []
+  images = Set.new
   extract_images(images)
   result_list = []
   images.select { |image| image[:required_blobs].include?(blob_sha256) }.each do |image|

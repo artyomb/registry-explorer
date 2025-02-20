@@ -1,31 +1,31 @@
 ruby:
+  require 'benchmark'
   require_relative '../utils/Node'
   require_relative '../utils/file_utils'
+  require_relative '../utils/common_utils'
   margin_coef=1.5
   possible_statuses = ['error', 'ok', 'warning']
 
-  images = []
-  unique_blobs_sizes = {}
-  extract_images(images, unique_blobs_sizes)
+  images = Set.new
+  TimeMeasurer.start_measurement
+  unique_blobs_sizes = { "Extracting images" => 0 }
 
-  # TODO: implement calculation of total size of subfolders and amount of images in them
-  tree = { children: {}, image: {}, total_images_amount: 0, required_blobs: Set.new, problem_blobs: Set.new }
-  # suppose images has name attribute. The name should split by '/'. Build a tree from it.
-  images.each do |image|
-    path_parts = image[:name].split('/')[1..]  # Skip first empty element from leading '/'
-    current = tree
-    path_parts.each do |part|
-      current[:total_images_amount] += 1
-      current[:required_blobs].merge(image[:required_blobs])
-      if image[:problem_blobs].size > 0
-        current[:problem_blobs].merge(image[:problem_blobs])
+  build_tree = lambda do |images, tree|
+    images.each do |image|
+      path_parts = image[:name].split('/')[1..] # Skip first empty element from leading '/'
+      current = tree
+      path_parts.each do |part|
+        current[:total_images_amount] += 1
+        current[:required_blobs].merge(image[:required_blobs])
+        if image[:problem_blobs].size > 0
+          current[:problem_blobs].merge(image[:problem_blobs])
+        end
+        current[:children][part] ||= { children: {}, image: {}, total_images_amount: 0, required_blobs: Set.new, problem_blobs: Set.new }
+        current = current[:children][part]
       end
-      current[:children][part] ||= { children: {}, image: {}, total_images_amount: 0, required_blobs: Set.new, problem_blobs: Set.new }
-      current = current[:children][part]
+      current[:image] = image
     end
-    current[:image] = image
   end
-
   # deep flatten tree
   flatten_tree = lambda do |node, level = 0, pname = nil|
     result = []
@@ -35,7 +35,23 @@ ruby:
     end
     result
   end
-  flattened = flatten_tree[tree]
+
+  tree = { children: {}, image: {}, total_images_amount: 0, required_blobs: Set.new, problem_blobs: Set.new }
+
+  flattened = nil
+  #flattened = flatten_tree[tree]
+  # extract_images(images, unique_blobs_sizes)
+  # build_tree.call(images, tree)
+  # flattened = flatten_tree.call(tree)
+
+  Benchmark.bm do |x|
+    x.report("Extracting images") { extract_images(images, unique_blobs_sizes) }
+    x.report("Building tree") { build_tree.call(images, tree) }
+    x.report("Flattening tree") { flattened = flatten_tree.call(tree) }
+  end
+  # suppose images has name attribute. The name should split by '/'. Build a tree from it.
+  puts TimeMeasurer.log_measurers
+
   #check_flattened(flattened)
 
 javascript:
