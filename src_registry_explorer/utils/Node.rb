@@ -9,9 +9,7 @@ class Node
     @created_at = nil
     @created_by = nil
     begin
-      TimeMeasurer.measure(:blob_size_time) do
-        @actual_blob_size = blob_size(@sha256)
-      end
+      @actual_blob_size = blob_size(@sha256)
       unique_blobs_sizes[sha256] = @actual_blob_size unless unique_blobs_sizes.nil?
       if @actual_blob_size.nil? || @actual_blob_size == -1
         @problem_blobs.add(@sha256)

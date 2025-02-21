@@ -8,7 +8,7 @@ ruby:
 
   images = Set.new
   TimeMeasurer.start_measurement
-  unique_blobs_sizes = { "Extracting images" => 0 }
+  unique_blobs_sizes = {}
 
   build_tree = lambda do |images, tree|
     images.each do |image|

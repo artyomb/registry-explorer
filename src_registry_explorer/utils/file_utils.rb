@@ -15,11 +15,16 @@ def blob_content(sha256)
 end
 
 def blob_size(sha256)
-  begin
-    File.size $base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data"
-  rescue Exception => e
-    puts "Error: #{e}"
-    -1
+  # TimeMeasurer.measure(:blob_size_time) do
+  #   begin
+  #     File.size $base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data"
+  #   rescue Exception => e
+  #     puts "Error: #{e}"
+  #     -1
+  #   end
+  # end
+  TimeMeasurer.measure(:blob_size_time) do
+    CachesManager.get_blob_size_cache(sha256)[:size]
   end
 end
 
