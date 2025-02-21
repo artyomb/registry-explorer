@@ -21,6 +21,7 @@ class RegistryExplorerFront < Sinatra::Base
   get '/json/:sha256', &->() { slim :json }
   get '/tar-gz/:sha256', &->() { slim :targz }
   get '/file-in-archive/:sha256', &->() { slim :file_in_archive }
+  get '/test', &->() { slim :test }
 
   # get '/file-in-archive/*/$path/*' do
   #   blob_sha256 = params[:splat].first

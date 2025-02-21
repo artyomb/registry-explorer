@@ -7,8 +7,7 @@ ruby:
   possible_statuses = ['error', 'ok', 'warning']
 
   images = Set.new
-  #TimeMeasurer.start_measurement
-  unique_blobs_sizes = {}
+  TimeMeasurer.start_measurement
 
   build_tree = lambda do |images, tree|
     images.each do |image|
@@ -41,14 +40,12 @@ ruby:
   flattened = nil
 
   Benchmark.bm do |x|
-    x.report("Extracting images") { extract_images(images, unique_blobs_sizes) }
+    x.report("Extracting images") { extract_images(images) }
     x.report("Building tree") { build_tree.call(images, tree) }
     x.report("Flattening tree") { flattened = flatten_tree.call(tree) }
   end
-  # suppose images has name attribute. The name should split by '/'. Build a tree from it.
-  #puts TimeMeasurer.log_measurers
+  puts TimeMeasurer.log_measurers
 
-  #check_flattened(flattened)
 
 javascript:
     function updateRowStripes() {

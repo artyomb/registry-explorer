@@ -51,7 +51,7 @@ class TimeMeasurer
   def log_measurers
     puts "Measurers in #{@order} set:"
     @times_dict.each do |key, value|
-      puts "#{key} - #{value}"
+      puts "#{key} - #{(value * 1000).round(2)} ms"
     end
   end
 end

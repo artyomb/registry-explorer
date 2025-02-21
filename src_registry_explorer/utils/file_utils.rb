@@ -6,15 +6,7 @@ require_relative 'time_measurer'
 require_relative 'Node'
 require_relative 'caches_manager'
 
-$base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../temp') + "/docker/registry/v2"
-
-def blob_content(sha256)
-  CachesManager.get_json_cache(sha256)[:content]
-end
-
-def blob_size(sha256)
-  CachesManager.get_blob_size_cache(sha256)[:size]
-end
+$base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../temp2') + "/docker/registry/v2"
 
 def extract_tar_gz_structure(tar_gz_sha256)
   file_path = $base_path + "/blobs/sha256/#{tar_gz_sha256[0..1]}/#{tar_gz_sha256}/data"
@@ -51,10 +43,10 @@ def extract_tar_gz_structure(tar_gz_sha256)
   structure
 end
 
-def extract_images(images=Set.new, unique_blobs_sizes=nil)
+def extract_images(images=Set.new)
   path_to_repositories = $base_path + "/repositories"
   images_path_list = nil
-  # TimeMeasurer.measure(:extract_images_paths) do
+  TimeMeasurer.measure(:extract_images_paths) do
     images_path_list = Dir.glob("#{path_to_repositories}/**/*")
                           &.select do |f|
       File.directory?(f) &&
@@ -62,55 +54,55 @@ def extract_images(images=Set.new, unique_blobs_sizes=nil)
         Dir.exist?(File.join(f, "_manifests")) &&
         Dir.exist?(File.join(f, "_uploads"))
     end
-  # end
-  # TimeMeasurer.measure(:extract_images_after_paths_time) do
-  images_path_list.each do |image_path|
-    subfolders = image_path.split('/')
-    image_name = "/" + subfolders[subfolders.find_index('repositories') + 1..].join('/')
-    current_img = { name: image_name, tags: Set.new, total_size: -1, required_blobs: Set.new, problem_blobs: Set.new }
-    images.add current_img
-    Dir.glob(image_path + "/_manifests/tags/*").select { |f| File.directory?(f) }.each do |tag_path|
-      extract_tag_with_image(tag_path, $base_path, image_name, current_img, unique_blobs_sizes)
-    end
-
-
-    current_img[:tags].each do |tag|
-      current_img[:required_blobs].merge(tag[:required_blobs])
-    end
-    full_size_of_img = 0
-    current_img[:required_blobs].each do |blob|
-      begin
-        current_blob_size = blob_size(blob)
-        if current_blob_size == -1
-          current_img[:problem_blobs].add(blob)
-          raise Exception.new("Blob #{blob} not founded")
-        end
-        full_size_of_img += current_blob_size
-      rescue Exception => e
-        puts("Error: #{e.message}")
-      end
-    end
-    current_img[:total_size] = full_size_of_img
   end
-  # end
+  TimeMeasurer.measure(:extract_images_after_paths_time) do
+    images_path_list.each do |image_path|
+      subfolders = image_path.split('/')
+      image_name = "/" + subfolders[subfolders.find_index('repositories') + 1..].join('/')
+      current_img = { name: image_name, tags: Set.new, total_size: -1, required_blobs: Set.new, problem_blobs: Set.new }
+      images.add current_img
+      Dir.glob(image_path + "/_manifests/tags/*").select { |f| File.directory?(f) }.each do |tag_path|
+        extract_tag_with_image(tag_path, $base_path, image_name, current_img)
+      end
+      current_img[:tags].each do |tag|
+        current_img[:required_blobs].merge(tag[:required_blobs])
+      end
+      full_size_of_img = 0
+      current_img[:required_blobs].each do |blob|
+        begin
+          current_blob_size = CachesManager.blob_size(blob)
+          if current_blob_size == -1
+            current_img[:problem_blobs].add(blob)
+            raise Exception.new("Blob #{blob} not founded")
+          end
+          full_size_of_img += current_blob_size
+        rescue Exception => e
+          puts("Error: #{e.message}")
+        end
+      end
+      current_img[:total_size] = full_size_of_img
+    end
+  end
   images
 end
 
-def extract_tag_with_image(tag_path, base_path, image_name, current_img, unique_blobs_sizes=nil)
+def extract_tag_with_image(tag_path, base_path, image_name, current_img)
   current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: File.read(tag_path + "/current/link").split(':').last, required_blobs: Set.new, size: -1, problem_blobs: Set.new }
   current_img[:tags].add current_tag
   indexes_paths = Dir.glob(tag_path + "/index/sha256/*")
-  extract_index(current_tag[:current_index_sha256], base_path, current_tag, unique_blobs_sizes)
+  extract_index(current_tag[:current_index_sha256], base_path, current_tag)
   indexes_paths.each do |index_path|
     index_sha256 = index_path.split('/').last
     next if index_sha256 == current_tag[:current_index_sha256]
-    extract_index(index_sha256, base_path, current_tag, unique_blobs_sizes)
+    extract_index(index_sha256, base_path, current_tag)
   end
-  calculate_tag_size(current_tag)
+  TimeMeasurer.measure(:tag_size_calculation) do
+    calculate_tag_size(current_tag)
+  end
   current_tag
 end
 
-def extract_tag_without_image(tag_path, base_path, unique_blobs_sizes=nil)
+def extract_tag_without_image(tag_path, base_path)
   current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: nil, created_at: nil, required_blobs: Set.new, size: -1, problem_blobs: Set.new }
   begin
     current_tag[:current_index_sha256] = File.read(tag_path + "/current/link").split(':').last
@@ -119,20 +111,23 @@ def extract_tag_without_image(tag_path, base_path, unique_blobs_sizes=nil)
     return current_tag
   end
   indexes_paths = Dir.glob(tag_path + "/index/sha256/*")
-  extract_index(current_tag[:current_index_sha256], base_path, current_tag, unique_blobs_sizes)
+  extract_index(current_tag[:current_index_sha256], base_path, current_tag)
   indexes_paths.each do |index_path|
     index_sha256 = index_path.split('/').last
     next if index_sha256 == current_tag[:current_index_sha256]
-    extract_index(index_sha256, base_path, current_tag, unique_blobs_sizes)
+    extract_index(index_sha256, base_path, current_tag)
   end
   calculate_tag_size(current_tag)
   current_tag
 end
 
-def extract_index(index_sha256, base_path, current_tag, unique_blobs_sizes = nil)
+def extract_index(index_sha256, base_path, current_tag)
   outer_index_path = base_path + "/blobs/sha256/#{index_sha256[0..1]}/#{index_sha256}/data"
   index_content = JSON.parse(File.read(outer_index_path))
-  current_Node_link = { path: ["Image"], node: Node.new(index_content["mediaType"], index_sha256, index_content[:size], nil, unique_blobs_sizes), parent_sha256: index_sha256 }
+  current_Node_link = nil
+  TimeMeasurer.measure(:nodes_creating) do
+    current_Node_link = { path: ["Image"], node: Node.new(index_content["mediaType"], index_sha256, index_content[:size], nil), parent_sha256: index_sha256 }
+  end
   current_tag[:index_Nodes] << current_Node_link
   current_Node_link[:node].set_created_at(extract_index_created_at(index_sha256))
   current_tag[:required_blobs].merge(current_Node_link[:node].get_included_blobs)
@@ -185,7 +180,7 @@ def calculate_tag_size(current_tag)
   size_of_tag = 0
   current_tag[:required_blobs].each do |blob|
     begin
-      current_blob_size = blob_size(blob)
+      current_blob_size = CachesManager.blob_size(blob)
       if current_blob_size == -1
         current_tag[:problem_blobs].add(blob)
         raise Exception.new("Blob #{blob} not founded")
@@ -201,14 +196,14 @@ end
 
 def extract_index_created_at(sha256)
   begin
-    index_json = blob_content(sha256)
-    man_sha256 = index_json[:manifests] # TODO: HERE IS PROBLEM
+    index_json = CachesManager.json_blob_content(sha256)
+    man_sha256 = index_json[:manifests]
                    &.select { |mf| !mf[:platform][:os].nil? && mf[:platform][:os] != 'unknown'}
                    .map { |mf| mf[:digest].split(':').last }
                    .first
-    manifest_json = blob_content(man_sha256)
+    manifest_json = CachesManager.json_blob_content(man_sha256)
     date_sha256 = manifest_json[:config][:digest].split(':').last
-    date = blob_content(date_sha256)[:created]
+    date = CachesManager.json_blob_content(date_sha256)[:created]
   rescue Exception => e
     puts "Error: #{e}"
     date =  nil
