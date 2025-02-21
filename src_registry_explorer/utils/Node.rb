@@ -30,15 +30,15 @@ class Node
     end
     # find_links_time
     find_links(json_blob_content, [], unique_blobs_sizes)
-    TimeMeasurer.measure(:defining_problem_blobs) do
-      @links.each do |link|
-        if link[:node].actual_blob_size == -1
-          @problem_blobs.add(link[:node].sha256)
-        else
-          @problem_blobs.merge(link[:node].get_problem_blobs)
-        end
+    # TimeMeasurer.measure(:defining_problem_blobs) do
+    @links.each do |link|
+      if link[:node].actual_blob_size == -1
+        @problem_blobs.add(link[:node].sha256)
+      else
+        @problem_blobs.merge(link[:node].get_problem_blobs)
       end
     end
+    # end
   end
 
   def find_links(n, path = [], unique_blobs_sizes = nil)

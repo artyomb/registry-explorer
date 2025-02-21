@@ -13,14 +13,6 @@ def blob_content(sha256)
 end
 
 def blob_size(sha256)
-  # TimeMeasurer.measure(:blob_size_time) do
-  #   begin
-  #     File.size $base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data"
-  #   rescue Exception => e
-  #     puts "Error: #{e}"
-  #     -1
-  #   end
-  # end
   CachesManager.get_blob_size_cache(sha256)[:size]
 end
 
@@ -62,7 +54,7 @@ end
 def extract_images(images=Set.new, unique_blobs_sizes=nil)
   path_to_repositories = $base_path + "/repositories"
   images_path_list = nil
-  TimeMeasurer.measure(:extract_images_paths) do
+  # TimeMeasurer.measure(:extract_images_paths) do
     images_path_list = Dir.glob("#{path_to_repositories}/**/*")
                           &.select do |f|
       File.directory?(f) &&
@@ -70,37 +62,37 @@ def extract_images(images=Set.new, unique_blobs_sizes=nil)
         Dir.exist?(File.join(f, "_manifests")) &&
         Dir.exist?(File.join(f, "_uploads"))
     end
-  end
-  TimeMeasurer.measure(:extract_images_after_paths_time) do
-    images_path_list.each do |image_path|
-      subfolders = image_path.split('/')
-      image_name = "/" + subfolders[subfolders.find_index('repositories') + 1..].join('/')
-      current_img = { name: image_name, tags: Set.new, total_size: -1, required_blobs: Set.new, problem_blobs: Set.new }
-      images.add current_img
-      Dir.glob(image_path + "/_manifests/tags/*").select { |f| File.directory?(f) }.each do |tag_path|
-        extract_tag_with_image(tag_path, $base_path, image_name, current_img, unique_blobs_sizes)
-      end
-
-
-      current_img[:tags].each do |tag|
-        current_img[:required_blobs].merge(tag[:required_blobs])
-      end
-      full_size_of_img = 0
-      current_img[:required_blobs].each do |blob|
-        begin
-          current_blob_size = blob_size(blob)
-          if current_blob_size == -1
-            current_img[:problem_blobs].add(blob)
-            raise Exception.new("Blob #{blob} not founded")
-          end
-          full_size_of_img += current_blob_size
-        rescue Exception => e
-          puts("Error: #{e.message}")
-        end
-      end
-      current_img[:total_size] = full_size_of_img
+  # end
+  # TimeMeasurer.measure(:extract_images_after_paths_time) do
+  images_path_list.each do |image_path|
+    subfolders = image_path.split('/')
+    image_name = "/" + subfolders[subfolders.find_index('repositories') + 1..].join('/')
+    current_img = { name: image_name, tags: Set.new, total_size: -1, required_blobs: Set.new, problem_blobs: Set.new }
+    images.add current_img
+    Dir.glob(image_path + "/_manifests/tags/*").select { |f| File.directory?(f) }.each do |tag_path|
+      extract_tag_with_image(tag_path, $base_path, image_name, current_img, unique_blobs_sizes)
     end
+
+
+    current_img[:tags].each do |tag|
+      current_img[:required_blobs].merge(tag[:required_blobs])
+    end
+    full_size_of_img = 0
+    current_img[:required_blobs].each do |blob|
+      begin
+        current_blob_size = blob_size(blob)
+        if current_blob_size == -1
+          current_img[:problem_blobs].add(blob)
+          raise Exception.new("Blob #{blob} not founded")
+        end
+        full_size_of_img += current_blob_size
+      rescue Exception => e
+        puts("Error: #{e.message}")
+      end
+    end
+    current_img[:total_size] = full_size_of_img
   end
+  # end
   images
 end
 

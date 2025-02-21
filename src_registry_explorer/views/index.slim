@@ -7,7 +7,7 @@ ruby:
   possible_statuses = ['error', 'ok', 'warning']
 
   images = Set.new
-  TimeMeasurer.start_measurement
+  #TimeMeasurer.start_measurement
   unique_blobs_sizes = {}
 
   build_tree = lambda do |images, tree|
@@ -39,10 +39,6 @@ ruby:
   tree = { children: {}, image: {}, total_images_amount: 0, required_blobs: Set.new, problem_blobs: Set.new }
 
   flattened = nil
-  #flattened = flatten_tree[tree]
-  # extract_images(images, unique_blobs_sizes)
-  # build_tree.call(images, tree)
-  # flattened = flatten_tree.call(tree)
 
   Benchmark.bm do |x|
     x.report("Extracting images") { extract_images(images, unique_blobs_sizes) }
@@ -50,7 +46,7 @@ ruby:
     x.report("Flattening tree") { flattened = flatten_tree.call(tree) }
   end
   # suppose images has name attribute. The name should split by '/'. Build a tree from it.
-  puts TimeMeasurer.log_measurers
+  #puts TimeMeasurer.log_measurers
 
   #check_flattened(flattened)
 
