@@ -108,7 +108,7 @@ h3.uk-h3= "Total size: #{represent_size(structure[:size])}"
       span.table-header.uk-float-right= "Size"
     .file-structure
       - render_structure = ->(structure, parent_path = '', parent_id = 'root', counter = 0) do
-        - structure.select{|n, c| c.is_a?(Hash) && c[:is_dir] }.each do |name, content|
+        - structure&.select{|n, c| c.is_a?(Hash) && c[:is_dir] }.each do |name, content|
           li
             - current_path = "#{parent_path}/#{name}"
             - current_id = "node_#{parent_id}_#{counter}"
@@ -120,7 +120,7 @@ h3.uk-h3= "Total size: #{represent_size(structure[:size])}"
             ul.uk-list.uk-margin-left id=current_id hidden=true
               - render_structure.call(content, current_path, current_id, 0)
           - counter += 1
-        - structure.select{|n, c| !(c.is_a?(Hash) && c[:is_dir]) && n != :size && c.is_a?(Hash) }.each do |name, content|
+        - structure&.select{|n, c| !(c.is_a?(Hash) && c[:is_dir]) && n != :size && c.is_a?(Hash) }.each do |name, content|
           li
             - current_path = "#{parent_path}/#{name}"
             - current_id = "node_#{parent_id}_#{counter}"

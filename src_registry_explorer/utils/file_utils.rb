@@ -9,9 +9,7 @@ require_relative 'caches_manager'
 $base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../temp') + "/docker/registry/v2"
 
 def blob_content(sha256)
-  TimeMeasurer.measure(:reading_files) do
-    File.read $base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data"
-  end
+  CachesManager.get_json_cache(sha256)[:content]
 end
 
 def blob_size(sha256)
@@ -23,9 +21,7 @@ def blob_size(sha256)
   #     -1
   #   end
   # end
-  TimeMeasurer.measure(:blob_size_time) do
-    CachesManager.get_blob_size_cache(sha256)[:size]
-  end
+  CachesManager.get_blob_size_cache(sha256)[:size]
 end
 
 def extract_tar_gz_structure(tar_gz_sha256)
@@ -68,7 +64,7 @@ def extract_images(images=Set.new, unique_blobs_sizes=nil)
   images_path_list = nil
   TimeMeasurer.measure(:extract_images_paths) do
     images_path_list = Dir.glob("#{path_to_repositories}/**/*")
-                          .select do |f|
+                          &.select do |f|
       File.directory?(f) &&
         Dir.exist?(File.join(f, "_layers")) &&
         Dir.exist?(File.join(f, "_manifests")) &&
@@ -84,6 +80,8 @@ def extract_images(images=Set.new, unique_blobs_sizes=nil)
       Dir.glob(image_path + "/_manifests/tags/*").select { |f| File.directory?(f) }.each do |tag_path|
         extract_tag_with_image(tag_path, $base_path, image_name, current_img, unique_blobs_sizes)
       end
+
+
       current_img[:tags].each do |tag|
         current_img[:required_blobs].merge(tag[:required_blobs])
       end
@@ -211,14 +209,14 @@ end
 
 def extract_index_created_at(sha256)
   begin
-    index_json = CachesManager.get_json_cache(sha256)[:content]
-    man_sha256 = index_json[:manifests]
-                   .select { |mf| !mf[:platform][:os].nil? && mf[:platform][:os] != 'unknown'}
+    index_json = blob_content(sha256)
+    man_sha256 = index_json[:manifests] # TODO: HERE IS PROBLEM
+                   &.select { |mf| !mf[:platform][:os].nil? && mf[:platform][:os] != 'unknown'}
                    .map { |mf| mf[:digest].split(':').last }
                    .first
-    manifest_json = CachesManager.get_json_cache(man_sha256)[:content]
+    manifest_json = blob_content(man_sha256)
     date_sha256 = manifest_json[:config][:digest].split(':').last
-    date = CachesManager.get_json_cache(date_sha256)[:content][:created]
+    date = blob_content(date_sha256)[:created]
   rescue Exception => e
     puts "Error: #{e}"
     date =  nil
@@ -230,9 +228,9 @@ def get_referring_image_entries(blob_sha256)
   images = Set.new
   extract_images(images)
   result_list = []
-  images.select { |image| image[:required_blobs].include?(blob_sha256) }.each do |image|
-    image[:tags].select{ |tag| tag[:required_blobs].include?(blob_sha256)}.each do |tag|
-      tag[:index_Nodes].map{|node_link| node_link[:node]}.select{|cn| cn.get_included_blobs.include?(blob_sha256)}.each do |index_node|
+  images&.select { |image| image[:required_blobs].include?(blob_sha256) }.each do |image|
+    image[:tags]&.select{ |tag| tag[:required_blobs].include?(blob_sha256)}.each do |tag|
+      tag[:index_Nodes].map{|node_link| node_link[:node]}&.select{|cn| cn.get_included_blobs.include?(blob_sha256)}.each do |index_node|
         result_list << { image_name: image[:name], tag_name: tag[:name], index_node: index_node }
       end
     end
@@ -259,7 +257,7 @@ def find_node_by_sha256_in_hierarchy(required_sha256, current_node)
   elsif current_node.links.nil? || current_node.links.empty?
     return nil
   else
-    return current_node.links.map{ |lnk| find_node_by_sha256_in_hierarchy(required_sha256, lnk[:node]) }.select{ |result| result != nil }.first
+    return current_node.links.map{ |lnk| find_node_by_sha256_in_hierarchy(required_sha256, lnk[:node]) }&.select{ |result| result != nil }.first
   end
 end
 # def check_flattened(fl)
