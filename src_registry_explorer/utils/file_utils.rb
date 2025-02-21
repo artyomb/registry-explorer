@@ -2,8 +2,9 @@ require 'zlib'
 require 'archive-tar-minitar'
 require 'time'
 require 'json'
-require_relative 'common_utils'
+require_relative 'time_measurer'
 require_relative 'Node'
+require_relative 'caches_manager'
 
 $base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../temp') + "/docker/registry/v2"
 
@@ -205,13 +206,14 @@ end
 
 def extract_index_created_at(sha256)
   begin
-    index_json = JSON.parse(blob_content(sha256), symbolize_names: true)
-    manifest_json = JSON.parse(blob_content(index_json[:manifests]
-                                              .select { |mf| !mf[:platform][:os].nil? && mf[:platform][:os] != 'unknown'}
-                                              .map { |mf| mf[:digest].split(':').last }
-                                              .first),
-                               symbolize_names: true)
-    date = JSON.parse(blob_content(manifest_json[:config][:digest].split(':').last), symbolize_names: true)[:created]
+    index_json = CachesManager.get_json_cache(sha256)[:content]
+    man_sha256 = index_json[:manifests]
+                   .select { |mf| !mf[:platform][:os].nil? && mf[:platform][:os] != 'unknown'}
+                   .map { |mf| mf[:digest].split(':').last }
+                   .first
+    manifest_json = CachesManager.get_json_cache(man_sha256)[:content]
+    date_sha256 = manifest_json[:config][:digest].split(':').last
+    date = CachesManager.get_json_cache(date_sha256)[:content][:created]
   rescue Exception => e
     puts "Error: #{e}"
     date =  nil

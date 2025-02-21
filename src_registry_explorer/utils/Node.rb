@@ -22,7 +22,7 @@ class Node
       @actual_blob_size = -1
     end
     return unless !(@type.to_s =~ /zip/)
-    json_blob_content = JSON.parse(blob_content(@sha256), symbolize_names: true)
+    json_blob_content = CachesManager.get_json_cache(@sha256)[:content]
 
     # Check if the keys exist and delete the :materials key
     if @type.to_s =~ /toto/ && @type.to_s =~ /json/
@@ -132,7 +132,7 @@ class Node
   def add_links_by_config(n, path, unique_blobs_sizes)
     config_sha256 = n[:config][:digest].split(':').last
     @links << { path: path.nil? ? ['config'] : path + ['config'], node: Node.new(n[:config][:mediaType], config_sha256, n[:config][:size], nil, unique_blobs_sizes) }
-    config_json = JSON.parse(blob_content(config_sha256), symbolize_names: true)
+    config_json = CachesManager.get_json_cache(config_sha256)[:content]
     if !config_json[:history].nil? && config_json[:history].size > 0
       history_without_empty_layers = config_json[:history].reject { |h| !h[:empty_layer].nil? && h[:empty_layer] }
       n[:layers].each_with_index do |layer, id|

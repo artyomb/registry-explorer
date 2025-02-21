@@ -1,6 +1,6 @@
 ruby:
   require_relative '../utils/Node'
-  json_blob_content = JSON.parse(blob_content(params[:sha256]))
+  json_blob_content = CachesManager.get_json_cache(params[:sha256])[:content]
   previous_tag_id = params[:tag_id].nil? ? nil : params[:tag_id].gsub(" ", "/")
 
 - if (!previous_tag_id.nil?)
