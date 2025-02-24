@@ -135,7 +135,7 @@ def extract_index(index_sha256, base_path, current_tag)
   index_content = JSON.parse(File.read(outer_index_path))
   current_Node_link = nil
   # TimeMeasurer.measure(:nodes_creating) do
-  current_Node_link = { path: ["Image"], node: Node.new(index_content["mediaType"], index_sha256, index_content[:size], nil), parent_sha256: index_sha256 }
+  current_Node_link = { path: ["Image"], node: CachesManager.get_node(index_content["mediaType"], index_sha256, index_content[:size], nil), parent_sha256: index_sha256 }
   # end
   current_tag[:index_Nodes] << current_Node_link
   current_Node_link[:node].set_created_at(extract_index_created_at(index_sha256))

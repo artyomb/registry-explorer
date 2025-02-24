@@ -1,8 +1,16 @@
+
 class Node
   @@nodes_created = 0
-
+  @@json_nodes_created = 0
+  @@not_json_nodes_created = 0
   def self.nodes_created
     @@nodes_created
+  end
+  def self.json_nodes_created
+    @@json_nodes_created
+  end
+  def self.not_json_nodes_created
+    @@not_json_nodes_created
   end
 
   def initialize(type, sha256, node_size = nil, required_blobs = nil)
@@ -25,9 +33,11 @@ class Node
       @problem_blobs.add(@sha256)
       @actual_blob_size = -1
     end
-    return unless !(@type.to_s =~ /zip/)
+    if @type.to_s =~ /zip/
+      @@not_json_nodes_created+=1
+      return
+    end
     json_blob_content = CachesManager.json_blob_content(@sha256)
-
     # Check if the keys exist and delete the :materials key
     if @type.to_s =~ /toto/ && @type.to_s =~ /json/
       if json_blob_content[:predicate] && json_blob_content[:predicate].is_a?(Hash)
@@ -44,6 +54,7 @@ class Node
         end
       end
     end
+    @@json_nodes_created += 1
   end
 
   def find_links(n, path = [])
@@ -76,7 +87,7 @@ class Node
   def add_link(path, value)
     digest_val = value[:digest]
     sha256 = digest_val.is_a?(Hash) ? digest_val[:sha256] : digest_val.split(':').last
-    @links << { path:, node: Node.new(value[:mediaType], sha256, value[:size], nil) }
+    @links << { path:, node: CachesManager.get_node(value[:mediaType], sha256, value[:size], nil) }
   end
 
   def node_type
@@ -138,18 +149,18 @@ class Node
 
   def add_links_by_config(n, path)
     config_sha256 = n[:config][:digest].split(':').last
-    @links << { path: path.nil? ? ['config'] : path + ['config'], node: Node.new(n[:config][:mediaType], config_sha256, n[:config][:size], nil) }
+    @links << { path: path.nil? ? ['config'] : path + ['config'], node: CachesManager.get_node(n[:config][:mediaType], config_sha256, n[:config][:size], nil) }
     config_json = CachesManager.json_blob_content(config_sha256)
     if !config_json[:history].nil? && config_json[:history].size > 0
       history_without_empty_layers = config_json[:history].reject { |h| !h[:empty_layer].nil? && h[:empty_layer] }
       n[:layers].each_with_index do |layer, id|
-        @links << { path: path.nil? ? ["layers/#{id}"] : path + ["layers/[#{id}]"], node: Node.new(layer[:mediaType], layer[:digest].split(':').last, layer[:size], nil) }
+        @links << { path: path.nil? ? ["layers/#{id}"] : path + ["layers/[#{id}]"], node: CachesManager.get_node(layer[:mediaType], layer[:digest].split(':').last, layer[:size], nil) }
         @links.last[:node].set_created_by history_without_empty_layers[id][:created_by]
         @links.last[:node].set_created_at history_without_empty_layers[id][:created]
       end
     else
       n[:layers].each_with_index do |layer, id|
-        @links << { path: path.nil? ? ["layers/#{id}"] : path + ["layers/[#{id}]"], node: Node.new(layer[:mediaType], layer[:digest].split(':').last, layer[:size], nil) }
+        @links << { path: path.nil? ? ["layers/#{id}"] : path + ["layers/[#{id}]"], node: CachesManager.get_node(layer[:mediaType], layer[:digest].split(':').last, layer[:size], nil) }
       end
     end
   end
