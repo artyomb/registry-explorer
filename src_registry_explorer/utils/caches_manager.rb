@@ -4,7 +4,8 @@ class CachesManager
   def self.json_blob_content(sha256)
     TimeMeasurer.measure(:reading_jsons) do
       if !@@cache_dict[:json_contents].key?sha256
-        content = JSON.parse(File.read($base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data"), symbolize_names: true)
+        cont = File.read($base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data")
+        content = JSON.parse(cont, symbolize_names: true)
         @@cache_dict[:json_contents][sha256] ||= content
       end
       @@cache_dict[:json_contents][sha256]

@@ -1,4 +1,10 @@
 class Node
+  @@nodes_created = 0
+
+  def self.nodes_created
+    @@nodes_created
+  end
+
   def initialize(type, sha256, node_size = nil, required_blobs = nil)
     @type = type
     @sha256 = sha256
@@ -8,6 +14,7 @@ class Node
     @links = []
     @created_at = nil
     @created_by = nil
+    @@nodes_created += 1
     begin
       @actual_blob_size = CachesManager.blob_size(@sha256)
       if @actual_blob_size.nil? || @actual_blob_size == -1
@@ -40,6 +47,7 @@ class Node
   end
 
   def find_links(n, path = [])
+    # TimeMeasurer.measure(:finding_links_for_node) do
     return unless (n.is_a? Hash or n.is_a? Array)
     if n.is_a? Hash
       if !(n.key?(:config) && n[:config].key?(:digest) && n.key?(:layers))
@@ -62,6 +70,7 @@ class Node
         end
       end
     end
+    # end
   end
 
   def add_link(path, value)

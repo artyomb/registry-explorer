@@ -1,7 +1,10 @@
 ruby:
   require_relative '../utils/Node'
-  json_blob_content = CachesManager.get_json_cache(params[:sha256])[:content]
+  require_relative '../utils/time_measurer'
+  TimeMeasurer.start_measurement
+  json_blob_content = CachesManager.json_blob_content(params[:sha256])
   previous_tag_id = params[:tag_id].nil? ? nil : params[:tag_id].gsub(" ", "/")
+  TimeMeasurer.log_measurers
 
 - if (!previous_tag_id.nil?)
   .uk-border-bottom.uk-padding-small.uk-padding-remove-left.uk-width-fit-content

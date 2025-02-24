@@ -4,17 +4,16 @@ ruby:
   require_relative '../utils/time_measurer'
   margin_coef=1.5
   possible_statuses = ['error', 'ok', 'warning']
-  #TimeMeasurer.start_measurement
+  TimeMeasurer.start_measurement
   base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../temp') + "/docker/registry/v2"
 
-  unique_blobs_sizes = {}
   img_pth_param = full_tag_path[0..(full_tag_path.rindex('/') - 1)]
   image_in_registry_path = "/" + img_pth_param
   tag_string = full_tag_path[(full_tag_path.rindex('/') + 1)..]
   path_to_repositories = base_path + "/repositories"
   full_path_to_image_tag = path_to_repositories + image_in_registry_path + '/_manifests/tags/' + tag_string
-  tag= extract_tag_without_image(full_path_to_image_tag, base_path, unique_blobs_sizes)
-  #TimeMeasurer.log_measurers
+  tag= extract_tag_without_image(full_path_to_image_tag, base_path)
+  TimeMeasurer.log_measurers
 javascript:
     function updateRowStripes() {
         const visibleRows = [...document.querySelectorAll('tbody tr.tree-node:not(.hidden)')];
@@ -167,7 +166,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
                 span uk-tooltip="title: #{node_link[:node].sha256}; delay: 500;" = node_link[:node].sha256[0..4] + "..."
             span.copy-btn.cursor-pointer data-buffervalue="#{node_link[:node].sha256}" uk-icon="icon: copy"
           - current_node_size = node_link[:node].actual_blob_size.nil? ? "-" : represent_size(node_link[:node].actual_blob_size)
-          - current_image_node_size = represent_size(node_link[:node].get_size_deep(unique_blobs_sizes))
+          - current_image_node_size = represent_size(node_link[:node].get_size_deep)
           - is_image_node = depth == 0
           td uk-tooltip="title: #{node_link[:node].node_type}; delay: 500;"= node_link[:node].node_type.nil? ? "-" : node_link[:node].node_type.split('.')[-2..-1].join('.')
           td.align-text-right= node_link[:node].node_size.nil? ? "-" : represent_size(node_link[:node].node_size)

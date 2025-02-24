@@ -2,11 +2,12 @@ require 'zlib'
 require 'archive-tar-minitar'
 require 'time'
 require 'json'
+require 'find'
 require_relative 'time_measurer'
 require_relative 'Node'
 require_relative 'caches_manager'
 
-$base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../temp2') + "/docker/registry/v2"
+$base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../temp') + "/docker/registry/v2"
 
 def extract_tar_gz_structure(tar_gz_sha256)
   file_path = $base_path + "/blobs/sha256/#{tar_gz_sha256[0..1]}/#{tar_gz_sha256}/data"
@@ -47,13 +48,20 @@ def extract_images(images=Set.new)
   path_to_repositories = $base_path + "/repositories"
   images_path_list = nil
   TimeMeasurer.measure(:extract_images_paths) do
-    images_path_list = Dir.glob("#{path_to_repositories}/**/*")
-                          &.select do |f|
-      File.directory?(f) &&
-        Dir.exist?(File.join(f, "_layers")) &&
-        Dir.exist?(File.join(f, "_manifests")) &&
-        Dir.exist?(File.join(f, "_uploads"))
+    images_path_list = []
+
+    # Traverse the directory tree
+    Find.find(path_to_repositories) do |path|
+      next unless File.directory?(path)
+
+      # Check if required subdirectories exist
+      subdirs = %w[_layers _manifests _uploads]
+      if subdirs.all? { |subdir| Dir.exist?(File.join(path, subdir)) }
+        images_path_list << path
+        Find.prune  # Skip deeper traversal in this valid directory
+      end
     end
+    images_path_list
   end
   TimeMeasurer.measure(:extract_images_after_paths_time) do
     images_path_list.each do |image_path|
@@ -61,7 +69,8 @@ def extract_images(images=Set.new)
       image_name = "/" + subfolders[subfolders.find_index('repositories') + 1..].join('/')
       current_img = { name: image_name, tags: Set.new, total_size: -1, required_blobs: Set.new, problem_blobs: Set.new }
       images.add current_img
-      Dir.glob(image_path + "/_manifests/tags/*").select { |f| File.directory?(f) }.each do |tag_path|
+      tag_paths = Dir.glob(image_path + "/_manifests/tags/*").select { |f| File.directory?(f) }
+      tag_paths.each do |tag_path|
         extract_tag_with_image(tag_path, $base_path, image_name, current_img)
       end
       current_img[:tags].each do |tag|
@@ -125,9 +134,9 @@ def extract_index(index_sha256, base_path, current_tag)
   outer_index_path = base_path + "/blobs/sha256/#{index_sha256[0..1]}/#{index_sha256}/data"
   index_content = JSON.parse(File.read(outer_index_path))
   current_Node_link = nil
-  TimeMeasurer.measure(:nodes_creating) do
-    current_Node_link = { path: ["Image"], node: Node.new(index_content["mediaType"], index_sha256, index_content[:size], nil), parent_sha256: index_sha256 }
-  end
+  # TimeMeasurer.measure(:nodes_creating) do
+  current_Node_link = { path: ["Image"], node: Node.new(index_content["mediaType"], index_sha256, index_content[:size], nil), parent_sha256: index_sha256 }
+  # end
   current_tag[:index_Nodes] << current_Node_link
   current_Node_link[:node].set_created_at(extract_index_created_at(index_sha256))
   current_tag[:required_blobs].merge(current_Node_link[:node].get_included_blobs)
@@ -197,15 +206,19 @@ end
 def extract_index_created_at(sha256)
   begin
     index_json = CachesManager.json_blob_content(sha256)
-    man_sha256 = index_json[:manifests]
-                   &.select { |mf| !mf[:platform][:os].nil? && mf[:platform][:os] != 'unknown'}
-                   .map { |mf| mf[:digest].split(':').last }
-                   .first
-    manifest_json = CachesManager.json_blob_content(man_sha256)
+    if index_json[:manifests].nil?
+      manifest_json = index_json
+    else
+      man_sha256 = index_json[:manifests]
+                     &.select { |mf| !mf[:platform][:os].nil? && mf[:platform][:os] != 'unknown'}
+                     .map { |mf| mf[:digest].split(':').last }
+                     .first
+      manifest_json = CachesManager.json_blob_content(man_sha256)
+    end
     date_sha256 = manifest_json[:config][:digest].split(':').last
     date = CachesManager.json_blob_content(date_sha256)[:created]
   rescue Exception => e
-    puts "Error: #{e}"
+    puts "Error in extracting create date: #{e}"
     date =  nil
   end
   date
