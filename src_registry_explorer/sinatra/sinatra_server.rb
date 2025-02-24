@@ -10,6 +10,7 @@ class RegistryExplorerFront < Sinatra::Base
       create_map_file: true, syntax: :sass, check: true
   use Rack::Static, urls: %w[/css /js], root: "#{__dir__}/public/", cascade: true
 
+  CachesManager.start_auto_refresh
   set :root, '.' #File.dirname(__FILE__)
   get '/',         &->() { slim :index }
   get '/index',         &->() { slim :index }
