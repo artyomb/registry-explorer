@@ -7,6 +7,7 @@ sass:
 ruby:
   require_relative '../utils/Node'
   require_relative '../utils/file_utils'
+  TimeMeasurer.start_measurement
   image_entries = get_referring_image_entries(params[:sha256])
   structure = extract_tar_gz_structure(params[:sha256])
   previous_tag_id = params[:tag_id].nil? ? nil : params[:tag_id].gsub(" ", "/")
@@ -17,7 +18,7 @@ ruby:
       tar_gz_node = find_node_by_sha256_in_hierarchy(params[:sha256], current_node)
     end
   end
-
+  TimeMeasurer.log_measurers
 
 javascript:
     document.addEventListener("DOMContentLoaded", function() {

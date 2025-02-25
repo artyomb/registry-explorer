@@ -9,39 +9,78 @@ require_relative 'caches_manager'
 
 $base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../temp') + "/docker/registry/v2"
 
-def extract_tar_gz_structure(tar_gz_sha256)
-  file_path = $base_path + "/blobs/sha256/#{tar_gz_sha256[0..1]}/#{tar_gz_sha256}/data"
-  structure = { size: 0, is_dir: true }
-  Zlib::GzipReader.open(file_path) do |gz|
-    Archive::Tar::Minitar::Reader.open(gz) do |tar|
-      tar.each_entry do |entry|
-        # puts "#{entry.directory? ? 'DIRECTORY ' : 'FILE'} #{entry.size} #{entry.name}"
-        parts = entry.prefix.split('/') + entry.name.split('/')
-        current_level = structure
-        parts.each_with_index do |part, index|
-          if index == parts.length - 1 # Last part is a file or directory
-            if !(entry.directory?)
-              entry_size = entry.size
-              current_level[part] = { size: entry_size, is_dir: false }
-              tmp = structure
+# def extract_tar_gz_structure(tar_gz_sha256)
+#   TimeMeasurer.measure(:extracting_gz_structure) do
+#     file_path = $base_path + "/blobs/sha256/#{tar_gz_sha256[0..1]}/#{tar_gz_sha256}/data"
+#     structure = { size: 0, is_dir: true }
+#     Zlib::GzipReader.open(file_path) do |gz|
+#       Archive::Tar::Minitar::Reader.open(gz) do |tar|
+#         tar.each_entry do |entry|
+#           # puts "#{entry.directory? ? 'DIRECTORY ' : 'FILE'} #{entry.size} #{entry.name}"
+#           parts = entry.prefix.split('/') + entry.name.split('/')
+#           current_level = structure
+#           parts.each_with_index do |part, index|
+#             if index == parts.length - 1 # Last part is a file or directory
+#               if !(entry.directory?)
+#                 entry_size = entry.size
+#                 current_level[part] = { size: entry_size, is_dir: false }
+#                 tmp = structure
+#
+#                 parts.each_with_index do |tmp_part, id|
+#                   tmp[:size] += entry_size unless id == 0
+#                   tmp = tmp[tmp_part]
+#                 end
+#               else
+#                 current_level[part] = { size: 0 , is_dir: true} # Mark of Directory
+#               end
+#             else # Intermediate part is a directory
+#               current_level[part] ||= { size: 0, is_dir: true }
+#               current_level = current_level[part]
+#             end
+#           end
+#           structure[:size] += entry.size unless entry.directory?
+#         end
+#       end
+#     end
+#     structure
+#   end
+# end
 
-              parts.each_with_index do |tmp_part, id|
-                tmp[:size] += entry_size unless id == 0
-                tmp = tmp[tmp_part]
-              end
-            else
-              current_level[part] = { size: 0 , is_dir: true} # Mark of Directory
-            end
-          else # Intermediate part is a directory
-            current_level[part] ||= { size: 0, is_dir: true }
-            current_level = current_level[part]
+def extract_tar_gz_structure(tar_gz_sha256)
+  TimeMeasurer.measure(:extracting_gz_structure) do
+    file_path = "#{$base_path}/blobs/sha256/#{tar_gz_sha256[0..1]}/#{tar_gz_sha256}/data"
+    structure = { size: 0, is_dir: true }
+
+    # Run tar command to list contents with size
+    command = "tar -tzvf #{Shellwords.escape(file_path)}"
+    IO.popen(command) do |io|
+      io.each_line do |line|
+        # Example line: "rw-r--r-- user/group 1234 YYYY-MM-DD HH:MM path/to/file"
+        parts = line.strip.split(/\s+/, 6)
+        next unless parts.size == 6
+
+        size = parts[2].to_i
+        path = parts[5]
+        is_dir = path.end_with?('/')
+
+        current_level = structure
+        path_parts = path.chomp('/').split('/')
+
+        path_parts.each_with_index do |part, index|
+          is_last = index == path_parts.length - 1
+          current_level[part] ||= { size: 0, is_dir: !is_last || is_dir }
+
+          if is_last && !is_dir
+            current_level[part][:size] = size
           end
+
+          current_level[:size] += size unless is_dir
+          current_level = current_level[part] unless is_last
         end
-        structure[:size] += entry.size unless entry.directory?
       end
     end
+    structure
   end
-  structure
 end
 
 def extract_images(images=Set.new)
