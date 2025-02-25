@@ -128,12 +128,15 @@ class Node
     @created_by = new_created_by
   end
 
-  def get_included_blobs(included_blobs = Set.new)
-    included_blobs.add(@sha256)
-    @links.each do |link|
-      link[:node].get_included_blobs(included_blobs)
-    end
-    included_blobs
+  def get_included_blobs
+    @included_blobs ||= begin
+                          included_blobs = Set.new
+                          included_blobs.add(@sha256)
+                          @links.each do |link|
+                            included_blobs.merge link[:node].get_included_blobs
+                          end
+                          included_blobs
+                        end
   end
 
   def get_problem_blobs

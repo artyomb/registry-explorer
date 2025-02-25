@@ -59,7 +59,7 @@ def extract_images(images=Set.new)
           current_img[:required_blobs].merge(tag[:required_blobs])
         end
       end
-      current_img[:total_size] = calculate_blobs_size(current_img[:required_blobs])
+      current_img[:total_size] = CachesManager.get_image_size(image_path, current_img[:required_blobs])
     end
   end
   images
@@ -77,9 +77,7 @@ def extract_tag(tag_path)
   TimeMeasurer.measure(:search_tags_blobs) do
     current_tag[:index_Nodes].map { |index_node| current_tag[:required_blobs].merge index_node[:node].get_included_blobs }
   end
-  TimeMeasurer.measure(:search_tags_sizes) do
-    current_tag[:size] = calculate_blobs_size(current_tag[:required_blobs])
-  end
+  current_tag[:size] = CachesManager.get_tag_size(tag_path, current_tag[:required_blobs])
   current_tag
 end
 
@@ -107,19 +105,22 @@ def extract_file_content_from_archive_by_path(blob_sha256, file_path)
 end
 
 def calculate_blobs_size(blobs)
-  total = 0
-  blobs.each do |blob|
-    begin
-      current_blob_size = CachesManager.blob_size(blob)
-      if current_blob_size == -1
-        raise Exception.new("Blob #{blob} not founded")
+  TimeMeasurer.measure(:blobs_size_summ_calc) do
+    blobs.sum do |blob|
+      begin
+        current_blob_size = CachesManager.blob_size(blob)
+        if current_blob_size == -1
+          puts("Error when blobs size calculation: Blob #{blob} not founded")
+          0
+        else
+          current_blob_size
+        end
+      rescue Exception => e
+        puts("Error when blobs size calculation: #{e.message}")
+        0
       end
-      total += current_blob_size
-    rescue Exception => e
-      puts("Error when blobs size calculation: #{e.message}")
     end
   end
-  total
 end
 
 def get_images_paths

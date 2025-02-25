@@ -3,7 +3,9 @@ class CachesManager
   @@cache_dict = { json_contents: { latest_update: Time.now, values: {} },
                    sizes: { latest_update: Time.now, values: {} },
                    nodes: { latest_update: Time.now, values: {} },
-                   indexes_sha256: {latest_update: Time.now, values: {} }
+                   indexes_sha256: {latest_update: Time.now, values: {} },
+                   image_sizes: {latest_update: Time.now, values: {} },
+                   tags_sizes: {latest_update: Time.now, values: {} }
   }
 
 
@@ -44,6 +46,18 @@ class CachesManager
     end
   end
 
+  def self.get_image_size(image_path, blobs)
+    TimeMeasurer.measure(:image_size_time) do
+      @@cache_dict[:image_sizes][:values][image_path] ||= calculate_blobs_size blobs
+    end
+  end
+
+  def self.get_tag_size(tag_path, blobs)
+    TimeMeasurer.measure(:tags_size_time) do
+      @@cache_dict[:tags_sizes][:values][tag_path] ||= calculate_blobs_size blobs
+    end
+  end
+
   def self.start_auto_refresh
     Thread.new do
       @@refreshing_in_progress = true
@@ -64,7 +78,7 @@ class CachesManager
     TimeMeasurer.start_measurement
     TimeMeasurer.measure(:refresh_cache_time) do
       puts "🔄 Refreshing cache at #{Time.now}"
-      [:json_contents, :sizes, :nodes, :indexes_sha256].each do |key|
+      @@cache_dict.keys.each do |key|
         @@cache_dict[key][:latest_update] = Time.now
         @@cache_dict[key][:values] = {}
       end
