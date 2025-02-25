@@ -59,7 +59,7 @@ def extract_images(images=Set.new)
           current_img[:required_blobs].merge(tag[:required_blobs])
         end
       end
-      current_img[:total_size] = CachesManager.get_image_size(image_path, current_img[:required_blobs])
+      current_img[:total_size] = CachesManager.get_repo_size(image_path, current_img[:required_blobs])
     end
   end
   images
@@ -77,7 +77,7 @@ def extract_tag(tag_path)
   TimeMeasurer.measure(:search_tags_blobs) do
     current_tag[:index_Nodes].map { |index_node| current_tag[:required_blobs].merge index_node[:node].get_included_blobs }
   end
-  current_tag[:size] = CachesManager.get_tag_size(tag_path, current_tag[:required_blobs])
+  current_tag[:size] = CachesManager.get_repo_size(tag_path, current_tag[:required_blobs])
   current_tag
 end
 

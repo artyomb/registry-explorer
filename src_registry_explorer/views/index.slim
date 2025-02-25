@@ -5,6 +5,7 @@ ruby:
   require_relative '../utils/time_measurer'
   margin_coef=1.5
   possible_statuses = ['error', 'ok', 'warning']
+  repo_path = $base_path + "/repositories"
 
   images = Set.new
   TimeMeasurer.start_measurement
@@ -202,7 +203,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
               span.hide-show-arrow uk-icon="icon: chevron-right"
             span = node[:name]
           td.alight-text-right
-          td.align-text-right #{node[:children_count] == 0 ? represent_size(node[:image][:total_size]) : represent_size(node[:required_blobs].sum { |blob| begin; size = CachesManager.blob_size(blob); size == -1 ? (node[:problem_blobs] << blob; 0) : size; rescue; 0; end })}
+          td.align-text-right #{node[:children_count] == 0 ? represent_size(node[:image][:total_size]) : represent_size(CachesManager.get_repo_size("#{repo_path}/#{node[:name]}", node[:required_blobs]))}
           td -
         - node[:image][:tags]&.each do |tag|
           tr.tree-node.hidden class="#{tag[:problem_blobs].size > 0 ? 'warning-background' : ''}" data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}"

@@ -4,8 +4,7 @@ class CachesManager
                    sizes: { latest_update: Time.now, values: {} },
                    nodes: { latest_update: Time.now, values: {} },
                    indexes_sha256: {latest_update: Time.now, values: {} },
-                   image_sizes: {latest_update: Time.now, values: {} },
-                   tags_sizes: {latest_update: Time.now, values: {} }
+                   repo_sizes: {latest_update: Time.now, values: {} }
   }
 
 
@@ -46,15 +45,9 @@ class CachesManager
     end
   end
 
-  def self.get_image_size(image_path, blobs)
-    TimeMeasurer.measure(:image_size_time) do
-      @@cache_dict[:image_sizes][:values][image_path] ||= calculate_blobs_size blobs
-    end
-  end
-
-  def self.get_tag_size(tag_path, blobs)
-    TimeMeasurer.measure(:tags_size_time) do
-      @@cache_dict[:tags_sizes][:values][tag_path] ||= calculate_blobs_size blobs
+  def self.get_repo_size(repo_path, blobs)
+    TimeMeasurer.measure(:repo_size_time) do
+      @@cache_dict[:repo_sizes][:values][repo_path] ||= calculate_blobs_size blobs
     end
   end
 
