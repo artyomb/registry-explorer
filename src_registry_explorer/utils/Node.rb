@@ -13,11 +13,10 @@ class Node
     @@not_json_nodes_created
   end
 
-  def initialize(type, sha256, node_size = nil, required_blobs = nil)
+  def initialize(type, sha256, node_size = nil)
     @type = type
     @sha256 = sha256
     @node_size = node_size
-    # @created_at = define_create_time sha256
     @problem_blobs = Set.new
     @links = []
     @created_at = nil
@@ -37,7 +36,10 @@ class Node
       @@not_json_nodes_created+=1
       return
     end
+
     json_blob_content = CachesManager.json_blob_content(@sha256)
+    @type ||= json_blob_content[:mediaType] # "application/vnd.oci.image.index.v1+json"
+
     # Check if the keys exist and delete the :materials key
     if @type.to_s =~ /toto/ && @type.to_s =~ /json/
       if json_blob_content[:predicate] && json_blob_content[:predicate].is_a?(Hash)
@@ -87,7 +89,7 @@ class Node
   def add_link(path, value)
     digest_val = value[:digest]
     sha256 = digest_val.is_a?(Hash) ? digest_val[:sha256] : digest_val.split(':').last
-    @links << { path:, node: CachesManager.get_node(value[:mediaType], sha256, value[:size], nil) }
+    @links << { path:, node: CachesManager.get_node(value[:mediaType], sha256, value[:size]) }
   end
 
   def node_type
@@ -139,28 +141,30 @@ class Node
   end
 
   def get_size_deep
-    included_blobs = get_included_blobs
-    size_deep = 0
-    included_blobs.each do |blob_sha256|
-      size_deep += CachesManager.blob_size(blob_sha256) unless CachesManager.blob_size(blob_sha256).nil? || CachesManager.blob_size(blob_sha256) == -1
+    @size_deep ||= begin
+      included_blobs = get_included_blobs
+      size_deep = 0
+      included_blobs.each do |blob_sha256|
+        size_deep += CachesManager.blob_size(blob_sha256) unless CachesManager.blob_size(blob_sha256).nil? || CachesManager.blob_size(blob_sha256) == -1
+      end
+      size_deep
     end
-    size_deep
   end
 
   def add_links_by_config(n, path)
     config_sha256 = n[:config][:digest].split(':').last
-    @links << { path: path.nil? ? ['config'] : path + ['config'], node: CachesManager.get_node(n[:config][:mediaType], config_sha256, n[:config][:size], nil) }
+    @links << { path: path.nil? ? ['config'] : path + ['config'], node: CachesManager.get_node(n[:config][:mediaType], config_sha256, n[:config][:size]) }
     config_json = CachesManager.json_blob_content(config_sha256)
     if !config_json[:history].nil? && config_json[:history].size > 0
       history_without_empty_layers = config_json[:history].reject { |h| !h[:empty_layer].nil? && h[:empty_layer] }
       n[:layers].each_with_index do |layer, id|
-        @links << { path: path.nil? ? ["layers/#{id}"] : path + ["layers/[#{id}]"], node: CachesManager.get_node(layer[:mediaType], layer[:digest].split(':').last, layer[:size], nil) }
+        @links << { path: path.nil? ? ["layers/#{id}"] : path + ["layers/[#{id}]"], node: CachesManager.get_node(layer[:mediaType], layer[:digest].split(':').last, layer[:size]) }
         @links.last[:node].set_created_by history_without_empty_layers[id][:created_by]
         @links.last[:node].set_created_at history_without_empty_layers[id][:created]
       end
     else
       n[:layers].each_with_index do |layer, id|
-        @links << { path: path.nil? ? ["layers/#{id}"] : path + ["layers/[#{id}]"], node: CachesManager.get_node(layer[:mediaType], layer[:digest].split(':').last, layer[:size], nil) }
+        @links << { path: path.nil? ? ["layers/#{id}"] : path + ["layers/[#{id}]"], node: CachesManager.get_node(layer[:mediaType], layer[:digest].split(':').last, layer[:size]) }
       end
     end
   end

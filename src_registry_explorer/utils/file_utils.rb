@@ -45,113 +45,46 @@ def extract_tar_gz_structure(tar_gz_sha256)
 end
 
 def extract_images(images=Set.new)
-  path_to_repositories = $base_path + "/repositories"
-  images_path_list = nil
-  TimeMeasurer.measure(:extract_images_paths) do
-    images_path_list = []
-
-    # Traverse the directory tree
-    Find.find(path_to_repositories) do |path|
-      next unless File.directory?(path)
-
-      # Check if required subdirectories exist
-      subdirs = %w[_layers _manifests _uploads]
-      if subdirs.all? { |subdir| Dir.exist?(File.join(path, subdir)) }
-        images_path_list << path
-        Find.prune  # Skip deeper traversal in this valid directory
-      end
-    end
-    images_path_list
-  end
-  TimeMeasurer.measure(:extract_images_after_paths_time) do
-    images_path_list.each do |image_path|
+  images_paths = get_images_paths
+  TimeMeasurer.measure(:images_paths_after) do
+    images_paths.each do |image_path|
       subfolders = image_path.split('/')
       image_name = "/" + subfolders[subfolders.find_index('repositories') + 1..].join('/')
       current_img = { name: image_name, tags: Set.new, total_size: -1, required_blobs: Set.new, problem_blobs: Set.new }
       images.add current_img
       tag_paths = Dir.glob(image_path + "/_manifests/tags/*").select { |f| File.directory?(f) }
-      tag_paths.each do |tag_path|
-        extract_tag_with_image(tag_path, $base_path, image_name, current_img)
-      end
-      current_img[:tags].each do |tag|
-        current_img[:required_blobs].merge(tag[:required_blobs])
-      end
-      full_size_of_img = 0
-      current_img[:required_blobs].each do |blob|
-        begin
-          current_blob_size = CachesManager.blob_size(blob)
-          if current_blob_size == -1
-            current_img[:problem_blobs].add(blob)
-            raise Exception.new("Blob #{blob} not founded")
-          end
-          full_size_of_img += current_blob_size
-        rescue Exception => e
-          puts("Error: #{e.message}")
+      TimeMeasurer.measure(:creating_tags) do
+        tag_paths.map { |tag_path| extract_tag(tag_path) }.each do |tag|
+          current_img[:tags].add(tag)
+          current_img[:required_blobs].merge(tag[:required_blobs])
         end
       end
-      current_img[:total_size] = full_size_of_img
+      current_img[:total_size] = calculate_blobs_size(current_img[:required_blobs])
     end
   end
   images
 end
 
-def extract_tag_with_image(tag_path, base_path, image_name, current_img)
-  current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: File.read(tag_path + "/current/link").split(':').last, required_blobs: Set.new, size: -1, problem_blobs: Set.new }
-  current_img[:tags].add current_tag
+def extract_tag(tag_path)
+  current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: CachesManager.get_index_sha256(tag_path + "/current/link"), required_blobs: Set.new, size: -1, problem_blobs: Set.new }
   indexes_paths = Dir.glob(tag_path + "/index/sha256/*")
-  extract_index(current_tag[:current_index_sha256], base_path, current_tag)
+  current_tag[:index_Nodes] << extract_index(current_tag[:current_index_sha256])
   indexes_paths.each do |index_path|
     index_sha256 = index_path.split('/').last
     next if index_sha256 == current_tag[:current_index_sha256]
-    extract_index(index_sha256, base_path, current_tag)
+    current_tag[:index_Nodes] << extract_index(index_sha256)
   end
-  TimeMeasurer.measure(:tag_size_calculation) do
-    calculate_tag_size(current_tag)
+  TimeMeasurer.measure(:search_tags_blobs) do
+    current_tag[:index_Nodes].map { |index_node| current_tag[:required_blobs].merge index_node[:node].get_included_blobs }
+  end
+  TimeMeasurer.measure(:search_tags_sizes) do
+    current_tag[:size] = calculate_blobs_size(current_tag[:required_blobs])
   end
   current_tag
 end
 
-def extract_tag_without_image(tag_path, base_path)
-  current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: nil, created_at: nil, required_blobs: Set.new, size: -1, problem_blobs: Set.new }
-  begin
-    current_tag[:current_index_sha256] = File.read(tag_path + "/current/link").split(':').last
-  rescue Exception => e
-    puts("Error: #{e.message}")
-    return current_tag
-  end
-  indexes_paths = Dir.glob(tag_path + "/index/sha256/*")
-  extract_index(current_tag[:current_index_sha256], base_path, current_tag)
-  indexes_paths.each do |index_path|
-    index_sha256 = index_path.split('/').last
-    next if index_sha256 == current_tag[:current_index_sha256]
-    extract_index(index_sha256, base_path, current_tag)
-  end
-  calculate_tag_size(current_tag)
-  current_tag
-end
-
-def extract_index(index_sha256, base_path, current_tag)
-  outer_index_path = base_path + "/blobs/sha256/#{index_sha256[0..1]}/#{index_sha256}/data"
-  index_content = JSON.parse(File.read(outer_index_path))
-  current_Node_link = nil
-  # TimeMeasurer.measure(:nodes_creating) do
-  current_Node_link = { path: ["Image"], node: CachesManager.get_node(index_content["mediaType"], index_sha256, index_content[:size], nil), parent_sha256: index_sha256 }
-  # end
-  current_tag[:index_Nodes] << current_Node_link
-  current_Node_link[:node].set_created_at(extract_index_created_at(index_sha256))
-  current_tag[:required_blobs].merge(current_Node_link[:node].get_included_blobs)
-  current_tag[:problem_blobs].merge(current_Node_link[:node].get_problem_blobs)
-end
-
-def define_create_time(sha256)
-  begin
-    file = File.join($base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data")
-    Time.at(File.ctime(file))
-  rescue Exception => e
-    puts "Error: #{e}"
-    return nil
-  end
-  nil
+def extract_index(index_sha256)
+  { path: ['Image'], node: CachesManager.get_node(nil, index_sha256, nil) }
 end
 
 def extract_file_content_from_archive_by_path(blob_sha256, file_path)
@@ -173,34 +106,37 @@ def extract_file_content_from_archive_by_path(blob_sha256, file_path)
   result
 end
 
-def represent_size(bytes)
-  # bytes.to_s.gsub(/(\d)(?=(\d{3})+(?!\d))/, '\\1,')
-  units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
-  return '0 B' if bytes == 0
-
-  exp = (Math.log(bytes) / Math.log(1024)).to_i
-  exp = units.size - 1 if exp > units.size - 1
-  size = bytes.to_f / (1024 ** exp)
-
-  format('%.2f %s', size, units[exp])
-end
-
-def calculate_tag_size(current_tag)
-  size_of_tag = 0
-  current_tag[:required_blobs].each do |blob|
+def calculate_blobs_size(blobs)
+  total = 0
+  blobs.each do |blob|
     begin
       current_blob_size = CachesManager.blob_size(blob)
       if current_blob_size == -1
-        current_tag[:problem_blobs].add(blob)
         raise Exception.new("Blob #{blob} not founded")
       end
-      size_of_tag += current_blob_size
+      total += current_blob_size
     rescue Exception => e
-      puts("Error: #{e.message}")
+      puts("Error when blobs size calculation: #{e.message}")
     end
   end
-  current_tag[:size] = size_of_tag
-  size_of_tag
+  total
+end
+
+def get_images_paths
+  path_to_repositories = $base_path + "/repositories"
+  TimeMeasurer.measure(:images_paths_before) do
+    images_paths = Set.new
+
+    Find.find(path_to_repositories) do |path|
+      next unless File.directory?(path)
+      subdirs = %w[_layers _manifests _uploads]
+      if subdirs.all? { |subdir| Dir.exist?(File.join(path, subdir)) }
+        images_paths.add path
+        Find.prune
+      end
+    end
+    images_paths
+  end
 end
 
 def extract_index_created_at(sha256)
@@ -238,19 +174,6 @@ def get_referring_image_entries(blob_sha256)
   result_list
 end
 
-def transform_datetime(datetime_str)
-  begin
-    # Parse the datetime string into a Time object
-    time_obj = Time.parse(datetime_str)
-    # Format the Time object into the desired format
-    time_obj.strftime('%Y-%m-%d %H:%M:%S')
-  rescue Exception => e
-    puts "Error: #{e}"
-    '-'
-  end
-end
-
-
 def find_node_by_sha256_in_hierarchy(required_sha256, current_node)
   if current_node.sha256 == required_sha256
     return current_node
@@ -260,7 +183,3 @@ def find_node_by_sha256_in_hierarchy(required_sha256, current_node)
     return current_node.links.map{ |lnk| find_node_by_sha256_in_hierarchy(required_sha256, lnk[:node]) }&.select{ |result| result != nil }.first
   end
 end
-# def check_flattened(fl)
-#   puts "Checking flattened is nil?: #{fl.nil?}"
-#   fl
-# end

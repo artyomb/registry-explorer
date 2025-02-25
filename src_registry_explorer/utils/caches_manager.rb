@@ -2,7 +2,9 @@ require_relative 'file_utils'
 class CachesManager
   @@cache_dict = { json_contents: { latest_update: Time.now, values: {} },
                    sizes: { latest_update: Time.now, values: {} },
-                   nodes: { latest_update: Time.now, values: {} } }
+                   nodes: { latest_update: Time.now, values: {} },
+                   indexes_sha256: {latest_update: Time.now, values: {} }
+  }
 
 
   @@cache_refresh_interval = 60 * 5 # seconds between each refresh
@@ -30,9 +32,15 @@ class CachesManager
   end
 
   # def self.find_node(sha256)
-  def self.get_node(type, sha256, node_size = nil, required_blobs = nil)
+  def self.get_node(type, sha256, node_size = nil)
     if !@@refreshing_in_progress || @@refreshing_in_progress
-      @@cache_dict[:nodes][:values][sha256] ||= Node.new(type, sha256, node_size, required_blobs)
+      @@cache_dict[:nodes][:values][sha256] ||= Node.new(type, sha256, node_size)
+    end
+  end
+
+  def self.get_index_sha256(path_to_index)
+    TimeMeasurer.measure(:reading_index_sha256) do
+      @@cache_dict[:indexes_sha256][:values][path_to_index] ||= File.read(path_to_index).split(':').last
     end
   end
 
@@ -56,7 +64,7 @@ class CachesManager
     TimeMeasurer.start_measurement
     TimeMeasurer.measure(:refresh_cache_time) do
       puts "🔄 Refreshing cache at #{Time.now}"
-      [:json_contents, :sizes, :nodes].each do |key|
+      [:json_contents, :sizes, :nodes, :indexes_sha256].each do |key|
         @@cache_dict[key][:latest_update] = Time.now
         @@cache_dict[key][:values] = {}
       end

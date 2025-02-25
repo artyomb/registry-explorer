@@ -2,6 +2,7 @@ ruby:
   require_relative '../utils/Node'
   require_relative '../utils/time_measurer'
   TimeMeasurer.start_measurement
+  image_entries = get_referring_image_entries(params[:sha256])
   json_blob_content = CachesManager.json_blob_content(params[:sha256])
   previous_tag_id = params[:tag_id].nil? ? nil : params[:tag_id].gsub(" ", "/")
   TimeMeasurer.log_measurers
@@ -16,5 +17,12 @@ h1.uk-h1
   span.uk-text-primary uk-tooltip="title: #{params[:sha256]}; cls: uk-active; delay: 500;"= " #{params[:sha256]}"
 pre.content-display.language-json style="opacity: 1"
   code= JSON.pretty_generate(json_blob_content)
+
+p= "Images, referring to this json:"
+ul.uk-list.uk-list-large.uk-list-divider.uk-list-disc.uk-list-primary.uk-border-rounded.uk-box-shadow-small.uk-margin-remove-vertical.uk-padding
+  - image_entries.each do |entry|
+    li
+      a href="/tag-exploring#{entry[:image_name]}/#{entry[:tag_name]}" #{entry[:image_name] + ':' + entry[:tag_name] + '@sha256:' + entry[:index_node].sha256}
+
 javascript:
     hljs.highlightElement(document.querySelector('pre code'));

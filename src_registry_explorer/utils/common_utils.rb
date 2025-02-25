@@ -23,3 +23,47 @@ def calculate_unique_duration(time_ranges)
   total_duration = merged.sum { |range| range[:end] - range[:start] }
   total_duration
 end
+
+
+
+def define_create_time(sha256)
+  begin
+    file = File.join($base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data")
+    Time.at(File.ctime(file))
+  rescue Exception => e
+    puts "Error: #{e}"
+    return nil
+  end
+  nil
+end
+
+
+def represent_size(bytes)
+  begin
+    # bytes.to_s.gsub(/(\d)(?=(\d{3})+(?!\d))/, '\\1,')
+    units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
+    return '0 B' if bytes == 0
+
+    exp = (Math.log(bytes) / Math.log(1024)).to_i
+    exp = units.size - 1 if exp > units.size - 1
+    size = bytes.to_f / (1024 ** exp)
+
+    format('%.2f %s', size, units[exp])
+  rescue Exception => e
+    puts "Error in size representing: #{e}"
+    '-'
+  end
+end
+
+
+def represent_datetime(datetime_str)
+  begin
+    # Parse the datetime string into a Time object
+    time_obj = Time.parse(datetime_str)
+    # Format the Time object into the desired format
+    time_obj.strftime('%Y-%m-%d %H:%M:%S')
+  rescue Exception => e
+    puts "Error: #{e}"
+    '-'
+  end
+end

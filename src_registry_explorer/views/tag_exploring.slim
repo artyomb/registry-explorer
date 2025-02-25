@@ -12,7 +12,7 @@ ruby:
   tag_string = full_tag_path[(full_tag_path.rindex('/') + 1)..]
   path_to_repositories = base_path + "/repositories"
   full_path_to_image_tag = path_to_repositories + image_in_registry_path + '/_manifests/tags/' + tag_string
-  tag= extract_tag_without_image(full_path_to_image_tag, base_path)
+  tag= extract_tag(full_path_to_image_tag)
   TimeMeasurer.log_measurers
 javascript:
     function updateRowStripes() {
@@ -171,7 +171,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
           td uk-tooltip="title: #{node_link[:node].node_type}; delay: 500;"= node_link[:node].node_type.nil? ? "-" : node_link[:node].node_type.split('.')[-2..-1].join('.')
           td.align-text-right= node_link[:node].node_size.nil? ? "-" : represent_size(node_link[:node].node_size)
           td.align-text-right= is_image_node ? current_image_node_size : current_node_size
-          td= node_link[:node].created_at.nil? ? "-" : transform_datetime(node_link[:node].created_at)
+          td= node_link[:node].created_at.nil? ? "-" : represent_datetime(node_link[:node].created_at)
           td.limit-max-width= node_link[:node].created_by.nil? ? "" : node_link[:node].created_by
         - if node_link[:node].links.any?
           - render_node_links.call(node_link[:node].links, depth + 1)
