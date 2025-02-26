@@ -19,6 +19,10 @@ class RegistryExplorerFront < Sinatra::Base
     full_tag_path = params[:splat].first || ''
     slim :tag_exploring, locals: { full_tag_path: full_tag_path }
   end
+  get '/image-exploring/*' do
+    tag_image_path = params[:splat].first || '' # expect following url: /image-exploring/re/po/si/to/ry/tag_name/imgsha256
+    slim :image_exploring, locals: { tag_image_path: tag_image_path }
+  end
   get '/json/:sha256', &->() { slim :json }
   get '/tar-gz/:sha256', &->() { slim :targz }
   get '/file-in-archive/:sha256', &->() { slim :file_in_archive }

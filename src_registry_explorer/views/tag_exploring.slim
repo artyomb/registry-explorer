@@ -5,82 +5,20 @@ ruby:
   margin_coef=1.5
   possible_statuses = ['error', 'ok', 'warning']
   TimeMeasurer.start_measurement
-
   img_pth_param = full_tag_path[0..(full_tag_path.rindex('/') - 1)]
+  puts "img_pth_param: #{img_pth_param}"
   image_in_registry_path = "/" + img_pth_param
   tag_string = full_tag_path[(full_tag_path.rindex('/') + 1)..]
   path_to_repositories = $base_path + "/repositories"
   full_path_to_image_tag = path_to_repositories + image_in_registry_path + '/_manifests/tags/' + tag_string
-  tag= extract_tag(full_path_to_image_tag)
+  tag = nil
+  total_nodes = 0
+  TimeMeasurer.measure(:extract_tag) do
+    tag= extract_tag(full_path_to_image_tag)
+  end
   TimeMeasurer.log_measurers
 javascript:
-    function updateRowStripes() {
-        const visibleRows = [...document.querySelectorAll('tbody tr.tree-node:not(.hidden)')];
-
-        visibleRows.forEach((row, index) => {
-            if (index % 2 === 0) {
-                row.classList.add('striped-even');
-                row.classList.remove('striped-odd');
-            } else {
-                row.classList.add('striped-odd');
-                row.classList.remove('striped-even');
-            }
-        });
-    }
-
-    function showAllChildrenLevelOne(currentNode) {
-        let childElem = currentNode.nextElementSibling;
-        let closestArrow = currentNode?.querySelector(".hide-show-arrow");
-        closestArrow?.classList.add("rotate-arrow");
-        closestArrow = childElem?.querySelector(".hide-show-arrow");
-        let levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
-        while (childElem && levelDifference > 0) {
-            if (levelDifference === 1) {
-                closestArrow?.classList.remove("rotate-arrow");
-                childElem.classList.remove('hidden');
-            }
-            childElem = childElem.nextElementSibling;
-            closestArrow = childElem?.querySelector(".hide-show-arrow");
-            levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
-        }
-        updateRowStripes();
-    }
-
-    function showAllChildren(currentNode) {
-        let childElem = currentNode.nextElementSibling;
-        let closestArrow = currentNode?.querySelector(".hide-show-arrow");
-        closestArrow?.classList.add("rotate-arrow");
-        closestArrow = childElem?.querySelector(".hide-show-arrow");
-        let levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
-        while (childElem && levelDifference > 0) {
-            closestArrow?.classList.add("rotate-arrow");
-            childElem.classList.remove('hidden');
-            childElem = childElem.nextElementSibling;
-            closestArrow = childElem?.querySelector(".hide-show-arrow");
-            levelDifference = parseInt(childElem.dataset.level) - parseInt(currentNode.dataset.level);
-        }
-        updateRowStripes();
-    }
-
-    function hideAllChildren(currentNode) {
-        let childElem = currentNode.nextElementSibling;
-        let closestArrow = currentNode?.querySelector(".hide-show-arrow");
-        while (childElem && parseInt(childElem.dataset.level) > parseInt(currentNode.dataset.level)) {
-            closestArrow?.classList.remove("rotate-arrow");
-            childElem.classList.add('hidden');
-            childElem = childElem.nextElementSibling;
-            closestArrow = childElem?.querySelector(".hide-show-arrow");
-        }
-        updateRowStripes();
-    }
     document.addEventListener("DOMContentLoaded", function() {
-        document.querySelectorAll(".tree-node").forEach(function(treeNode) {
-            if (treeNode.dataset.level <= 0) {
-                treeNode.classList.remove("hidden");
-                treeNode.querySelector(".hide-show-arrow")?.classList.remove("rotate-arrow");
-            }
-        });
-
         document.querySelectorAll('.copy-btn').forEach(function(copyBtn) {
             copyBtn.addEventListener('click', function(event) {
                 event.stopPropagation();
@@ -90,38 +28,14 @@ javascript:
                 });
             });
         });
-        document.querySelector('body').addEventListener('click', function (event) {
-            const row = event.target.closest('tr[data-href]');
-            if (row) window.location.href = row.dataset.href;
-            const currentNode = event.target.closest('.tree-node');
-            let closestArrow = currentNode?.querySelector(".hide-show-arrow");
-            if (currentNode) {
-                if (!closestArrow) return;
-                const branchExpanded = closestArrow.classList.contains("rotate-arrow");
-                if (branchExpanded) {
-                    if (event.ctrlKey) {
-                        showAllChildren(currentNode);
-                    } else {
-                        hideAllChildren(currentNode);
-                    }
-                } else {
-                    if (event.ctrlKey) {
-                        showAllChildren(currentNode);
-                    } else {
-                        showAllChildrenLevelOne(currentNode);
-                    }
-                }
-            }
-        });
         UIkit.util.on(document, 'beforeshow', '.uk-tooltip.uk-active', function () {
             this.classList.add('uk-width-auto');
         });
-        updateRowStripes();
     });
 
 sass:
   .copy-btn
-    margin-left: 0.5rem
+    margin-left: 3.5rem
   .sha256-container
     display: inline-block
     width: 3.5rem
@@ -129,49 +43,33 @@ sass:
   a.uk-link-text href="/index"
     span.icon-padding-right.icon-padding-left.uk-text-primary uk-icon="icon: triangle-left"
     span Back to registry
-h1.uk-h1 #{image_in_registry_path[1..-1] + ':' + tag_string}
+h1.uk-h1= "#{image_in_registry_path[1..-1] + ':' + tag_string }"
 table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
   thead
     tr
-      th style="width: 1%" Main
-      th style="min-width: 15%; width: 15%; max-width: 15%; padding-left: 0" Node path
-      th style="min-width: 4%; width: 4%; max-width: 4%" Node sha256
-      th style="min-width: 10%; width: 10%; max-width: 10%" Node type
-      th style="min-width: 10%; width: 10%; max-width: 10%; text-align: right" Node size
-      th style="min-width: 10%; width: 10%; max-width: 10%; text-align: right" Actucal blob / image size
-      th style="min-width: 10%; width: 10%; max-width: 10%" Node created at
-      th style="min-width: 40%; width: 40%; max-width: 40%" Created by
+      th style="min-width: 4%; width: 4%; max-width: 4%" Main
+      th Image index sha256
+      th Image structure exploring
+      th.uk-float-right Image size
+      th Created at
   tbody
-    - render_node_links = ->(node_links, depth=0) do
-      - node_links.each do |node_link|
+    - TimeMeasurer.start_measurement
+    - TimeMeasurer.measure(:rendering_tag_page) do
+      - tag[:index_Nodes].each do |node_link|
         - node_is_current = node_link[:node].sha256 == tag[:current_index_sha256]
-        - class_string_cursor = (!(node_link[:node].node_type.to_s =~ /zip/) && node_link[:node].links.any?) ? '' : 'default-cursor'
         - class_string_warning = node_link[:node].get_problem_blobs.size > 0 || node_link[:node].get_problem_blobs.nil? ? 'warning-background' : ''
-        tr.tree-node.hidden id="#{img_pth_param}/#{tag_string}/#{node_link[:node].sha256}" data-level="#{depth}" class="#{class_string_cursor + ' ' + class_string_warning}"
+        tr.tree-node id="#{img_pth_param}/#{tag_string}/#{node_link[:node].sha256}" class="#{class_string_warning}"
           td
             - if node_is_current
               span uk-icon="icon: check" style="color: green; min-width: max-content; padding: 0.5rem"
-          td style="padding-left: #{depth * margin_coef}rem "
-            - if !(node_link[:node].node_type.to_s =~ /zip/) && node_link[:node].links.any?
-              span.hide-show-arrow uk-icon="icon: chevron-right"
-            span=" #{node_link[:path].join('/')}"
           td
             .sha256-container
-              - if !(node_link[:node].node_type.to_s =~ /zip/)
-                a uk-tooltip="title: #{node_link[:node].sha256}; cls: uk-active; delay: 500;" href="/json/#{node_link[:node].sha256}?tag_id=#{(img_pth_param + '/' + tag_string).gsub('/', ' ')}"= node_link[:node].sha256[0..4] + "..."
-              - elsif node_link[:node].node_type.to_s =~ /zip/
-                a uk-tooltip="title: #{node_link[:node].sha256}; delay: 500;" href="/tar-gz/#{node_link[:node].sha256}?tag_id=#{(img_pth_param + '/' + tag_string).gsub('/', ' ')}"= node_link[:node].sha256[0..4] + "..."
-              - else
-                span uk-tooltip="title: #{node_link[:node].sha256}; delay: 500;" = node_link[:node].sha256[0..4] + "..."
+              a uk-tooltip="title: #{node_link[:node].sha256}; cls: uk-active; delay: 500;" href="/json/#{node_link[:node].sha256}?tag_id=#{(img_pth_param + '/' + tag_string).gsub('/', ' ')}"= 'Index ' + node_link[:node].sha256[0..4] + "..."
             span.copy-btn.cursor-pointer data-buffervalue="#{node_link[:node].sha256}" uk-icon="icon: copy"
           - current_node_size = node_link[:node].actual_blob_size.nil? ? "-" : represent_size(node_link[:node].actual_blob_size)
           - current_image_node_size = represent_size(node_link[:node].get_size_deep)
-          - is_image_node = depth == 0
-          td uk-tooltip="title: #{node_link[:node].node_type}; delay: 500;"= node_link[:node].node_type.nil? ? "-" : node_link[:node].node_type.split('.')[-2..-1].join('.')
-          td.align-text-right= node_link[:node].node_size.nil? ? "-" : represent_size(node_link[:node].node_size)
-          td.align-text-right= is_image_node ? current_image_node_size : current_node_size
-          td= node_link[:node].created_at.nil? ? "-" : represent_datetime(node_link[:node].created_at)
-          td.limit-max-width= node_link[:node].created_by.nil? ? "" : node_link[:node].created_by
-        - if node_link[:node].links.any?
-          - render_node_links.call(node_link[:node].links, depth + 1)
-    - render_node_links.call(tag[:index_Nodes], 0)
+          td
+            a uk-tooltip="title: #{node_link[:node].sha256}; cls: uk-active; delay: 500;" href="/image-exploring/#{img_pth_param + '/' + tag_string}/#{node_link[:node].sha256}" uk-icon="icon: search"= "Explore structure    "
+          td.align-text-right= current_image_node_size
+          td #{represent_datetime(extract_index_created_at(node_link[:node].sha256))}
+    - TimeMeasurer.log_measurers

@@ -3,8 +3,8 @@ class CachesManager
   @@cache_dict = { json_contents: { latest_update: Time.now, values: {} },
                    sizes: { latest_update: Time.now, values: {} },
                    nodes: { latest_update: Time.now, values: {} },
-                   indexes_sha256: {latest_update: Time.now, values: {} },
-                   repo_sizes: {latest_update: Time.now, values: {} }
+                   indexes_sha256: { latest_update: Time.now, values: {} },
+                   repo_sizes: { latest_update: Time.now, values: {} }
   }
 
 

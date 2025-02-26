@@ -162,6 +162,7 @@ class Node
       history_without_empty_layers = config_json[:history].reject { |h| !h[:empty_layer].nil? && h[:empty_layer] }
       n[:layers].each_with_index do |layer, id|
         @links << { path: path.nil? ? ["layers/#{id}"] : path + ["layers/[#{id}]"], node: CachesManager.get_node(layer[:mediaType], layer[:digest].split(':').last, layer[:size]) }
+        # @links.last[:node].set_created_by history_without_empty_layers[id][:created_by][0..10]
         @links.last[:node].set_created_by history_without_empty_layers[id][:created_by]
         @links.last[:node].set_created_at history_without_empty_layers[id][:created]
       end

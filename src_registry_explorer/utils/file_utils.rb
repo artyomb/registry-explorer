@@ -206,7 +206,7 @@ def get_referring_image_entries(blob_sha256)
   result_list = []
   images&.select { |image| image[:required_blobs].include?(blob_sha256) }.each do |image|
     image[:tags]&.select{ |tag| tag[:required_blobs].include?(blob_sha256)}.each do |tag|
-      tag[:index_Nodes].map{|node_link| node_link[:node]}&.select{|cn| cn.get_included_blobs.include?(blob_sha256)}.each do |index_node|
+      tag[:index_Nodes].map{ |node_link| node_link[:node] }&.select{|cn| cn.get_included_blobs.include?(blob_sha256)}.each do |index_node|
         result_list << { image_name: image[:name], tag_name: tag[:name], index_node: index_node }
       end
     end
