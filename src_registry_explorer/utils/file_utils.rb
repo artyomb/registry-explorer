@@ -223,3 +223,29 @@ def find_node_by_sha256_in_hierarchy(required_sha256, current_node)
     return current_node.links.map{ |lnk| find_node_by_sha256_in_hierarchy(required_sha256, lnk[:node]) }&.select{ |result| result != nil }.first
   end
 end
+
+def build_tree(images, tree)
+  images.each do |image|
+    path_parts = image[:name].split('/')[1..] # Skip first empty element from leading '/'
+    current = tree
+    path_parts.each do |part|
+      current[:total_images_amount] += 1
+      current[:required_blobs].merge(image[:required_blobs])
+      if image[:problem_blobs].size > 0
+        current[:problem_blobs].merge(image[:problem_blobs])
+      end
+      current[:children][part] ||= { children: {}, image: {}, total_images_amount: 0, required_blobs: Set.new, problem_blobs: Set.new }
+      current = current[:children][part]
+    end
+    current[:image] = image
+  end
+end
+
+def flatten_tree(node, level = 0, pname = nil)
+  result = []
+  node[:children].each do |name, child|
+    result << { name: [pname, name].flatten.compact.join('/'), level: level, image: child[:image], children_count: child[:total_images_amount], required_blobs: child[:required_blobs], problem_blobs: child[:problem_blobs] }
+    result.concat(flatten_tree(child, level + 1, [pname, name]))
+  end
+  result
+end

@@ -75,12 +75,24 @@ class CachesManager
         @@cache_dict[key][:latest_update] = Time.now
         @@cache_dict[key][:values] = {}
       end
-      extract_images(Set.new)
+      tree = { children: {}, image: {}, total_images_amount: 0, required_blobs: Set.new, problem_blobs: Set.new }
+      images = extract_images(Set.new)
+      build_tree(images, tree)
+      flat = flatten_tree(tree)
+      flat.each do |node|
+        node[:children_count] == 0 ? represent_size(node[:image][:total_size]) : CachesManager.get_repo_size("#{$base_path}/repositories/#{node[:name]}", node[:required_blobs])
+      end
     end
     TimeMeasurer.log_measurers
     TimeMeasurer.start_measurement
     puts "Preforming extracting images after refresh"
-    extract_images(Set.new)
+    tree = { children: {}, image: {}, total_images_amount: 0, required_blobs: Set.new, problem_blobs: Set.new }
+    images = extract_images(Set.new)
+    build_tree(images, tree)
+    flat = flatten_tree(tree)
+    flat.each do |node|
+      node[:children_count] == 0 ? represent_size(node[:image][:total_size]) : CachesManager.get_repo_size("#{$base_path}/repositories/#{node[:name]}", node[:required_blobs])
+    end
     TimeMeasurer.log_measurers
   end
 end

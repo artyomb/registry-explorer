@@ -10,7 +10,7 @@ ruby:
   images = Set.new
   TimeMeasurer.start_measurement
 
-  build_tree = lambda do |images, tree|
+  build_tree_l = lambda do |images, tree|
     images.each do |image|
       path_parts = image[:name].split('/')[1..] # Skip first empty element from leading '/'
       current = tree
@@ -27,7 +27,7 @@ ruby:
     end
   end
   # deep flatten tree
-  flatten_tree = lambda do |node, level = 0, pname = nil|
+  flatten_tree_l = lambda do |node, level = 0, pname = nil|
     result = []
     node[:children].each do |name, child|
       result << { name: [pname, name].flatten.compact.join('/'), level: level, image: child[:image], children_count: child[:total_images_amount], required_blobs: child[:required_blobs], problem_blobs: child[:problem_blobs] }
@@ -41,10 +41,10 @@ ruby:
   flattened = nil
   extract_images(images)
   TimeMeasurer.measure(:building_tree) do
-    build_tree.call(images, tree)
+    build_tree(images, tree)
   end
   TimeMeasurer.measure(:flatten_tree) do
-    flattened = flatten_tree.call(tree)
+    flattened = flatten_tree(tree)
   end
   puts TimeMeasurer.log_measurers
   puts "Flattened tree size: #{flattened.size}"
