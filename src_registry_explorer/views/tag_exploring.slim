@@ -58,7 +58,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
       - tag[:index_Nodes].each do |node_link|
         - node_is_current = node_link[:node].sha256 == tag[:current_index_sha256]
         - class_string_warning = node_link[:node].get_problem_blobs.size > 0 || node_link[:node].get_problem_blobs.nil? ? 'warning-background' : ''
-        tr.tree-node id="#{img_pth_param}/#{tag_string}/#{node_link[:node].sha256}" class="#{class_string_warning}"
+        tr.tree-node style="cursor: default" id="#{img_pth_param}/#{tag_string}/#{node_link[:node].sha256}" class="#{class_string_warning}"
           td
             - if node_is_current
               span uk-icon="icon: check" style="color: green; min-width: max-content; padding: 0.5rem"
