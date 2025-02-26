@@ -7,13 +7,11 @@ ruby:
   TimeMeasurer.start_measurement
   splited_path = tag_image_path.split('/')
   img_pth_param = splited_path[0..-3].join('/')
-  puts "img_pth_param: #{img_pth_param}"
   image_in_registry_path = "/" + img_pth_param
   tag_string = splited_path[-2]
   image_sha256 = tag_image_path[(tag_image_path.rindex('/') + 1)..]
   path_to_repositories = $base_path + "/repositories"
   full_path_to_image_tag = path_to_repositories + image_in_registry_path + '/_manifests/tags/' + tag_string
-  puts "/tag-exploring/#{img_pth_param}/#{tag_string}"
   index_node_link = nil
   TimeMeasurer.measure(:extract_image_by_sha256) do
     index_node_link = extract_index(image_sha256)
@@ -136,12 +134,12 @@ sass:
     span Back to tag
     / "/tag-exploring#{entry[:image_name]}/#{entry[:tag_name]}" #{entry[:image_name] + ':' + entry[:tag_name] + '@sha256:' + entry[:index_node_link].sha256}
 
-h1.uk-h1= "#{image_in_registry_path[1..] + ':' + tag_string + '@sha256:' + index_node_link[:node].sha256 }"
+h1.uk-h1 uk-tooltip="title: #{index_node_link[:node].sha256}; delay: 500;" = "#{image_in_registry_path[1..] + ':' + tag_string + '@sha256:' + index_node_link[:node].sha256[0..5] + '...' }"
 table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
   thead
     tr
       th style="min-width: 15%; width: 15%; max-width: 15%; padding-left: 0" Node path
-      th style="min-width: 4%; width: 4%; max-width: 4%" Node sha256
+      th style="min-width: 5%; width: 5%; max-width: 5%" Node sha256
       th style="min-width: 10%; width: 10%; max-width: 10%" Node type
       th style="min-width: 10%; width: 10%; max-width: 10%; text-align: right" Node size
       th style="min-width: 10%; width: 10%; max-width: 10%; text-align: right" Actucal blob / image size

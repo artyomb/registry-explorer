@@ -6,7 +6,6 @@ ruby:
   possible_statuses = ['error', 'ok', 'warning']
   TimeMeasurer.start_measurement
   img_pth_param = full_tag_path[0..(full_tag_path.rindex('/') - 1)]
-  puts "img_pth_param: #{img_pth_param}"
   image_in_registry_path = "/" + img_pth_param
   tag_string = full_tag_path[(full_tag_path.rindex('/') + 1)..]
   path_to_repositories = $base_path + "/repositories"
