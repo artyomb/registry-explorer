@@ -1,4 +1,4 @@
-
+require_relative '../sinatra/sinatra_server'
 class Node
   @@nodes_created = 0
   @@json_nodes_created = 0
@@ -42,8 +42,17 @@ class Node
 
     # Check if the keys exist and delete the :materials key
     if @type.to_s =~ /toto/ && @type.to_s =~ /json/
-      if json_blob_content[:predicate] && json_blob_content[:predicate].is_a?(Hash)
-        json_blob_content[:predicate].delete(:materials)
+      begin
+        if RegistryExplorerFront.get_session.nil? || RegistryExplorerFront.get_session[:attestations_exploring]
+          if json_blob_content[:predicate] && json_blob_content[:predicate].is_a?(Hash)
+            json_blob_content[:predicate].delete(:materials)
+          end
+        else
+          return
+        end
+      rescue Exception => e
+        puts "Error when processing toto json: #{e}"
+        return
       end
     end
     find_links(json_blob_content, [])

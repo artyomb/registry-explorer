@@ -6,24 +6,38 @@ class CachesManager
                    indexes_sha256: { latest_update: Time.now, values: {} },
                    repo_sizes: { latest_update: Time.now, values: {} }
   }
+  @@cache_dict_with_attest = { json_contents: { latest_update: Time.now, values: {} },
+                               sizes: { latest_update: Time.now, values: {} },
+                               nodes: { latest_update: Time.now, values: {} },
+                               indexes_sha256: { latest_update: Time.now, values: {} },
+                               repo_sizes: { latest_update: Time.now, values: {} }
+  }
 
 
   @@cache_refresh_interval = 60 * 5 # seconds between each refresh
   @@refreshing_in_progress = false
   def self.json_blob_content(sha256)
+    # Version with cache
+    # TimeMeasurer.measure(:reading_jsons) do
+    #   if !@@refreshing_in_progress || @@refreshing_in_progress
+    #     @@cache_dict[:json_contents][:values][sha256] ||= begin
+    #       cont = File.read($base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data")
+    #       JSON.parse(cont, symbolize_names: true)
+    #     end
+    #   end
+    # end
+
+    # Version without cache
     TimeMeasurer.measure(:reading_jsons) do
-      if !@@refreshing_in_progress || @@refreshing_in_progress
-        @@cache_dict[:json_contents][:values][sha256] ||= begin
-          cont = File.read($base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data")
-          JSON.parse(cont, symbolize_names: true)
-        end
-      end
+      JSON.parse(File.read($base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data"), symbolize_names: true)
     end
   end
 
   def self.blob_size(sha256)
     TimeMeasurer.measure(:blob_size_time) do
-      if !@@refreshing_in_progress || @@refreshing_in_progress
+      if RegistryExplorerFront.get_session.nil? || RegistryExplorerFront.get_session[:attestations_exploring]
+        @@cache_dict_with_attest[:sizes][:values][sha256] ||= File.size($base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data")
+      else
         @@cache_dict[:sizes][:values][sha256] ||= File.size($base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data")
       end
     rescue Exception => e
@@ -34,7 +48,9 @@ class CachesManager
 
   # def self.find_node(sha256)
   def self.get_node(type, sha256, node_size = nil)
-    if !@@refreshing_in_progress || @@refreshing_in_progress
+    if RegistryExplorerFront.get_session.nil? || RegistryExplorerFront.get_session[:attestations_exploring]
+      @@cache_dict_with_attest[:nodes][:values][sha256] ||= Node.new(type, sha256, node_size)
+    else
       @@cache_dict[:nodes][:values][sha256] ||= Node.new(type, sha256, node_size)
     end
   end
@@ -47,7 +63,11 @@ class CachesManager
 
   def self.get_repo_size(repo_path, blobs)
     TimeMeasurer.measure(:repo_size_time) do
-      @@cache_dict[:repo_sizes][:values][repo_path] ||= calculate_blobs_size blobs
+      if RegistryExplorerFront.get_session.nil? || RegistryExplorerFront.get_session[:attestations_exploring]
+        @@cache_dict_with_attest[:repo_sizes][:values][repo_path] ||= calculate_blobs_size blobs
+      else
+        @@cache_dict[:repo_sizes][:values][repo_path] ||= calculate_blobs_size blobs
+      end
     end
   end
 

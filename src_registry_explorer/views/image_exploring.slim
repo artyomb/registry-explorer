@@ -19,6 +19,7 @@ ruby:
   end
   TimeMeasurer.log_measurers
 javascript:
+    let attestationExploring = false
     function updateRowStripes() {
         const visibleRows = [...document.querySelectorAll('tbody tr.tree-node:not(.hidden)')];
 
@@ -72,13 +73,48 @@ javascript:
         let closestArrow = currentNode?.querySelector(".hide-show-arrow");
         while (childElem && parseInt(childElem.dataset.level) > parseInt(currentNode.dataset.level)) {
             closestArrow?.classList.remove("rotate-arrow");
-            childElem.classList.add('hidden');
+            chiladElem.classList.add('hidden');
             childElem = childElem.nextElementSibling;
             closestArrow = childElem?.querySelector(".hide-show-arrow");
         }
         updateRowStripes();
     }
+
+    function setAttestationsExploring(boolean) {
+        const uri = "/set-in-session-attestations-exploring?new_value=" + boolean;
+        const response = fetch(uri, {method: 'PUT'});
+        try {
+            response.then(response => {
+                if (response.status === 200) {
+                    window.location.reload();
+                }
+            });
+        } catch (error) {
+            UIkit.notification({message: 'Error setting session value', status: 'danger', pos: 'top-right'});
+        }
+        attestationExploring = boolean;
+    }
+
+    function refreshAttestationsExploring() {
+        fetch('/get-in-session-attestations-exploring', {method: 'GET'})
+            .then(response => response.text())
+            .then(text => {
+                attestationExploring = text === "true";
+                document.querySelectorAll('.switch-btn').forEach(btn => {
+                    const btnText = btn.textContent;
+                    if (btnText === "Explore attestations") {
+                        if (attestationExploring) btn.classList.add('uk-button-primary');
+                        else btn.classList.remove('uk-button-primary');
+                    } else if (btnText === "Disable attestations") {
+                        if (attestationExploring) btn.classList.remove('uk-button-primary');
+                        else btn.classList.add('uk-button-primary');
+                    }
+                });
+            });
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
+        refreshAttestationsExploring();
         document.querySelectorAll(".tree-node").forEach(function(treeNode) {
             treeNode.classList.remove("hidden");
             treeNode.querySelector(".hide-show-arrow")?.classList.add("rotate-arrow");
@@ -119,6 +155,24 @@ javascript:
         UIkit.util.on(document, 'beforeshow', '.uk-tooltip.uk-active', function () {
             this.classList.add('uk-width-auto');
         });
+
+        document.querySelectorAll('.switch-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const isActive = btn.classList.contains('uk-button-primary');
+                if (!isActive) {
+                    const btnText = btn.textContent;
+                    if (btnText === "Explore attestations") {
+                        setAttestationsExploring(true);
+                    } else if (btnText === "Disable attestations"){
+                        setAttestationsExploring(false);
+                    }
+                    // btn.classList.add('uk-button-primary');
+                    if (btn.nextElementSibling) btn.nextElementSibling.classList.remove('uk-button-primary');
+                    else btn.previousElementSibling.classList.remove('uk-button-primary');
+                    window.location.reload();
+                }
+            });
+        });
         updateRowStripes();
     });
 
@@ -135,6 +189,9 @@ sass:
     / "/tag-exploring#{entry[:image_name]}/#{entry[:tag_name]}" #{entry[:image_name] + ':' + entry[:tag_name] + '@sha256:' + entry[:index_node_link].sha256}
 
 h1.uk-h1 uk-tooltip="title: #{index_node_link[:node].sha256}; delay: 500;" = "#{image_in_registry_path[1..] + ':' + tag_string + '@sha256:' + index_node_link[:node].sha256[0..5] + '...' }"
+.uk-button-group.uk-float-right
+  button.switch-btn.uk-button.uk-button-default style=""= "Explore attestations"
+  button.switch-btn.uk-button.uk-button-default style=""= "Disable attestations"
 table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
   thead
     tr

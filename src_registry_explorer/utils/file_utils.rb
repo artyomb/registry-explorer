@@ -121,7 +121,7 @@ def extract_tag(tag_path)
 end
 
 def extract_index(index_sha256)
-  { path: ['Image'], node: CachesManager.get_node(nil, index_sha256, nil) }
+  { path: ['Image'], node: CachesManager.get_node('application/vnd.oci.image.index.v1+json', index_sha256, nil) }
 end
 
 def extract_file_content_from_archive_by_path(blob_sha256, file_path)

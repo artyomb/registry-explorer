@@ -10,6 +10,15 @@ class RegistryExplorerFront < Sinatra::Base
       create_map_file: true, syntax: :sass, check: true
   use Rack::Static, urls: %w[/css /js], root: "#{__dir__}/public/", cascade: true
 
+  enable :sessions
+
+  @@current_session = nil
+
+  before do
+    session[:attestations_exploring] ||= false
+    @@current_session = session
+  end
+
   CachesManager.start_auto_refresh
   set :root, '.' #File.dirname(__FILE__)
   get '/',         &->() { slim :index }
@@ -43,6 +52,33 @@ class RegistryExplorerFront < Sinatra::Base
   end
 
   get '/healthcheck', &-> { 'Healthy' }
+
+  get '/debug' do
+    session.inspect
+  end
+
+  get '/get-in-session-attestations-exploring' do
+    session[:attestations_exploring].nil? ? 'false' : session[:attestations_exploring].to_s
+  end
+
+  put '/set-in-session-attestations-exploring' do
+    puts "Setting session[:attestations_exploring] to #{params[:new_value]}\nPrevious value: #{session[:attestations_exploring]}"
+    if params[:new_value] == 'true'
+      params[:new_value] = true
+    elsif params[:new_value] == 'false'
+      params[:new_value] = false
+    else
+      return [400, 'Error: new_value should be true or false']
+    end
+    session[:attestations_exploring] = params[:new_value]
+    puts "Session[:attestations_exploring] set to #{session[:attestations_exploring]}"
+    [200, 'OK']
+  end
+
+
+  def self.get_session
+    @@current_session
+  end
 
   error do
     "<h1>Error: #{env['sinatra.error']}</h1> <pre>#{env['sinatra.error'].backtrace.join("\n")}</pre>"
