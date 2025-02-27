@@ -11,6 +11,7 @@ ruby:
   image_entries = get_referring_image_entries(params[:sha256])
   structure = extract_tar_gz_structure(params[:sha256])
   previous_tag_id = params[:tag_id].nil? ? nil : params[:tag_id].gsub(" ", "/")
+  previous_image_sha256 = params[:img_sha256].nil? ? nil : params[:img_sha256]
   tar_gz_node = nil
   if !image_entries.nil? && image_entries.size > 0
     current_node = image_entries.first[:index_node]
@@ -96,6 +97,11 @@ sass:
     a.uk-link-text href="/tag-exploring/#{previous_tag_id}"
       span.icon-padding-right.icon-padding-left.uk-text-primary uk-icon="icon: triangle-left"
       span Back to tag
+  - if(!previous_image_sha256.nil?)
+    .uk-border-bottom.uk-padding-small.uk-padding-remove-left.uk-width-fit-content
+      a.uk-link-text href="/image-exploring/#{previous_tag_id}/#{previous_image_sha256}"
+        span.icon-padding-right.icon-padding-left.uk-text-primary uk-icon="icon: triangle-left"
+        span Back to image
 h1.uk-h1
   span Archive blob exploring
   span.uk-text-primary uk-tooltip="title: #{params[:sha256]}; cls: uk-active; delay: 500;"= " #{params[:sha256]}"

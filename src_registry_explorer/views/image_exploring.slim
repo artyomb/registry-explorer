@@ -215,9 +215,9 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
           td
             .sha256-container
               - if !(node_link[:node].node_type.to_s =~ /zip/)
-                a uk-tooltip="title: #{node_link[:node].sha256}; cls: uk-active; delay: 500;" href="/json/#{node_link[:node].sha256}?tag_id=#{(img_pth_param + '/' + tag_string).gsub('/', ' ')}"= node_link[:node].sha256[0..4] + "..."
+                a uk-tooltip="title: #{node_link[:node].sha256}; cls: uk-active; delay: 500;" href="/json/#{node_link[:node].sha256}?tag_id=#{(img_pth_param + '/' + tag_string).gsub('/', ' ')}&img_sha256=#{image_sha256}"= node_link[:node].sha256[0..4] + "..."
               - elsif node_link[:node].node_type.to_s =~ /zip/
-                a uk-tooltip="title: #{node_link[:node].sha256}; delay: 500;" href="/tar-gz/#{node_link[:node].sha256}?tag_id=#{(img_pth_param + '/' + tag_string).gsub('/', ' ')}"= node_link[:node].sha256[0..4] + "..."
+                a uk-tooltip="title: #{node_link[:node].sha256}; delay: 500;" href="/tar-gz/#{node_link[:node].sha256}?tag_id=#{(img_pth_param + '/' + tag_string).gsub('/', ' ')}&img_sha256=#{image_sha256}"= node_link[:node].sha256[0..4] + "..."
               - else
                 span uk-tooltip="title: #{node_link[:node].sha256}; delay: 500;" = node_link[:node].sha256[0..4] + "..."
             span.copy-btn.cursor-pointer data-buffervalue="#{node_link[:node].sha256}" uk-icon="icon: copy"
