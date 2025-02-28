@@ -19,7 +19,8 @@ class CachesManager
 
 
   @@cache_refresh_interval = 60 * 5 # seconds between each refresh
-  @@refreshing_in_progress = false
+  @@refreshing_in_progress_no_attest = false
+  @@refreshing_in_progress_with_attest = false
   def self.json_blob_content(sha256)
     # Version with cache
     # TimeMeasurer.measure(:reading_jsons) do
@@ -52,25 +53,34 @@ class CachesManager
 
   # def self.find_node(sha256)
   def self.get_node(type, sha256, node_size = nil)
-    if !@@refreshing_in_progress
+    if !self.is_refreshing_in_progress?
       if RegistryExplorerFront.get_session.nil? || RegistryExplorerFront.get_session[:attestations_exploring]
         @@cache_dict_with_attest[:nodes][:values][sha256] ||= Node.new(type, sha256, node_size)
       else
         @@cache_dict[:nodes][:values][sha256] ||= Node.new(type, sha256, node_size)
       end
     else
-      @@cache_dicts.each do |dict|
-        dict[:nodes][:values][sha256] ||= Node.new(type, sha256, node_size)
+      if self.is_refreshing_in_progress_no_attest?
+        @@cache_dict[:nodes][:values][sha256] ||= Node.new(type, sha256, node_size)
+      else
+        @@cache_dict_with_attest[:nodes][:values][sha256] ||= Node.new(type, sha256, node_size)
       end
-      return @@cache_dict_with_attest[:nodes][:values][sha256]
     end
   end
 
-  def self.find_node(sha256, explore_attestation)
-    if explore_attestation
-      @@cache_dict_with_attest[:nodes][:values][sha256]
+  def self.find_node(sha256)
+    if !self.is_refreshing_in_progress?
+      if RegistryExplorerFront.get_session.nil? || RegistryExplorerFront.get_session[:attestations_exploring]
+        @@cache_dict_with_attest[:nodes][:values][sha256]
+      else
+        @@cache_dict[:nodes][:values][sha256]
+      end
     else
-      @@cache_dict[:nodes][:values][sha256]
+      if self.is_refreshing_in_progress_no_attest?
+        @@cache_dict[:nodes][:values][sha256]
+      else
+        @@cache_dict_with_attest[:nodes][:values][sha256]
+      end
     end
   end
 
@@ -91,10 +101,10 @@ class CachesManager
   end
 
   def self.build_metadata(sha256_of_node)
-    cache_refreshing_lambda = lambda do |dict, explore_attestation|
+    cache_refreshing_lambda = lambda do |dict|
       dict[:build_metadata][:values][sha256_of_node] ||=
         begin
-          head_node = CachesManager.find_node(sha256_of_node, explore_attestation)
+          head_node = CachesManager.find_node(sha256_of_node)
           tmp = head_node
           effective_size = head_node.get_effective_size
 
@@ -145,13 +155,17 @@ class CachesManager
         end
       end
     TimeMeasurer.measure(:build_metadata_time) do
-      if @@refreshing_in_progress
-        [@@cache_dict_with_attest, @@cache_dict].each_with_index { |dict, i| cache_refreshing_lambda.call(dict, i == 0) }
-      else
+      if !self.is_refreshing_in_progress?
         if RegistryExplorerFront.get_session.nil? || RegistryExplorerFront.get_session[:attestations_exploring]
-          cache_refreshing_lambda.call(@@cache_dict_with_attest, true)
+          cache_refreshing_lambda.call(@@cache_dict_with_attest)
         else
-          cache_refreshing_lambda.call(@@cache_dict, false)
+          cache_refreshing_lambda.call(@@cache_dict)
+        end
+      else
+        if self.is_refreshing_in_progress_no_attest?
+          cache_refreshing_lambda.call(@@cache_dict)
+        else
+          cache_refreshing_lambda.call(@@cache_dict_with_attest)
         end
       end
     end
@@ -159,14 +173,20 @@ class CachesManager
 
   def self.start_auto_refresh
     Thread.new do
-      @@refreshing_in_progress = true
-      refresh_nodes_cache
-      @@refreshing_in_progress = false
+      @@refreshing_in_progress_with_attest = true
+      refresh_nodes_cache(@@cache_dict_with_attest)
+      @@refreshing_in_progress_with_attest = false
+      @@refreshing_in_progress_no_attest = true
+      refresh_nodes_cache(@@cache_dict)
+      @@refreshing_in_progress_no_attest = false
       loop do
         sleep @@cache_refresh_interval
-        @@refreshing_in_progress = true
-        refresh_nodes_cache
-        @@refreshing_in_progress = false
+        @@refreshing_in_progress_with_attest = true
+        refresh_nodes_cache(@@cache_dict_with_attest)
+        @@refreshing_in_progress_with_attest = false
+        @@refreshing_in_progress_no_attest = true
+        refresh_nodes_cache(@@cache_dict)
+        @@refreshing_in_progress_no_attest = false
       end
     end
   end
@@ -180,18 +200,28 @@ class CachesManager
     @@cache_dict
   end
 
+  def self.is_refreshing_in_progress?
+    @@refreshing_in_progress_no_attest || @@refreshing_in_progress_with_attest
+  end
+
+  def self.is_refreshing_in_progress_no_attest?
+    @@refreshing_in_progress_no_attest
+  end
+
+  def self.is_refreshing_in_progress_with_attest?
+    @@refreshing_in_progress_with_attest
+  end
 
   private
 
-  def self.refresh_nodes_cache
+  def self.refresh_nodes_cache(dict)
     TimeMeasurer.start_measurement
     TimeMeasurer.measure(:refresh_cache_time) do
       puts "🔄 Refreshing cache at #{Time.now}"
-      @@cache_dicts.each do |dict|
-        dict.keys.each do |key|
-          dict[key][:latest_update] = Time.now
-          dict[key][:values] = {}
-        end
+
+      dict.keys.each do |key|
+        dict[key][:latest_update] = Time.now
+        dict[key][:values] = {}
       end
       tree = { children: {}, image: {}, total_images_amount: 0, required_blobs: Set.new, problem_blobs: Set.new }
       images = extract_images(Set.new)
