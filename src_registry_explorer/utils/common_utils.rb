@@ -31,7 +31,7 @@ def define_create_time(sha256)
     file = File.join($base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data")
     Time.at(File.ctime(file))
   rescue Exception => e
-    puts "Error: #{e}"
+    puts "Error in defining create time: #{e}"
     return nil
   end
   nil
@@ -63,7 +63,7 @@ def represent_datetime(datetime_str)
     # Format the Time object into the desired format
     time_obj.strftime('%Y-%m-%d %H:%M:%S')
   rescue Exception => e
-    puts "Error: #{e}"
+    puts "Error in representing datetime: #{e}"
     '-'
   end
 end

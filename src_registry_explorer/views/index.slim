@@ -216,5 +216,5 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
               span #{tag[:name]}
             td.align-text-right #{tag[:index_Nodes].size}
             td.align-text-right #{represent_size(tag[:size]).to_s + (tag[:problem_blobs].size > 0 ? ' (some blobs not found)' : '')}
-            td #{represent_datetime(extract_index_created_at(tag[:index_Nodes]&.select{ |nd| tag[:current_index_sha256] == nd[:node].sha256 }.first[:node].sha256))}
+            td #{represent_datetime(tag[:index_Nodes]&.select{ |nd| tag[:current_index_sha256] == nd[:node].sha256 }.first[:node].created_at)}
     - TimeMeasurer.log_measurers

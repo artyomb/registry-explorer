@@ -47,8 +47,9 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
   thead
     tr
       th style="min-width: 4%; width: 4%; max-width: 4%" Main
-      th Image index sha256
+      th Indexes
       th Image structure exploring
+      th Build details
       th.uk-float-right Image size
       th Created at
   tbody
@@ -66,9 +67,14 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
               a uk-tooltip="title: #{node_link[:node].sha256}; cls: uk-active; delay: 500;" href="/json/#{node_link[:node].sha256}?tag_id=#{(img_pth_param + '/' + tag_string).gsub('/', ' ')}"= 'Index ' + node_link[:node].sha256[0..4] + "..."
             span.copy-btn.cursor-pointer data-buffervalue="#{node_link[:node].sha256}" uk-icon="icon: copy"
           - current_node_size = node_link[:node].actual_blob_size.nil? ? "-" : represent_size(node_link[:node].actual_blob_size)
-          - current_image_node_size = represent_size(node_link[:node].get_size_deep)
+          - current_image_node_size = represent_size(node_link[:node].get_effective_size)
           td
-            a uk-tooltip="title: #{node_link[:node].sha256}; cls: uk-active; delay: 500;" href="/image-exploring/#{img_pth_param + '/' + tag_string}/#{node_link[:node].sha256}" uk-icon="icon: search"= "Explore structure    "
+            a uk-tooltip="title: #{node_link[:node].sha256}; cls: uk-active; delay: 500;" href="/image-exploring/#{img_pth_param + '/' + tag_string}/#{node_link[:node].sha256}"
+              span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-left = "Explore structure "
+              span uk-icon="icon: search"
+          td.uk-text-primary.cursor-pointer uk-tooltip="title: #{'Click to expand build details ' + (node_link[:build_info].nil? ? 'NONE' : node_link[:build_info].to_s)}; pos: top-left; cls: uk-active; delay: 200;"
+            span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-left= "Build details"
+            span uk-icon="icon: info"
           td.align-text-right= current_image_node_size
-          td #{represent_datetime(extract_index_created_at(node_link[:node].sha256))}
+          td #{represent_datetime(node_link[:node].created_at)}
     - TimeMeasurer.log_measurers

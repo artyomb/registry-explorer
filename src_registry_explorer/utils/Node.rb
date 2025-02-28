@@ -28,7 +28,7 @@ class Node
         @problem_blobs.add(@sha256)
       end
     rescue Exception => e
-      puts "Error: #{e}"
+      puts "Error when Node initialization: #{e}"
       @problem_blobs.add(@sha256)
       @actual_blob_size = -1
     end
@@ -152,7 +152,7 @@ class Node
     @problem_blobs
   end
 
-  def get_size_deep
+  def get_effective_size
     @size_deep ||= begin
       included_blobs = get_included_blobs
       size_deep = 0

@@ -15,7 +15,6 @@ ruby:
   index_node_link = nil
   TimeMeasurer.measure(:extract_image_by_sha256) do
     index_node_link = extract_index(image_sha256)
-    index_node_link[:node].set_created_at(extract_index_created_at(image_sha256))
   end
   TimeMeasurer.log_measurers
 javascript:
@@ -73,7 +72,7 @@ javascript:
         let closestArrow = currentNode?.querySelector(".hide-show-arrow");
         while (childElem && parseInt(childElem.dataset.level) > parseInt(currentNode.dataset.level)) {
             closestArrow?.classList.remove("rotate-arrow");
-            chiladElem.classList.add('hidden');
+            childElem.classList.add('hidden');
             childElem = childElem.nextElementSibling;
             closestArrow = childElem?.querySelector(".hide-show-arrow");
         }
@@ -85,8 +84,10 @@ javascript:
         const response = fetch(uri, {method: 'PUT'});
         try {
             response.then(response => {
-                if (response.status === 200) {
+                if (Math.round(response.status / 200) === 1) {
                     window.location.reload();
+                } else {
+                    throw new Error(response.status);
                 }
             });
         } catch (error) {
@@ -169,7 +170,7 @@ javascript:
                     // btn.classList.add('uk-button-primary');
                     if (btn.nextElementSibling) btn.nextElementSibling.classList.remove('uk-button-primary');
                     else btn.previousElementSibling.classList.remove('uk-button-primary');
-                    window.location.reload();
+                    // window.location.reload();
                 }
             });
         });
@@ -222,7 +223,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
                 span uk-tooltip="title: #{node_link[:node].sha256}; delay: 500;" = node_link[:node].sha256[0..4] + "..."
             span.copy-btn.cursor-pointer data-buffervalue="#{node_link[:node].sha256}" uk-icon="icon: copy"
           - current_node_size = node_link[:node].actual_blob_size.nil? ? "-" : represent_size(node_link[:node].actual_blob_size)
-          - current_image_node_size = represent_size(node_link[:node].get_size_deep)
+          - current_image_node_size = represent_size(node_link[:node].get_effective_size)
           - is_image_node = depth == 0
           td uk-tooltip="title: #{node_link[:node].node_type}; delay: 500;"= node_link[:node].node_type.nil? ? "-" : node_link[:node].node_type.split('.')[-2..-1].join('.')
           td.align-text-right= node_link[:node].node_size.nil? ? "-" : represent_size(node_link[:node].node_size)

@@ -4,14 +4,18 @@ class CachesManager
                    sizes: { latest_update: Time.now, values: {} },
                    nodes: { latest_update: Time.now, values: {} },
                    indexes_sha256: { latest_update: Time.now, values: {} },
-                   repo_sizes: { latest_update: Time.now, values: {} }
+                   repo_sizes: { latest_update: Time.now, values: {} },
+                   build_metadata: { latest_update: Time.now, values: {} }
   }
   @@cache_dict_with_attest = { json_contents: { latest_update: Time.now, values: {} },
                                sizes: { latest_update: Time.now, values: {} },
                                nodes: { latest_update: Time.now, values: {} },
                                indexes_sha256: { latest_update: Time.now, values: {} },
-                               repo_sizes: { latest_update: Time.now, values: {} }
+                               repo_sizes: { latest_update: Time.now, values: {} },
+                               build_metadata: { latest_update: Time.now, values: {} }
   }
+
+  @@cache_dicts = [@@cache_dict, @@cache_dict_with_attest]
 
 
   @@cache_refresh_interval = 60 * 5 # seconds between each refresh
@@ -41,17 +45,32 @@ class CachesManager
         @@cache_dict[:sizes][:values][sha256] ||= File.size($base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data")
       end
     rescue Exception => e
-      puts "Error: #{e}"
+      puts "Error in size defining: #{e}"
       -1
     end
   end
 
   # def self.find_node(sha256)
   def self.get_node(type, sha256, node_size = nil)
-    if RegistryExplorerFront.get_session.nil? || RegistryExplorerFront.get_session[:attestations_exploring]
-      @@cache_dict_with_attest[:nodes][:values][sha256] ||= Node.new(type, sha256, node_size)
+    if !@@refreshing_in_progress
+      if RegistryExplorerFront.get_session.nil? || RegistryExplorerFront.get_session[:attestations_exploring]
+        @@cache_dict_with_attest[:nodes][:values][sha256] ||= Node.new(type, sha256, node_size)
+      else
+        @@cache_dict[:nodes][:values][sha256] ||= Node.new(type, sha256, node_size)
+      end
     else
-      @@cache_dict[:nodes][:values][sha256] ||= Node.new(type, sha256, node_size)
+      @@cache_dicts.each do |dict|
+        dict[:nodes][:values][sha256] ||= Node.new(type, sha256, node_size)
+      end
+      return @@cache_dict_with_attest[:nodes][:values][sha256]
+    end
+  end
+
+  def self.find_node(sha256, explore_attestation)
+    if explore_attestation
+      @@cache_dict_with_attest[:nodes][:values][sha256]
+    else
+      @@cache_dict[:nodes][:values][sha256]
     end
   end
 
@@ -71,6 +90,73 @@ class CachesManager
     end
   end
 
+  def self.build_metadata(sha256_of_node)
+    cache_refreshing_lambda = lambda do |dict, explore_attestation|
+      dict[:build_metadata][:values][sha256_of_node] ||=
+        begin
+          head_node = CachesManager.find_node(sha256_of_node, explore_attestation)
+          tmp = head_node
+          effective_size = head_node.get_effective_size
+
+          if head_node.node_type =~ /index/
+            head_node = head_node.links.select do |link|
+              link[:node].node_type =~ /manifest/ && !(
+                link[:node].links.any? do |lnk|
+                  lnk[:node].links.any? do |l|
+                    l[:node].node_type =~ /toto/ && l[:node].node_type =~ /json/
+                  end
+                end
+              )
+            end.first[:node]
+          end
+          raise "No manifest found" unless head_node
+
+          config_node_link = head_node.links.select { |link| (link[:node].node_type =~ /config/ && link[:node].node_type =~ /json/) || link[:node].node_type == 'application/vnd.docker.container.image.v1+json' }.first
+          raise "No config found" unless config_node_link
+
+          configuration = CachesManager.json_blob_content(config_node_link[:node].sha256)
+          tmp.set_created_at configuration[:created] unless tmp.created_at
+
+          result_hash = {
+            created_at: configuration[:created],
+            os: configuration[:os],
+            architecture: configuration[:architecture],
+            size: effective_size,
+            environment: configuration[:config][:Env],
+            labels: configuration[:config][:Labels],
+            entrypoint: configuration[:config][:Entrypoint],
+            cmd: configuration[:config][:Cmd]
+          }
+
+          gitlab_key_condition = lambda { |key| key =~ /GITLAB/ }
+          github_key_condition = lambda { |key| key =~ /GITHUB/ }
+
+          env_hash = configuration[:config][:Env].map {|env_var| env_var.split('=')}.to_h { |key, value| [key.to_sym, value] }
+          if env_hash.keys.any?(&gitlab_key_condition)
+            TimeMeasurer.measure(:extracting_gitlab_ci_cd_env) do
+              result_hash[:gitlab_ci_cd_env] = env_hash.select{ |k, v| gitlab_key_condition[k] }
+            end
+          elsif env_hash.keys.any?(&github_key_condition)
+            TimeMeasurer.measure(:extracting_github_ci_cd_env) do
+              result_hash[:github_ci_cd_env] = env_hash.select(&github_key_condition)
+            end
+          end
+          result_hash
+        end
+      end
+    TimeMeasurer.measure(:build_metadata_time) do
+      if @@refreshing_in_progress
+        [@@cache_dict_with_attest, @@cache_dict].each_with_index { |dict, i| cache_refreshing_lambda.call(dict, i == 0) }
+      else
+        if RegistryExplorerFront.get_session.nil? || RegistryExplorerFront.get_session[:attestations_exploring]
+          cache_refreshing_lambda.call(@@cache_dict_with_attest, true)
+        else
+          cache_refreshing_lambda.call(@@cache_dict, false)
+        end
+      end
+    end
+  end
+
   def self.start_auto_refresh
     Thread.new do
       @@refreshing_in_progress = true
@@ -85,15 +171,27 @@ class CachesManager
     end
   end
 
+
+  def self.cache_dict_with_attest
+    @@cache_dict_with_attest
+  end
+
+  def self.cache_dict
+    @@cache_dict
+  end
+
+
   private
 
   def self.refresh_nodes_cache
     TimeMeasurer.start_measurement
     TimeMeasurer.measure(:refresh_cache_time) do
       puts "🔄 Refreshing cache at #{Time.now}"
-      @@cache_dict.keys.each do |key|
-        @@cache_dict[key][:latest_update] = Time.now
-        @@cache_dict[key][:values] = {}
+      @@cache_dicts.each do |dict|
+        dict.keys.each do |key|
+          dict[key][:latest_update] = Time.now
+          dict[key][:values] = {}
+        end
       end
       tree = { children: {}, image: {}, total_images_amount: 0, required_blobs: Set.new, problem_blobs: Set.new }
       images = extract_images(Set.new)

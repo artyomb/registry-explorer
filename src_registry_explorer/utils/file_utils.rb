@@ -121,7 +121,10 @@ def extract_tag(tag_path)
 end
 
 def extract_index(index_sha256)
-  { path: ['Image'], node: CachesManager.get_node('application/vnd.oci.image.index.v1+json', index_sha256, nil) }
+  index_json_content = CachesManager.json_blob_content(index_sha256)
+  index_node_link = { path: ['Image'], node: CachesManager.get_node(index_json_content[:mediaType], index_sha256, CachesManager.blob_size(index_sha256)) }
+  index_node_link[:build_info] = CachesManager.build_metadata(index_node_link[:node].sha256)
+  index_node_link
 end
 
 def extract_file_content_from_archive_by_path(blob_sha256, file_path)
@@ -134,7 +137,7 @@ def extract_file_content_from_archive_by_path(blob_sha256, file_path)
         entry_path = (entry.prefix.split('/') + entry.name.split('/')).join('/')
         if !founded && entry_path == file_path
           content = entry.read
-          result =  content.force_encoding('UTF-8').encode('UTF-8', invalid: :replace, undef: :replace, replace: '?') rescue "Couldn't read content in file"
+          result = content.force_encoding('UTF-8').encode('UTF-8', invalid: :replace, undef: :replace, replace: '?') rescue "Couldn't read content in file"
           break
         end
       end
@@ -179,26 +182,27 @@ def get_images_paths
   end
 end
 
-def extract_index_created_at(sha256)
-  begin
-    index_json = CachesManager.json_blob_content(sha256)
-    if index_json[:manifests].nil?
-      manifest_json = index_json
-    else
-      man_sha256 = index_json[:manifests]
-                     &.select { |mf| !mf[:platform][:os].nil? && mf[:platform][:os] != 'unknown'}
-                     .map { |mf| mf[:digest].split(':').last }
-                     .first
-      manifest_json = CachesManager.json_blob_content(man_sha256)
-    end
-    date_sha256 = manifest_json[:config][:digest].split(':').last
-    date = CachesManager.json_blob_content(date_sha256)[:created]
-  rescue Exception => e
-    puts "Error in extracting create date: #{e}"
-    date =  nil
-  end
-  date
-end
+# Unnecessary function
+# def extract_index_created_at(sha256)
+#   begin
+#     index_json = CachesManager.json_blob_content(sha256)
+#     if index_json[:manifests].nil?
+#       manifest_json = index_json
+#     else
+#       man_sha256 = index_json[:manifests]
+#                      &.select { |mf| !mf[:platform][:os].nil? && mf[:platform][:os] != 'unknown'}
+#                      .map { |mf| mf[:digest].split(':').last }
+#                      .first
+#       manifest_json = CachesManager.json_blob_content(man_sha256)
+#     end
+#     date_sha256 = manifest_json[:config][:digest].split(':').last
+#     date = CachesManager.json_blob_content(date_sha256)[:created]
+#   rescue Exception => e
+#     puts "Error in extracting create date: #{e}"
+#     date =  nil
+#   end
+#   date
+# end
 
 def get_referring_image_entries(blob_sha256)
   images = Set.new
