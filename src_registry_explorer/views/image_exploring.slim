@@ -114,6 +114,17 @@ javascript:
             });
     }
 
+    function toggleBuildInfoVisibility() {
+        const buildInfo = document.getElementById("build-info");
+        if (buildInfo) {
+            buildInfo.querySelectorAll('.can-be-hidden').forEach(elem => {
+                elem.classList.toggle('uk-hidden');
+            });
+            const btn = buildInfo.querySelector('.uk-button-small');
+            btn.textContent = btn.textContent === "Show build info" ? "Hide build info" : "Show build info";
+        }
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
         refreshAttestationsExploring();
         document.querySelectorAll(".tree-node").forEach(function(treeNode) {
@@ -195,7 +206,7 @@ h2.uk-h2.uk-margin-remove-top.uk-margin-remove-bottom.uk-margin-small-top.uk-mar
 .uk-card.uk-card-default.uk-card-body.uk-overflow-auto.uk-margin
   - node_link = index_node_link
 
-  .uk-grid-small.uk-child-width-1-2.uk-grid-match[uk-grid]
+  #build-info.uk-grid-small.uk-child-width-1-2.uk-grid-match[uk-grid]
     - if node_link[:build_info].nil? || node_link[:build_info].empty?
       p No build details
     - else
@@ -211,30 +222,29 @@ h2.uk-h2.uk-margin-remove-top.uk-margin-remove-bottom.uk-margin-small-top.uk-mar
           - else
             a href=git_commit_url target="_blank"
               span.uk-text-primary= git_commit_url
-        .uk-container.uk-margin
-          span.icon-padding-right uk-icon="icon: calendar"
-          span.uk-text-bold Created at:
-          br
-          span.uk-text-primary= node_link.dig(:build_info, :created_at).nil? ? "Date info not found" : represent_datetime(node_link[:build_info][:created_at])
-        .uk-container.uk-margin
-          span.icon-padding-right uk-icon="icon: link-external"
-          span.uk-text-bold Cmd:
-          br
+        .can-be-hidden.uk-hidden
+          .uk-container.uk-margin
+            span.icon-padding-right uk-icon="icon: calendar"
+            span.uk-text-bold Created at:
+            br
+            span.uk-text-primary= node_link.dig(:build_info, :created_at).nil? ? "Date info not found" : represent_datetime(node_link[:build_info][:created_at])
+          .uk-container.uk-margin
+            span.icon-padding-right uk-icon="icon: link-external"
+            span.uk-text-bold Cmd:
+            br
             span.uk-text-primary= node_link.dig(:build_info, :cmd).nil? ? "Command info not found" : node_link[:build_info][:cmd]
-        .uk-container.uk-margin.uk-overflow-auto
-          span.icon-padding-right uk-icon="icon: tag"
-          span.uk-text-bold Labels:
-          br
-          - has_environment = !node_link.dig(:build_info, :environment).nil? && node_link[:build_info][:environment].length > 0
-          - if !has_environment
-            span.uk-text-primary= "Environment info not found"
-          - else
-            .uk-container.uk-margin-small
-              - node_link[:build_info][:environment].each do |env|
-                span.uk-text-primary= env
-                br
-
-
+          .uk-container.uk-margin.uk-overflow-auto
+            span.icon-padding-right uk-icon="icon: tag"
+            span.uk-text-bold Labels:
+            br
+            - has_environment = !node_link.dig(:build_info, :environment).nil? && node_link[:build_info][:environment].length > 0
+            - if !has_environment
+              span.uk-text-primary= "Environment info not found"
+            - else
+              .uk-container.uk-margin-small
+                - node_link[:build_info][:environment].each do |env|
+                  span.uk-text-primary= env
+                  br
       .uk-width-1-2
         - if !node_link[:build_info][:os].nil? && !node_link[:build_info][:architecture].nil?
           .uk-container.uk-margin
@@ -248,6 +258,7 @@ h2.uk-h2.uk-margin-remove-top.uk-margin-remove-bottom.uk-margin-small-top.uk-mar
             - else
               a href=git_pipeline_url target="_blank"
                 span.uk-text-primary= git_pipeline_url
+        .can-be-hidden.uk-hidden
           .uk-container.uk-margin
             span.icon-padding-right uk-icon="icon: server"
             span.uk-text-bold OS/Architecture:
@@ -270,7 +281,8 @@ h2.uk-h2.uk-margin-remove-top.uk-margin-remove-bottom.uk-margin-small-top.uk-mar
                 - node_link[:build_info][:environment].each do |env|
                   span.uk-text-primary= env
                   br
-
+      .uk-width-auto
+        .uk-button-small.uk-button-primary onclick="toggleBuildInfoVisibility()"= "Show build info"
 .uk-button-group.uk-float-right
   button.switch-btn.uk-button.uk-button-default style=""= "Explore attestations"
   button.switch-btn.uk-button.uk-button-default style=""= "Disable attestations"
