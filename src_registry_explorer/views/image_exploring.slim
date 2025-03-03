@@ -212,7 +212,9 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
           td style="padding-left: #{depth * margin_coef}rem "
             - if !(node_link[:node].node_type.to_s =~ /zip/) && node_link[:node].links.any?
               span.hide-show-arrow uk-icon="icon: chevron-right"
-            span=" #{node_link[:path].join('/')}"
+              span=" #{node_link[:path].join('/')}"
+            - else
+              span style="margin-left: 2rem"="#{node_link[:path].join('/')}"
           td
             .inline-container-small
               - if !(node_link[:node].node_type.to_s =~ /zip/)
