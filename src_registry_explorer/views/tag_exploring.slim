@@ -46,18 +46,86 @@ sass:
     span.icon-padding-right.icon-padding-left.uk-text-primary uk-icon="icon: triangle-left"
     span Back to registry
 h1.uk-h1.uk-text-bold= "#{image_in_registry_path[1..-1] + ':' + tag_string }"
-h2.uk-h2.uk-margin-remove-top.uk-margin-remove-bottom.uk-margin-small-top.uk-margin-small-bottom.uk-text-bold.uk-text-break Latest image details
+h2.uk-h2.uk-margin-remove-top.uk-margin-remove-bottom.uk-margin-small-top.uk-margin-small-bottom.uk-text-bold.uk-text-break Latest image build details
 .uk-card.uk-card-default.uk-card-body.uk-overflow-auto.uk-margin
   - node_link = tag[:index_Nodes][0]
-  h3.uk-card-title Build details
-  - if node_link[:build_info].nil?
-    p No build details
-  - else
-    - node_link[:build_info].each do |key, value|
-      p
-        span.uk-text-bold= key
-        span.uk-text-primary= " : "
-        span= value
+
+  .uk-grid-small.uk-child-width-1-2.uk-grid-match[uk-grid]
+    - if node_link[:build_info].nil? || node_link[:build_info].empty?
+      p No build details
+    - else
+      .uk-width-1-2
+        .uk-container.uk-margin
+          span.icon-padding-right uk-icon="icon: git-branch"
+          span.uk-text-bold Git commit url:
+          - git_commit_url ||= node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_COMMITURL)
+          - git_commit_url ||= node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_COMMITURL)
+          br
+          - if git_commit_url.nil?
+            span.uk-text-primary= "Commit url not found"
+          - else
+            a href=git_commit_url target="_blank"
+              span.uk-text-primary= git_commit_url
+        .uk-container.uk-margin
+          span.icon-padding-right uk-icon="icon: calendar"
+          span.uk-text-bold Created at:
+          br
+          span.uk-text-primary= node_link.dig(:build_info, :created_at).nil? ? "Date info not found" : represent_datetime(node_link[:build_info][:created_at])
+        .uk-container.uk-margin
+          span.icon-padding-right uk-icon="icon: link-external"
+          span.uk-text-bold Cmd:
+          br
+            span.uk-text-primary= node_link.dig(:build_info, :cmd).nil? ? "Command info not found" : node_link[:build_info][:cmd]
+        .uk-container.uk-margin.uk-overflow-auto
+          span.icon-padding-right uk-icon="icon: tag"
+          span.uk-text-bold Labels:
+          br
+          - has_environment = !node_link.dig(:build_info, :environment).nil? && node_link[:build_info][:environment].length > 0
+          - if !has_environment
+            span.uk-text-primary= "Environment info not found"
+          - else
+            .uk-container.uk-margin-small
+              - node_link[:build_info][:environment].each do |env|
+                span.uk-text-primary= env
+                br
+
+
+      .uk-width-1-2
+        - if !node_link[:build_info][:os].nil? && !node_link[:build_info][:architecture].nil?
+          .uk-container.uk-margin
+            span.icon-padding-right uk-icon="icon: git-branch"
+            span.uk-text-bold Git pipeline url:
+            - git_pipeline_url ||= node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_PIPELINEURL)
+            - git_pipeline_url ||= node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_ACTIONURL)
+            br
+            - if git_pipeline_url.nil?
+              span.uk-text-primary= "Pipeline url not found"
+            - else
+              a href=git_pipeline_url target="_blank"
+                span.uk-text-primary= git_pipeline_url
+          .uk-container.uk-margin
+            span.icon-padding-right uk-icon="icon: server"
+            span.uk-text-bold OS/Architecture:
+            br
+            span.uk-text-primary= node_link[:build_info][:os] + '/' + node_link[:build_info][:architecture]
+          .uk-container.uk-margin
+            span.icon-padding-right uk-icon="icon: sign-in"
+            span.uk-text-bold Entrypoint:
+            br
+            span.uk-text-primary= node_link.dig(:build_info, :entrypoint).nil? ? "Entrypoint info not found" : node_link[:build_info][:entrypoint]
+          .uk-container.uk-margin.uk-overflow-auto
+            span.icon-padding-right uk-icon="icon: list"
+            span.uk-text-bold Environment variables:
+            br
+            - has_environment = !node_link.dig(:build_info, :environment).nil? && node_link[:build_info][:environment].length > 0
+            - if !has_environment
+              span.uk-text-primary= "Environment info not found"
+            - else
+              .uk-container.uk-margin-small
+                - node_link[:build_info][:environment].each do |env|
+                  span.uk-text-primary= env
+                  br
+
 
 h2.uk-h2.uk-margin-remove-top.uk-margin-remove-bottom.uk-margin-small-top.uk-margin-small-bottom.uk-text-bold.uk-text-break History
 table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
@@ -100,7 +168,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
               a href="#{git_commit_url}"
                 .inline-container
                   span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-left= "Git commit"
-                span uk-icon="icon: github"
+                span uk-icon="icon: git-branch"
                 br
             - else
               .inline-container
@@ -110,7 +178,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
               a href="#{git_pipeline_url}"
                 .inline-container
                   span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-left= "Git pipeline"
-                span uk-icon="icon: github"
+                span uk-icon="icon: git-branch"
             - else
               .inline-container
                 span.uk-text-secondary= "Could not find git pipeline url"
