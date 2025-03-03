@@ -8,16 +8,16 @@ ruby:
   previous_image_sha256 = params[:img_sha256].nil? ? nil : params[:img_sha256]
   TimeMeasurer.log_measurers
 
-- if (!previous_tag_id.nil?)
+/ - if (!previous_tag_id.nil?)
+/   .uk-border-bottom.uk-padding-small.uk-padding-remove-left.uk-width-fit-content
+/     a.uk-link-text href="/tag-exploring/#{previous_tag_id}"
+/       span.icon-padding-right.icon-padding-left.uk-text-primary uk-icon="icon: triangle-left"
+/       span Back to tag
+- if (!previous_image_sha256.nil?)
   .uk-border-bottom.uk-padding-small.uk-padding-remove-left.uk-width-fit-content
-    a.uk-link-text href="/tag-exploring/#{previous_tag_id}"
+    a.uk-link-text href="/image-exploring/#{previous_tag_id}/#{previous_image_sha256}"
       span.icon-padding-right.icon-padding-left.uk-text-primary uk-icon="icon: triangle-left"
-      span Back to tag
-  - if (!previous_image_sha256.nil?)
-    .uk-border-bottom.uk-padding-small.uk-padding-remove-left.uk-width-fit-content
-      a.uk-link-text href="/image-exploring/#{previous_tag_id}/#{previous_image_sha256}"
-        span.icon-padding-right.icon-padding-left.uk-text-primary uk-icon="icon: triangle-left"
-        span Back to image
+      span Back to image
 
 h1.uk-h1
   span JSON blob
