@@ -180,7 +180,7 @@ javascript:
 sass:
   .copy-btn
     margin-left: 0.5rem
-  .sha256-container
+  .inline-container-small
     display: inline-block
     width: 3.5rem
 .uk-border-bottom.uk-padding-small.uk-padding-remove-left.uk-width-fit-content
@@ -214,7 +214,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
               span.hide-show-arrow uk-icon="icon: chevron-right"
             span=" #{node_link[:path].join('/')}"
           td
-            .sha256-container
+            .inline-container-small
               - if !(node_link[:node].node_type.to_s =~ /zip/)
                 a uk-tooltip="title: #{node_link[:node].sha256}; cls: uk-active; delay: 500;" href="/json/#{node_link[:node].sha256}?tag_id=#{(img_pth_param + '/' + tag_string).gsub('/', ' ')}&img_sha256=#{image_sha256}"= node_link[:node].sha256[0..4] + "..."
               - elsif node_link[:node].node_type.to_s =~ /zip/

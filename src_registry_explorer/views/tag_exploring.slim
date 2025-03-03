@@ -35,21 +35,38 @@ javascript:
 sass:
   .copy-btn
     margin-left: 3.5rem
-  .sha256-container
+  .inline-container-small
     display: inline-block
-    width: 3.5rem
+    width: 3rem
+  .inline-container
+    display: inline-block
+    width: 6rem
 .uk-border-bottom.uk-padding-small.uk-padding-remove-left.uk-width-fit-content
   a.uk-link-text href="/index"
     span.icon-padding-right.icon-padding-left.uk-text-primary uk-icon="icon: triangle-left"
     span Back to registry
-h1.uk-h1= "#{image_in_registry_path[1..-1] + ':' + tag_string }"
+h1.uk-h1.uk-text-bold= "#{image_in_registry_path[1..-1] + ':' + tag_string }"
+h2.uk-h2.uk-margin-remove-top.uk-margin-remove-bottom.uk-margin-small-top.uk-margin-small-bottom.uk-text-bold.uk-text-break Latest image details
+.uk-card.uk-card-default.uk-card-body.uk-overflow-auto.uk-margin
+  - node_link = tag[:index_Nodes][0]
+  h3.uk-card-title Build details
+  - if node_link[:build_info].nil?
+    p No build details
+  - else
+    - node_link[:build_info].each do |key, value|
+      p
+        span.uk-text-bold= key
+        span.uk-text-primary= " : "
+        span= value
+
+h2.uk-h2.uk-margin-remove-top.uk-margin-remove-bottom.uk-margin-small-top.uk-margin-small-bottom.uk-text-bold.uk-text-break History
 table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
   thead
     tr
       th style="min-width: 4%; width: 4%; max-width: 4%" Main
+      th Image exploring
       th Indexes
-      th Image structure exploring
-      th Build details
+      th Git pipeline
       th.uk-float-right Image size
       th Created at
   tbody
@@ -63,18 +80,40 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
             - if node_is_current
               span uk-icon="icon: check" style="color: green; min-width: max-content; padding: 0.5rem"
           td
-            .sha256-container
-              a uk-tooltip="title: #{node_link[:node].sha256}; cls: uk-active; delay: 500;" href="/json/#{node_link[:node].sha256}?tag_id=#{(img_pth_param + '/' + tag_string).gsub('/', ' ')}"= 'Index ' + node_link[:node].sha256[0..4] + "..."
-            span.copy-btn.cursor-pointer data-buffervalue="#{node_link[:node].sha256}" uk-icon="icon: copy"
-          - current_node_size = node_link[:node].actual_blob_size.nil? ? "-" : represent_size(node_link[:node].actual_blob_size)
-          - current_image_node_size = represent_size(node_link[:node].get_effective_size)
-          td
             a uk-tooltip="title: #{node_link[:node].sha256}; cls: uk-active; delay: 500;" href="/image-exploring/#{img_pth_param + '/' + tag_string}/#{node_link[:node].sha256}"
               span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-left = "Explore structure "
               span uk-icon="icon: search"
-          td.uk-text-primary.cursor-pointer uk-tooltip="title: #{'Click to expand build details ' + (node_link[:build_info].nil? ? 'NONE' : node_link[:build_info].to_s)}; pos: top-left; cls: uk-active; delay: 200;"
-            span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-left= "Build details"
-            span uk-icon="icon: info"
+          td
+            .inline-container-small
+              / a uk-tooltip="title: #{node_link[:node].sha256}; cls: uk-active; delay: 500;" href="/json/#{node_link[:node].sha256}?tag_id=#{(img_pth_param + '/' + tag_string).gsub('/', ' ')}"= node_link[:node].sha256[0..4] + "..."
+              span uk-tooltip="title: #{node_link[:node].sha256}; cls: uk-active; delay: 500;"= node_link[:node].sha256[0..6] + "..."
+            a
+              span.copy-btn.cursor-pointer data-buffervalue="#{node_link[:node].sha256}" uk-icon="icon: copy"
+            - current_node_size = node_link[:node].actual_blob_size.nil? ? "-" : represent_size(node_link[:node].actual_blob_size)
+            - current_image_node_size = represent_size(node_link[:node].get_effective_size)
+          td.uk-text-primary.cursor-pointer
+            - git_commit_url ||= node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_COMMITURL)
+            - git_commit_url ||= node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_COMMITURL)
+            - git_pipeline_url ||= node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_PIPELINEURL)
+            - git_pipeline_url ||= node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_ACTIONURL)
+            - if !git_commit_url.nil?
+              a href="#{git_commit_url}"
+                .inline-container
+                  span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-left= "Git commit"
+                span uk-icon="icon: github"
+                br
+            - else
+              .inline-container
+                span.uk-text-secondary="Could not find git commit url"
+              br
+            - if !git_pipeline_url.nil?
+              a href="#{git_pipeline_url}"
+                .inline-container
+                  span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-left= "Git pipeline"
+                span uk-icon="icon: github"
+            - else
+              .inline-container
+                span.uk-text-secondary= "Could not find git pipeline url"
           td.align-text-right= current_image_node_size
           td #{represent_datetime(node_link[:node].created_at)}
     - TimeMeasurer.log_measurers
