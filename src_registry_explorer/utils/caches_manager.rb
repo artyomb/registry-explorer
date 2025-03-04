@@ -105,6 +105,7 @@ class CachesManager
       dict[:build_metadata][:values][sha256_of_node] ||=
         begin
           head_node = CachesManager.find_node(sha256_of_node)
+          return nil if head_node.nil?
           tmp = head_node
           effective_size = head_node.get_effective_size
 

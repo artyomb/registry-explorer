@@ -129,7 +129,8 @@ end
 
 def extract_index(index_sha256)
   index_node_link = { path: ['Image'], node: CachesManager.get_node(nil, index_sha256, CachesManager.blob_size(index_sha256)) }
-  index_node_link[:build_info] = CachesManager.build_metadata(index_node_link[:node].sha256)
+  index_node_link[:build_info] = CachesManager.build_metadata(index_node_link[:node].sha256) unless index_node_link[:node].actual_blob_size <= 0 || index_node_link[:node].get_problem_blobs.size > 0
+  index_node_link[:build_info] ||= nil
   index_node_link
 end
 
