@@ -40,7 +40,7 @@ sass:
     width: 3rem
   .inline-container
     display: inline-block
-    width: 6rem
+    width: 5rem
 .uk-border-bottom.uk-padding-small.uk-padding-remove-left.uk-width-fit-content
   a.uk-link-text href="/index"
     span.icon-padding-right.icon-padding-left.uk-text-primary uk-icon="icon: triangle-left"
@@ -83,8 +83,8 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
     tr
       th style="min-width: 4%; width: 4%; max-width: 4%" Main
       th Image exploring
-      th Git pipeline
-      th Git commit
+      th.uk-text-right Git pipeline
+      th.uk-text-right Git commit
       th.uk-float-right Image size
       th Created at
   tbody
@@ -104,7 +104,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
               span.copy-btn.cursor-pointer data-buffervalue="#{node_link[:node].sha256}" uk-icon="icon: copy"
             - current_node_size = node_link[:node].actual_blob_size.nil? ? "-" : represent_size(node_link[:node].actual_blob_size)
             - current_image_node_size = represent_size(node_link[:node].get_effective_size)
-          td.uk-text-primary.cursor-pointer
+          td.uk-text-right.uk-text-primary.cursor-pointer
             - git_pipeline_url ||= node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_PIPELINEURL)
             - git_pipeline_url ||= node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_ACTIONURL)
             - git_pipeline_iid ||= node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_PIPELINE_IID)
@@ -112,21 +112,20 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
             - if !git_pipeline_url.nil?
               a href="#{git_pipeline_url}"
                 .inline-container
-                  span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-left= git_pipeline_iid
-                span uk-icon="icon: git-branch"
+                  span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-right.uk-padding-remove-left= git_pipeline_iid
             - else
               .inline-container
                 span.uk-text-secondary= "Could not find git pipeline url"
-          td.uk-text-primary.cursor-pointer
+          td.uk-text-right.uk-text-primary.cursor-pointer
             - git_commit_url ||= node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_COMMITURL)
             - git_commit_url ||= node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_COMMITURL)
             - git_commit_short_sha ||= node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_COMMIT_SHORT_SHA)
             - git_commit_short_sha ||= node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_COMMIT_SHORT_SHA)
             - if !git_commit_url.nil?
               a href="#{git_commit_url}"
-                .inline-container
-                  span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-left= git_commit_short_sha
                 span uk-icon="icon: git-branch"
+                .inline-container.uk-text-right
+                  span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-right.uk-padding-remove-left= git_commit_short_sha
             - else
               .inline-container
                 span.uk-text-secondary="Could not find git commit url"
