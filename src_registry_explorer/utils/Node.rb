@@ -28,16 +28,24 @@ class Node
         @problem_blobs.add(@sha256)
       end
     rescue Exception => e
-      puts "Error when Node initialization: #{e}"
+      puts "Error when Node with sha256 = #{@sha256} initialization: #{e}"
       @problem_blobs.add(@sha256)
       @actual_blob_size = -1
+      return
     end
     if @type.to_s =~ /zip/
       @@not_json_nodes_created+=1
       return
     end
 
-    json_blob_content = CachesManager.json_blob_content(@sha256)
+    json_blob_content ||= begin
+                            CachesManager.json_blob_content(@sha256)
+                          rescue Exception => e
+                            @actual_blob_size = -1
+                            @problem_blobs.add(@sha256)
+                            puts "Error in json blob content by sha256#{@sha256}: #{e}"
+                            return
+                          end
     @type ||= json_blob_content[:mediaType] # "application/vnd.oci.image.index.v1+json"
 
     # Check if the keys exist and delete the :materials key
