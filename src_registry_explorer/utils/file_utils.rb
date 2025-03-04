@@ -108,11 +108,14 @@ def extract_tag(tag_path)
   current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: CachesManager.get_index_sha256(tag_path + "/current/link"), required_blobs: Set.new, size: -1, problem_blobs: Set.new }
   indexes_paths = Dir.glob(tag_path + "/index/sha256/*")
   current_tag[:index_Nodes] << extract_index(current_tag[:current_index_sha256])
+  other_inndex_nodes = []
   indexes_paths.each do |index_path|
     index_sha256 = index_path.split('/').last
     next if index_sha256 == current_tag[:current_index_sha256]
-    current_tag[:index_Nodes] << extract_index(index_sha256)
+    other_inndex_nodes << extract_index(index_sha256)
   end
+  other_inndex_nodes.sort_by! { |index_node| index_node[:node].created_at }.reverse!
+  current_tag[:index_Nodes].append(*other_inndex_nodes)
   TimeMeasurer.measure(:search_tags_blobs) do
     current_tag[:index_Nodes].map { |index_node| current_tag[:required_blobs].merge index_node[:node].get_included_blobs }
   end

@@ -200,7 +200,7 @@ sass:
     span Back to tag
     / "/tag-exploring#{entry[:image_name]}/#{entry[:tag_name]}" #{entry[:image_name] + ':' + entry[:tag_name] + '@sha256:' + entry[:index_node_link].sha256}
 
-h1.uk-h1 uk-tooltip="title: #{index_node_link[:node].sha256}; delay: 500;" = "#{image_in_registry_path[1..] + ':' + tag_string + '@sha256:' + index_node_link[:node].sha256[0..5] + '...' }"
+h1.uk-h1 = "#{image_in_registry_path[1..] + ':' + tag_string + '@sha256:' + index_node_link[:node].sha256 }"
 
 h2.uk-h2.uk-margin-remove-top.uk-margin-remove-bottom.uk-margin-small-top.uk-margin-small-bottom.uk-text-break Image build details
 .uk-card.uk-card-default.uk-card-body.uk-overflow-auto.uk-margin
@@ -211,17 +211,18 @@ h2.uk-h2.uk-margin-remove-top.uk-margin-remove-bottom.uk-margin-small-top.uk-mar
       p No build details
     - else
       .uk-width-1-2
-        .uk-container.uk-margin
-          span.icon-padding-right uk-icon="icon: git-branch"
-          span.uk-text-bold Git commit url:
-          - git_commit_url ||= node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_COMMITURL)
-          - git_commit_url ||= node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_COMMITURL)
-          br
-          - if git_commit_url.nil?
-            span.uk-text-primary= "Commit url not found"
-          - else
-            a href=git_commit_url target="_blank"
-              span.uk-text-primary= git_commit_url
+        .div
+          .uk-container.uk-margin
+            span.icon-padding-right uk-icon="icon: git-branch"
+            span.uk-text-bold Git commit url:
+            - git_commit_url ||= node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_COMMITURL)
+            - git_commit_url ||= node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_COMMITURL)
+            br
+            - if git_commit_url.nil?
+              span.uk-text-primary= "Commit url not found"
+            - else
+              a href=git_commit_url target="_blank"
+                span.uk-text-primary= git_commit_url
         .can-be-hidden.uk-hidden
           .uk-container.uk-margin
             span.icon-padding-right uk-icon="icon: calendar"
@@ -246,18 +247,19 @@ h2.uk-h2.uk-margin-remove-top.uk-margin-remove-bottom.uk-margin-small-top.uk-mar
                   span.uk-text-primary= env
                   br
       .uk-width-1-2
-        - if !node_link[:build_info][:os].nil? && !node_link[:build_info][:architecture].nil?
-          .uk-container.uk-margin
-            span.icon-padding-right uk-icon="icon: git-branch"
-            span.uk-text-bold Git pipeline url:
-            - git_pipeline_url ||= node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_PIPELINEURL)
-            - git_pipeline_url ||= node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_ACTIONURL)
-            br
-            - if git_pipeline_url.nil?
-              span.uk-text-primary= "Pipeline url not found"
-            - else
-              a href=git_pipeline_url target="_blank"
-                span.uk-text-primary= git_pipeline_url
+        .div
+          - if !node_link[:build_info][:os].nil? && !node_link[:build_info][:architecture].nil?
+            .uk-container.uk-margin
+              span.icon-padding-right uk-icon="icon: git-branch"
+              span.uk-text-bold Git pipeline url:
+              - git_pipeline_url ||= node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_PIPELINEURL)
+              - git_pipeline_url ||= node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_ACTIONURL)
+              br
+              - if git_pipeline_url.nil?
+                span.uk-text-primary= "Pipeline url not found"
+              - else
+                a href=git_pipeline_url target="_blank"
+                  span.uk-text-primary= git_pipeline_url
         .can-be-hidden.uk-hidden
           .uk-container.uk-margin
             span.icon-padding-right uk-icon="icon: server"
@@ -301,7 +303,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
       - node_links.each do |node_link|
         - class_string_cursor = (!(node_link[:node].node_type.to_s =~ /zip/) && node_link[:node].links.any?) ? '' : 'default-cursor'
         - class_string_warning = node_link[:node].get_problem_blobs.size > 0 || node_link[:node].get_problem_blobs.nil? ? 'warning-background' : ''
-        tr.tree-node.hidden id="#{img_pth_param}/#{tag_string}/#{node_link[:node].sha256}" data-level="#{depth}" class="#{class_string_cursor + ' ' + class_string_warning}"
+        tr.tree-node.hidden id="#{img_pth_param}/#{tag_string}/#{node_link[:node].sha256}" data-level="#{depth}" class="#{class_string_cursor + ' ' + class_string_warning}" onmouseover="this.querySelector('.to-be-hidden').classList.remove('uk-hidden')" onmouseout="this.querySelector('.to-be-hidden').classList.add('uk-hidden')"
           td style="padding-left: #{depth * margin_coef}rem "
             - if !(node_link[:node].node_type.to_s =~ /zip/) && node_link[:node].links.any?
               span.hide-show-arrow uk-icon="icon: chevron-right"
@@ -316,7 +318,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
                 a uk-tooltip="title: #{node_link[:node].sha256}; delay: 500;" href="/tar-gz/#{node_link[:node].sha256}?tag_id=#{(img_pth_param + '/' + tag_string).gsub('/', ' ')}&img_sha256=#{image_sha256}"= node_link[:node].sha256[0..4] + "..."
               - else
                 span uk-tooltip="title: #{node_link[:node].sha256}; delay: 500;" = node_link[:node].sha256[0..4] + "..."
-            span.copy-btn.cursor-pointer data-buffervalue="#{node_link[:node].sha256}" uk-icon="icon: copy"
+            span.copy-btn.cursor-pointer.to-be-hidden.uk-hidden data-buffervalue="#{node_link[:node].sha256}" uk-icon="icon: copy"
           - current_node_size = node_link[:node].actual_blob_size.nil? ? "-" : represent_size(node_link[:node].actual_blob_size)
           - current_image_node_size = represent_size(node_link[:node].get_effective_size)
           - is_image_node = depth == 0

@@ -42,30 +42,26 @@ class Node
 
     # Check if the keys exist and delete the :materials key
     if @type.to_s =~ /toto/ && @type.to_s =~ /json/
-      begin
-        if !CachesManager.is_refreshing_in_progress?
-          if RegistryExplorerFront.get_session.nil? || RegistryExplorerFront.get_session[:attestations_exploring]
-            if json_blob_content[:predicate] && json_blob_content[:predicate].is_a?(Hash)
-              json_blob_content[:predicate].delete(:materials)
-            end
-          else
-            return
-          end
-        else
-          if CachesManager.is_refreshing_in_progress_no_attest?
-            return
-          elsif CachesManager.is_refreshing_in_progress_with_attest?
-            if json_blob_content[:predicate] && json_blob_content[:predicate].is_a?(Hash)
-              json_blob_content[:predicate].delete(:materials)
-            end
-          end
-        end
-      rescue Exception => e
-        puts "Error when processing toto json: #{e}"
-        return
+      if json_blob_content[:predicate] && json_blob_content[:predicate].is_a?(Hash)
+        json_blob_content[:predicate].delete(:materials)
       end
     end
     find_links(json_blob_content, [])
+    begin
+      explore_attestations_in_session = RegistryExplorerFront.get_session.nil? || RegistryExplorerFront.get_session[:attestations_exploring]
+      removing_to_to_links_condition = CachesManager.is_refreshing_in_progress_no_attest? || (!CachesManager.is_refreshing_in_progress? && !(explore_attestations_in_session))
+      if removing_to_to_links_condition
+        @links.each do |link|
+          if link[:node].node_type.to_s =~ /json/ && link[:node].node_type.to_s =~ /toto/
+            @links = []
+            return
+          end
+        end
+      end
+    rescue Exception => e
+      puts "Error when processing toto json: #{e}"
+      return
+    end
     TimeMeasurer.measure(:defining_problem_blobs) do
       @links.each do |link|
         if link[:node].actual_blob_size == -1
@@ -192,3 +188,27 @@ class Node
     end
   end
 end
+
+
+#     begin
+#         if !CachesManager.is_refreshing_in_progress?
+#           if RegistryExplorerFront.get_session.nil? || RegistryExplorerFront.get_session[:attestations_exploring]
+#             if json_blob_content[:predicate] && json_blob_content[:predicate].is_a?(Hash)
+#               json_blob_content[:predicate].delete(:materials)
+#             end
+#           else
+#             return
+#           end
+#         else
+#           if CachesManager.is_refreshing_in_progress_no_attest?
+#             return
+#           elsif CachesManager.is_refreshing_in_progress_with_attest?
+#             if json_blob_content[:predicate] && json_blob_content[:predicate].is_a?(Hash)
+#               json_blob_content[:predicate].delete(:materials)
+#             end
+#           end
+#         end
+#       rescue Exception => e
+#         puts "Error when processing toto json: #{e}"
+#         return
+#       end
