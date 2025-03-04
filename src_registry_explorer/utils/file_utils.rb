@@ -124,8 +124,7 @@ def extract_tag(tag_path)
 end
 
 def extract_index(index_sha256)
-  index_json_content = CachesManager.json_blob_content(index_sha256)
-  index_node_link = { path: ['Image'], node: CachesManager.get_node(index_json_content[:mediaType], index_sha256, CachesManager.blob_size(index_sha256)) }
+  index_node_link = { path: ['Image'], node: CachesManager.get_node(nil, index_sha256, CachesManager.blob_size(index_sha256)) }
   index_node_link[:build_info] = CachesManager.build_metadata(index_node_link[:node].sha256)
   index_node_link
 end
