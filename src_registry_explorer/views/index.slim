@@ -16,7 +16,7 @@ ruby:
       current = tree
       path_parts.each do |part|
         current[:total_images_amount] += 1
-        current[:required_blobs].merge(image[:required_blobs])
+        current[:required_blobs].merge!(image[:required_blobs])
         if image[:problem_blobs].size > 0
           current[:problem_blobs].merge(image[:problem_blobs])
         end
@@ -24,6 +24,8 @@ ruby:
         current = current[:children][part]
       end
       current[:image] = image
+      current[:problem_blobs] ||= Set.new
+      current[:problem_blobs].merge(image[:problem_blobs])
     end
   end
   # deep flatten tree
@@ -197,7 +199,8 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
         tr.tree-node.tree-view.hidden class="#{warn_node_condition ? 'warning-background' : ''}" data-level="#{node[:level]}"
           td
             - if warn_node_condition
-              span uk-tooltip="title: #{(node[:problem_blobs].size == 0) ? 'Full size of tag' : "Some layers of tag not found:<br>" + node[:problem_blobs].map { |s| s[0..25] + '...' }.join('<br>') + " Actual size without problem blobs: " + represent_size(node[:size])}; delay: 500;" uk-icon="icon: warning"
+              - puts "Node #{node[:name]} has problem blobs #{node[:problem_blobs].map { |s| s[0..25] + '...' }.join(', ')}"
+              span.warning-icon uk-tooltip="title: #{(node[:problem_blobs].size == 0) ? 'Full size of tag' : "Some layers of tag not found:<br>" + node[:problem_blobs].map { |s| s[0..25] + '...' }.join('<br>')}; delay: 500;" uk-icon="icon: warning"
             span style="padding-left: #{node[:level]}em"
             - unless node[:children_count] == 0 && (node[:image][:tags] || []).empty?
               span.hide-show-arrow uk-icon="icon: chevron-right"
@@ -209,7 +212,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
           tr.tree-node.hidden class="#{tag[:problem_blobs].size > 0 ? 'warning-background' : ''}" data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}"
             td
               - if tag[:problem_blobs].size != 0
-                span uk-tooltip="title: #{(tag[:problem_blobs].size == 0) ? 'Full size of tag' : "Some layers of tag not found:<br>" + tag[:problem_blobs].map{|s| s[0..25] + '...' }.join('<br>') + " Actual size without problem blobs: " + represent_size(tag[:size])}; delay: 500;"  uk-icon="icon: warning"
+                span.warning-icon uk-tooltip="title: #{(tag[:problem_blobs].size == 0) ? 'Full size of tag' : "Some layers of tag not found:<br>" + tag[:problem_blobs].map{|s| s[0..25] + '...' }.join('<br>')}; delay: 500;"  uk-icon="icon: warning"
               span.tree-view style="padding-left: #{node[:level] + 1}em"
               span uk-icon="icon: tag" style="padding: 0.5rem"
               span.table-view.hidden #{node[:image][:name][1..]}:

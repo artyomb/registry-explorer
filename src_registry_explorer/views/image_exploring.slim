@@ -212,30 +212,29 @@ h1.uk-h1 = "#{image_in_registry_path[1..] + ':' + tag_string + '@sha256:' + inde
       p No build details
     - else
       .uk-width-1-2
-        .div
-          .uk-container.uk-margin
-            span.icon-padding-right uk-icon="icon: git-branch"
-            span.uk-text-bold Git commit url:
-            - git_commit_url ||= index_node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_COMMITURL)
-            - git_commit_url ||= index_node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_COMMITURL)
-            br
-            - if git_commit_url.nil?
-              span.uk-text-primary= "Commit url not found"
-            - else
-              a href=git_commit_url target="_blank"
-                span.uk-text-primary= git_commit_url
-        .can-be-hidden.uk-hidden
-          .uk-container.uk-margin
+        .uk-container.uk-margin-remove.uk-padding-small.uk-padding-remove-left.uk-padding-remove-right.uk-overflow-auto
+          span.icon-padding-right uk-icon="icon: git-branch"
+          span.uk-text-bold Git commit url:
+          - git_commit_url ||= index_node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_COMMITURL)
+          - git_commit_url ||= index_node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_COMMITURL)
+          br
+          - if git_commit_url.nil?
+            span.uk-text-primary= "Commit url not found"
+          - else
+            a href=git_commit_url target="_blank"
+              span.uk-text-primary= git_commit_url
+        .can-be-hidden.uk-hidden.uk-flex.uk-flex-column.uk-flex-around
+          .uk-container.uk-margin-remove.uk-padding-small.uk-padding-remove-left.uk-padding-remove-right
             span.icon-padding-right uk-icon="icon: calendar"
             span.uk-text-bold Created at:
             br
             span.uk-text-primary= index_node_link.dig(:build_info, :created_at).nil? ? "Date info not found" : represent_datetime(index_node_link[:build_info][:created_at])
-          .uk-container.uk-margin
+          .uk-container.uk-margin-remove.uk-padding-small.uk-padding-remove-left.uk-padding-remove-right
             span.icon-padding-right uk-icon="icon: link-external"
             span.uk-text-bold Cmd:
             br
             span.uk-text-primary= index_node_link.dig(:build_info, :cmd).nil? ? "Command info not found" : index_node_link[:build_info][:cmd]
-          .uk-container.uk-margin.uk-overflow-auto
+          .uk-container.uk-margin-remove.uk-padding-small.uk-padding-remove-left.uk-padding-remove-right.uk-overflow-auto
             span.icon-padding-right uk-icon="icon: tag"
             span.uk-text-bold Labels:
             br
@@ -248,31 +247,30 @@ h1.uk-h1 = "#{image_in_registry_path[1..] + ':' + tag_string + '@sha256:' + inde
                   span.uk-text-primary= env
                   br
       .uk-width-1-2
-        .div
-          - if !index_node_link[:build_info][:os].nil? && !index_node_link[:build_info][:architecture].nil?
-            .uk-container.uk-margin
-              span.icon-padding-right uk-icon="icon: git-branch"
-              span.uk-text-bold Git pipeline url:
-              - git_pipeline_url ||= index_node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_PIPELINEURL)
-              - git_pipeline_url ||= index_node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_ACTIONURL)
-              br
-              - if git_pipeline_url.nil?
-                span.uk-text-primary= "Pipeline url not found"
-              - else
-                a href=git_pipeline_url target="_blank"
-                  span.uk-text-primary= git_pipeline_url
+        - if !index_node_link[:build_info][:os].nil? && !index_node_link[:build_info][:architecture].nil?
+          .uk-container.uk-margin-remove.uk-padding-small.uk-padding-remove-left.uk-padding-remove-right.uk-overflow-auto
+            span.icon-padding-right uk-icon="icon: git-branch"
+            span.uk-text-bold Git pipeline url:
+            - git_pipeline_url ||= index_node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_PIPELINEURL)
+            - git_pipeline_url ||= index_node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_ACTIONURL)
+            br
+            - if git_pipeline_url.nil?
+              span.uk-text-primary= "Pipeline url not found"
+            - else
+              a href=git_pipeline_url target="_blank"
+                span.uk-text-primary= git_pipeline_url
         .can-be-hidden.uk-hidden
-          .uk-container.uk-margin
+          .uk-container.uk-margin-remove.uk-padding-small.uk-padding-remove-left.uk-padding-remove-right
             span.icon-padding-right uk-icon="icon: server"
             span.uk-text-bold OS/Architecture:
             br
             span.uk-text-primary= index_node_link[:build_info][:os] + '/' + index_node_link[:build_info][:architecture]
-          .uk-container.uk-margin
+          .uk-container.uk-margin-remove.uk-padding-small.uk-padding-remove-left.uk-padding-remove-right
             span.icon-padding-right uk-icon="icon: sign-in"
             span.uk-text-bold Entrypoint:
             br
             span.uk-text-primary= index_node_link.dig(:build_info, :entrypoint).nil? ? "Entrypoint info not found" : index_node_link[:build_info][:entrypoint]
-          .uk-container.uk-margin.uk-overflow-auto
+          .uk-container.uk-margin-remove.uk-padding-small.uk-padding-remove-left.uk-padding-remove-right.uk-overflow-auto
             span.icon-padding-right uk-icon="icon: list"
             span.uk-text-bold Environment variables:
             br
