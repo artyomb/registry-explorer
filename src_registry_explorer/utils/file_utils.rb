@@ -256,6 +256,8 @@ def build_tree(images, tree)
       current = current[:children][part]
     end
     current[:image] = image
+    current[:problem_blobs] ||= Set.new
+    current[:problem_blobs].merge(image[:problem_blobs])
   end
 end
 
