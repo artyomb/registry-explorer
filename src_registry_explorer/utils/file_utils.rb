@@ -121,7 +121,7 @@ def extract_tag(tag_path)
       index_without_problems << cur_index
     end
   end
-  index_without_problems.sort_by! { |index_node| index_node[:node].created_at }.reverse!
+  index_without_problems.sort_by! { _1[:node]&.created_at || 0 }.reverse!
   current_tag[:index_Nodes].append(*index_without_problems)
   current_tag[:index_Nodes].append(*problem_indexes)
   TimeMeasurer.measure(:search_tags_blobs) do
