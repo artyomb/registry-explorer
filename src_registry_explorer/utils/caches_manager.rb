@@ -86,7 +86,8 @@ class CachesManager
 
   def self.get_index_sha256(path_to_index)
     TimeMeasurer.measure(:reading_index_sha256) do
-      @@cache_dict[:indexes_sha256][:values][path_to_index] ||= File.read(path_to_index).split(':').last
+      # @@cache_dict[:indexes_sha256][:values][path_to_index] ||= File.read(path_to_index).split(':').last
+      File.read(path_to_index).split(':').last
     end
   end
 

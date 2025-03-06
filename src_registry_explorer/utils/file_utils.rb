@@ -116,7 +116,7 @@ def extract_tag(tag_path)
   problem_indexes = []
   indexes_paths.each do |index_path|
     index_sha256 = index_path.split('/').last
-    next if index_sha256 == current_tag[:current_index_sha256]
+    next if index_sha256 == current_tag[:current_index_sha256] || !File.exist?(tag_path + "/../../revisions/sha256/#{index_sha256}/link")
     cur_index = extract_index(index_sha256)
     if cur_index[:node].get_problem_blobs.size > 0
       problem_indexes << cur_index

@@ -89,6 +89,14 @@ class RegistryExplorerFront < Sinatra::Base
       http = Net::HTTP.new(url.host, url.port)
       request = Net::HTTP::Delete.new(url.request_uri)
       request.basic_auth($registry_user, $registry_password)
+      error_message = ''
+      error_message += "Registry user is not set." if $registry_user.nil? || $registry_user.empty?
+      error_message += "\nRegistry password is not set." if $registry_password.nil? || $registry_password.empty?
+      error_message += "\nRegistry host is not set." if $registry_host_path.nil? || $registry_host_path.empty?
+      error_message += "\nRegistry port is not set." if $registry_port.nil? || $registry_port.empty?
+      if !error_message.empty?
+        raise StandardError, error_message
+      end
       request['Accept'] = CachesManager.find_node(image_sha256).node_type
       # request['Accept'] = 'application/vnd.docker.distribution.manifest.v2+json'
       response = http.request(request)
@@ -107,6 +115,7 @@ class RegistryExplorerFront < Sinatra::Base
       message = "Error deleting image #{image_sha256} from #{image_path}: #{e.message}"
       puts message
       CachesManager.execute_refresh_pipeline
+      status 400
       return message
     end
   end
