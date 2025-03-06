@@ -8,7 +8,9 @@ require_relative 'Node'
 require_relative 'caches_manager'
 
 $base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../temp') + "/docker/registry/v2"
-
+$registry_host_path = ENV['DBG'].nil? ? ENV['REGISTRY_HOST'] : "172.22.0.1:5000"
+$registry_user = ENV['DBG'].nil? ? ENV['REGISTRY_USER'] : "admin"
+$registry_password = ENV['DBG'].nil? ? ENV['REGISTRY_PASSWORD'] : "admin"
 # def extract_tar_gz_structure(tar_gz_sha256)
 #   TimeMeasurer.measure(:extracting_gz_structure) do
 #     file_path = $base_path + "/blobs/sha256/#{tar_gz_sha256[0..1]}/#{tar_gz_sha256}/data"
@@ -121,7 +123,7 @@ def extract_tag(tag_path)
       index_without_problems << cur_index
     end
   end
-  index_without_problems.sort_by! { _1[:node]&.created_at || 0 }.reverse!
+  index_without_problems.sort_by! { _1[:node]&.created_at || '-' }.reverse!
   current_tag[:index_Nodes].append(*index_without_problems)
   current_tag[:index_Nodes].append(*problem_indexes)
   TimeMeasurer.measure(:search_tags_blobs) do

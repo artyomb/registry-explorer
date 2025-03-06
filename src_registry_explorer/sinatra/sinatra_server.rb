@@ -2,6 +2,8 @@
 require 'sinatra/base'
 require 'slim'
 require 'rack/sassc'
+require 'uri'
+require 'net/http'
 require 'cgi'
 require_relative '../utils/file_utils'
 
@@ -73,6 +75,41 @@ class RegistryExplorerFront < Sinatra::Base
     session[:attestations_exploring] = params[:new_value]
     puts "Session[:attestations_exploring] set to #{session[:attestations_exploring]}"
     [200, 'OK']
+  end
+
+  delete '/delete-image/*' do
+    path_data = params[:splat].first.split('/$sha256/')
+    image_path = path_data[0]
+    image_sha256 = path_data[1]
+    # image_sha256 = '1cc7df3e7de17c9eb755dd0780ec551510ec4c5e7fe4374cf08fb525998326e4'
+    request_url = "http://#{$registry_host_path}/v2/#{image_path}/manifests/sha256:#{image_sha256}"
+
+    begin
+      url = URI.parse(request_url)
+      http = Net::HTTP.new(url.host, url.port)
+      http.use_ssl = true if url.scheme == 'https'
+      request = Net::HTTP::Delete.new(url.request_uri)
+      request.basic_auth($registry_user, $registry_password)
+      request['Accept'] = CachesManager.find_node(image_sha256).node_type
+      # request['Accept'] = 'application/vnd.docker.distribution.manifest.v2+json'
+      response = http.request(request)
+      if response.code.to_i / 100 == 2
+        message = "Image #{image_sha256} deleted successfully"
+        puts message
+        CachesManager.execute_refresh_pipeline
+        return message
+      else
+        message = "Error deleting image #{image_sha256} from #{image_path}. Registry message: #{response.message}"
+        puts message
+        CachesManager.execute_refresh_pipeline
+        return message
+      end
+    rescue StandardError => e
+      message = "Error deleting image #{image_sha256} from #{image_path}: #{e.message}"
+      puts message
+      CachesManager.execute_refresh_pipeline
+      return message
+    end
   end
 
 

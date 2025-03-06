@@ -16,6 +16,32 @@ ruby:
     tag= extract_tag(full_path_to_image_tag)
   end
   TimeMeasurer.log_measurers
+  environ ||= tag[:index_Nodes].first.nil? || tag[:index_Nodes].first[:build_info].nil? ? nil : (tag[:index_Nodes].first[:build_info][:environment])
+  image_title = begin
+                  environ.nil? ? nil : environ.select { |env_string| env_string.include?('ORG_OPENCONTAINERS_IMAGE_TITLE') }.first.split('=')[1]
+                rescue Exception => e
+                  puts "Error when parsing image title: #{e}"
+                  nil
+                end
+  image_source = begin
+                   environ.nil? ? nil : environ.select { |env_string| env_string.include?('ORG_OPENCONTAINERS_IMAGE_SOURCE') }.first.split('=')[1]
+                 rescue Exception => e
+                   puts "Error when parsing image source: #{e}"
+                   nil
+                 end
+  image_documentation = begin
+                          environ.nil? ? nil : environ.select { |env_string| env_string.include?('ORG_OPENCONTAINERS_IMAGE_DOCUMENTATION') }.first.split('=')[1]
+                        rescue Exception => e
+                          puts "Error when parsing image documentation: #{e}"
+                          nil
+                        end
+  image_licenses = begin
+                     environ.nil? ? nil : environ.select { |env_string| env_string.include?('ORG_OPENCONTAINERS_IMAGE_LICENSES') }.first.split('=')[1]
+                   rescue Exception => e
+                     puts "Error when parsing image licenses: #{e}"
+                     nil
+                   end
+script="var pathToImage = `#{image_in_registry_path}`;"
 javascript:
     document.addEventListener("DOMContentLoaded", function() {
         document.querySelectorAll('.copy-btn').forEach(function(copyBtn) {
@@ -32,6 +58,27 @@ javascript:
         });
     });
 
+    async function delete_node(sha256) {
+        try {
+            // '/delete-image/$sha256/
+            const url = '/delete-image' + pathToImage + '/$sha256/' + sha256;
+            console.log(url);
+            const response = await fetch(url, {
+                method: 'DELETE'
+            })
+            const responseText = await response.text(); // Wait for the response text
+
+            if (response.ok) {
+                UIkit.notification({message: responseText, status: 'success', pos: 'top-right'});
+            } else {
+                UIkit.notification({message: 'Error: ' + responseText, status: 'danger', pos: 'top-right'});
+            }
+        } catch (error) {
+            UIkit.notification({message: 'Error: ' + error, status: 'danger', pos: 'top-right'});
+        }
+        UIkit.notification({message: 'Refresh page to see actual information about current tag', status: 'primary', pos: 'top-right'});
+    }
+
 sass:
   .copy-btn
     margin-left: 3.5rem
@@ -46,11 +93,6 @@ sass:
     span.icon-padding-right.icon-padding-left.uk-text-primary uk-icon="icon: triangle-left"
     span Back to registry
 h1.uk-h1= "#{image_in_registry_path[1..-1] + ':' + tag_string }"
-- environ ||= tag[:index_Nodes].first.nil? || tag[:index_Nodes].first[:build_info].nil? ? nil : (tag[:index_Nodes].first[:build_info][:environment])
-- image_title = environ.nil? ? nil : environ.select {|env_string| env_string.include?('ORG_OPENCONTAINERS_IMAGE_TITLE')}.first.split('=')[1]
-- image_source = environ.nil? ? nil : environ.select {|env_string| env_string.include?('ORG_OPENCONTAINERS_IMAGE_SOURCE')}.first.split('=')[1]
-- image_documentation = environ.nil? ? nil : environ.select {|env_string| env_string.include?('ORG_OPENCONTAINERS_IMAGE_DOCUMENTATION')}.first.split('=')[1]
-- image_licenses = environ.nil? ? nil : environ.select {|env_string| env_string.include?('ORG_OPENCONTAINERS_IMAGE_LICENSES')}.first.split('=')[1]
 - if !image_title.nil? || !image_source.nil? || !image_documentation.nil? || !image_licenses.nil?
   .uk-card.uk-card-default.uk-card-body.uk-overflow-auto.uk-flex.uk-flex-middle.uk-flex-between
     - if !image_title.nil?
@@ -90,6 +132,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
       th Commit message
       th.uk-float-right Image size
       th Created at
+      th.uk-text-right Tools
   tbody
     - TimeMeasurer.start_measurement
     - TimeMeasurer.measure(:rendering_tag_page) do
@@ -140,4 +183,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
                 span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-right.uk-padding-remove-left= commit_message
           td.align-text-right= current_image_node_size
           td #{represent_datetime(node_link[:node].created_at)}
+          td.align-text-right
+            - if !node_link[:node].sha256.nil?
+              span.uk-icon-link.cursor-pointer uk-icon="icon: trash" onclick="delete_node(`#{node_link[:node].sha256}`)"
     - TimeMeasurer.log_measurers

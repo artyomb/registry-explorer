@@ -174,23 +174,23 @@ class CachesManager
 
   def self.start_auto_refresh
     Thread.new do
-      @@refreshing_in_progress_with_attest = true
-      refresh_nodes_cache(@@cache_dict_with_attest)
-      @@refreshing_in_progress_with_attest = false
-      @@refreshing_in_progress_no_attest = true
-      refresh_nodes_cache(@@cache_dict)
-      @@refreshing_in_progress_no_attest = false
+      self.execute_refresh_pipeline
       loop do
         sleep @@cache_refresh_interval
-        @@refreshing_in_progress_with_attest = true
-        refresh_nodes_cache(@@cache_dict_with_attest)
-        @@refreshing_in_progress_with_attest = false
-        @@refreshing_in_progress_no_attest = true
-        refresh_nodes_cache(@@cache_dict)
-        @@refreshing_in_progress_no_attest = false
+        self.execute_refresh_pipeline
       end
     end
   end
+
+  def self.execute_refresh_pipeline
+    @@refreshing_in_progress_with_attest = true
+    refresh_nodes_cache(@@cache_dict_with_attest)
+    @@refreshing_in_progress_with_attest = false
+    @@refreshing_in_progress_no_attest = true
+    refresh_nodes_cache(@@cache_dict)
+    @@refreshing_in_progress_no_attest = false
+  end
+
 
 
   def self.cache_dict_with_attest
