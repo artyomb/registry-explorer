@@ -9,6 +9,8 @@ require_relative 'caches_manager'
 
 $base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../temp') + "/docker/registry/v2"
 $registry_host = ENV['DBG'].nil? ? ENV['REGISTRY_HOST'] : "172.22.0.1:5000"
+$temp_dir = Dir.pwd + '/temp_registry_blobs/blobs'
+$zip_time_limit = 60 * 10
 # def extract_tar_gz_structure(tar_gz_sha256)
 #   TimeMeasurer.measure(:extracting_gz_structure) do
 #     file_path = $base_path + "/blobs/sha256/#{tar_gz_sha256[0..1]}/#{tar_gz_sha256}/data"
@@ -48,38 +50,72 @@ $registry_host = ENV['DBG'].nil? ? ENV['REGISTRY_HOST'] : "172.22.0.1:5000"
 
 def extract_tar_gz_structure(tar_gz_sha256)
   TimeMeasurer.measure(:extracting_gz_structure) do
+    temp_path = "#{$temp_dir}/#{tar_gz_sha256}"
+    structure_file = "#{temp_path}/structure.json"
+
+    # If structure already exists, load from disk
+    if File.exist?(structure_file)
+      return JSON.parse(File.read(structure_file), symbolize_names: true)
+    end
+
     file_path = "#{$base_path}/blobs/sha256/#{tar_gz_sha256[0..1]}/#{tar_gz_sha256}/data"
     structure = { size: 0, is_dir: true }
 
-    # Run tar command to list contents with size
-    command = "tar -tzvf #{Shellwords.escape(file_path)}"
-    IO.popen(command) do |io|
-      io.each_line do |line|
-        # Example line: "rw-r--r-- user/group 1234 YYYY-MM-DD HH:MM path/to/file"
-        parts = line.strip.split(/\s+/, 6)
-        next unless parts.size == 6
+    # Create temp directory and extract the archive
+    FileUtils.mkdir_p(temp_path)
+    system("tar", "xf", file_path, "-C", temp_path)
 
-        size = parts[2].to_i
-        path = parts[5]
-        is_dir = path.end_with?('/')
+    # Build structure by traversing the extracted files
+    file_sizes = {} # Temporary hash to store file sizes
+    Find.find(temp_path) do |path|
+      next if path == temp_path  # Skip root directory
 
-        current_level = structure
-        path_parts = path.chomp('/').split('/')
+      relative_path = path.sub("#{temp_path}/", '')
+      path_parts = relative_path.split('/')
+      current_level = structure
 
+      if File.directory?(path)
+        # Ensure directory entry exists
+        path_parts.each do |part|
+          current_level[part] ||= { size: 0, is_dir: true }
+          current_level = current_level[part]
+        end
+      else
+        # Store file size
+        size = begin
+                 File.size(path)
+               rescue Errno::ENOENT
+                 puts "Warning: File not found while processing #{path}"
+                 0
+               end
+        file_sizes[relative_path] = size
+
+        # Update size for all parent directories
         path_parts.each_with_index do |part, index|
           is_last = index == path_parts.length - 1
-          current_level[part] ||= { size: 0, is_dir: !is_last || is_dir }
-
-          if is_last && !is_dir
-            current_level[part][:size] = size
-          end
-
-          current_level[:size] += size unless is_dir
+          current_level[part] ||= { size: 0, is_dir: !is_last }
+          current_level[part][:size] += size
           current_level = current_level[part] unless is_last
         end
+        structure[:size] += size
       end
     end
+
+    # Store the extracted structure on disk for fast retrieval
+    File.write(structure_file, JSON.pretty_generate(structure))
+
+    # Cleanup old directories
+    cleanup_old_temp_dirs
+
     structure
+  end
+end
+
+def cleanup_old_temp_dirs
+  Dir.glob("#{$temp_dir}/*").each do |dir|
+    next unless File.directory?(dir)
+    next unless File.mtime(dir) < Time.now - $zip_time_limit
+    FileUtils.rm_rf(dir)
   end
 end
 
@@ -142,22 +178,19 @@ def extract_index(index_sha256)
 end
 
 def extract_file_content_from_archive_by_path(blob_sha256, file_path)
-  blob_path = $base_path + "/blobs/sha256/#{blob_sha256[0..1]}/#{blob_sha256}/data"
-  result = "File not found"
-  founded = false
-  Zlib::GzipReader.open(blob_path) do |gz|
-    Archive::Tar::Minitar::Reader.open(gz) do |tar|
-      tar.each_entry do |entry|
-        entry_path = (entry.prefix.split('/') + entry.name.split('/')).join('/')
-        if !founded && entry_path == file_path
-          content = entry.read
-          result = content.force_encoding('UTF-8').encode('UTF-8', invalid: :replace, undef: :replace, replace: '?') rescue "Couldn't read content in file"
-          break
-        end
-      end
-    end
+  if !Dir.exist?("#{$temp_dir}/#{blob_sha256}")
+    source_path = "#{$base_path}/blobs/sha256/#{blob_sha256[0..1]}/#{blob_sha256}/data"
+    FileUtils.mkdir_p("#{$temp_dir}/#{blob_sha256}")
+    system("tar", "xf", source_path, "-C", "#{$temp_dir}/#{blob_sha256}")
   end
-  result
+
+  full_path = "#{$temp_dir}/#{blob_sha256}/#{file_path}"
+  if File.exist?(full_path)
+    content = File.read(full_path)
+    content.force_encoding('UTF-8').encode('UTF-8', invalid: :replace, undef: :replace, replace: '?') rescue "Couldn't read content in file"
+  else
+    "File not found"
+  end
 end
 
 def calculate_blobs_size(blobs)

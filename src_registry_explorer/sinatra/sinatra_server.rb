@@ -12,6 +12,8 @@ class RegistryExplorerFront < Sinatra::Base
       create_map_file: true, syntax: :sass, check: true
   use Rack::Static, urls: %w[/css /js], root: "#{__dir__}/public/", cascade: true
 
+  FileUtils.mkdir_p($temp_dir) unless Dir.exist?($temp_dir)
+
   enable :sessions
 
   @@current_session = nil
