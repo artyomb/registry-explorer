@@ -82,12 +82,11 @@ class RegistryExplorerFront < Sinatra::Base
     image_path = path_data[0]
     image_sha256 = path_data[1]
     # image_sha256 = '1cc7df3e7de17c9eb755dd0780ec551510ec4c5e7fe4374cf08fb525998326e4'
-    request_url = "http://#{$registry_host_path}/v2/#{image_path}/manifests/sha256:#{image_sha256}"
+    request_url = "http://#{$registry_host_path}:#{$registry_port}/v2/#{image_path}/manifests/sha256:#{image_sha256}"
 
     begin
       url = URI.parse(request_url)
       http = Net::HTTP.new(url.host, url.port)
-      http.use_ssl = true if url.scheme == 'https'
       request = Net::HTTP::Delete.new(url.request_uri)
       request.basic_auth($registry_user, $registry_password)
       request['Accept'] = CachesManager.find_node(image_sha256).node_type

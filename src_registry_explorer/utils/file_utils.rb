@@ -8,7 +8,8 @@ require_relative 'Node'
 require_relative 'caches_manager'
 
 $base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../temp') + "/docker/registry/v2"
-$registry_host_path = ENV['DBG'].nil? ? ENV['REGISTRY_HOST'] : "172.22.0.1:5000"
+$registry_host_path = ENV['DBG'].nil? ? ENV['REGISTRY_HOST'] : "172.22.0.1"
+$registry_port = ENV['DBG'].nil? ? ENV['REGISTRY_PORT'] : "5000"
 $registry_user = ENV['DBG'].nil? ? ENV['REGISTRY_USER'] : "admin"
 $registry_password = ENV['DBG'].nil? ? ENV['REGISTRY_PASSWORD'] : "admin"
 # def extract_tar_gz_structure(tar_gz_sha256)
