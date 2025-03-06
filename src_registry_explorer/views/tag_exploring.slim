@@ -59,24 +59,33 @@ javascript:
     });
 
     async function delete_node(sha256) {
-        try {
-            // '/delete-image/$sha256/
-            const url = '/delete-image' + pathToImage + '/$sha256/' + sha256;
-            console.log(url);
-            const response = await fetch(url, {
-                method: 'DELETE'
-            })
-            const responseText = await response.text(); // Wait for the response text
+        // handle confirmation
+        UIkit.modal.confirm('Are you sure you want to delete this image?').then(async function (){
+            try {
+                // '/delete-image/$sha256/
+                const url = '/delete-image' + pathToImage + '/$sha256/' + sha256;
+                console.log(url);
+                const response = await fetch(url, {
+                    method: 'DELETE'
+                })
+                const responseText = await response.text(); // Wait for the response text
 
-            if (response.ok) {
-                UIkit.notification({message: responseText, status: 'success', pos: 'top-right'});
-            } else {
-                UIkit.notification({message: 'Error: ' + responseText, status: 'danger', pos: 'top-right'});
+                if (response.ok) {
+                    UIkit.notification({message: responseText, status: 'success', pos: 'top-right'});
+                } else {
+                    UIkit.notification({message: 'Error: ' + responseText, status: 'danger', pos: 'top-right'});
+                }
+            } catch (error) {
+                UIkit.notification({message: 'Error: ' + error, status: 'danger', pos: 'top-right'});
             }
-        } catch (error) {
-            UIkit.notification({message: 'Error: ' + error, status: 'danger', pos: 'top-right'});
-        }
-        UIkit.notification({message: 'Refresh page to see actual information about current tag', status: 'primary', pos: 'top-right'});
+            UIkit.notification({
+                message: 'Refresh page to see actual information about current tag',
+                status: 'primary',
+                pos: 'top-right'
+            });
+        }, function () {
+            return false;
+        });
     }
 
 sass:
@@ -121,7 +130,7 @@ h1.uk-h1= "#{image_in_registry_path[1..-1] + ':' + tag_string }"
         span.uk-text-bold Licenses:
         br
         a href="#{image_licenses}"= image_licenses
-
+/ TODO: store temporary archieves in a temporary directory
 table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
   thead
     tr
@@ -132,7 +141,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
       th Commit message
       th.uk-float-right Image size
       th Created at
-      th.uk-text-right Tools
+      th.uk-text-right Actions
   tbody
     - TimeMeasurer.start_measurement
     - TimeMeasurer.measure(:rendering_tag_page) do
@@ -186,4 +195,13 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
           td.align-text-right
             - if !node_link[:node].sha256.nil?
               span.uk-icon-link.cursor-pointer uk-icon="icon: trash" onclick="delete_node(`#{node_link[:node].sha256}`)"
+              / button.uk-icon-link.cursor-pointer type="button" uk-toggle="target: #modal-example" uk-icon="icon: trash"
+              / #modal-example uk-modal="true"
+              /   .uk-modal-dialog.uk-modal-body
+              /     h2.uk-modal-title Delete node
+              /     p Are you sure you want to delete this node?
+              /     p.uk-text-right
+              /       button.uk-button.uk-button-default.uk-modal-close type="button" Cancel
+              /       button.uk-button.uk-button-primary.uk-modal-close type="button" onclick="delete_node(`#{node_link[:node].sha256}`)" Delete
+
     - TimeMeasurer.log_measurers

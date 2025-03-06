@@ -82,18 +82,13 @@ class RegistryExplorerFront < Sinatra::Base
     image_path = path_data[0]
     image_sha256 = path_data[1]
     # image_sha256 = '1cc7df3e7de17c9eb755dd0780ec551510ec4c5e7fe4374cf08fb525998326e4'
-    request_url = "http://#{$registry_host_path}:#{$registry_port}/v2/#{image_path}/manifests/sha256:#{image_sha256}"
+    request_url = "http://#{$registry_host}/v2/#{image_path}/manifests/sha256:#{image_sha256}"
 
     begin
       url = URI.parse(request_url)
       http = Net::HTTP.new(url.host, url.port)
       request = Net::HTTP::Delete.new(url.request_uri)
-      request.basic_auth($registry_user, $registry_password)
-      error_message = ''
-      error_message += "Registry user is not set." if $registry_user.nil? || $registry_user.empty?
-      error_message += "\nRegistry password is not set." if $registry_password.nil? || $registry_password.empty?
-      error_message += "\nRegistry host is not set." if $registry_host_path.nil? || $registry_host_path.empty?
-      error_message += "\nRegistry port is not set." if $registry_port.nil? || $registry_port.empty?
+      error_message = $registry_host.nil? ? 'Registry host is not set' : ""
       if !error_message.empty?
         raise StandardError, error_message
       end
