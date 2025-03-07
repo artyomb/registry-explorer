@@ -48,7 +48,7 @@ class Node
                           end
     @type ||= json_blob_content[:mediaType] # "application/vnd.oci.image.index.v1+json"
 
-    # Check if the keys exist and delete the :materials key
+    # Check if the keys exist and delete the :materials key to avoid exploring digests with external uri
     if @type.to_s =~ /toto/ && @type.to_s =~ /json/
       if json_blob_content[:predicate] && json_blob_content[:predicate].is_a?(Hash)
         json_blob_content[:predicate].delete(:materials)

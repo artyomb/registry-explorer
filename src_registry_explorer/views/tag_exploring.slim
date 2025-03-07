@@ -41,7 +41,12 @@ ruby:
                      puts "Error when parsing image licenses: #{e}"
                      nil
                    end
-script="var pathToImage = `#{image_in_registry_path}`;"
+/ script="var pathToImage = `#{image_in_registry_path}`;"
+script
+  | var imagesRegistryHost = "#{ENV['IMAGES_REGISTRY_HOST'].nil? ? '' : ENV['IMAGES_REGISTRY_HOST']}";
+  | var pathToImage = "#{image_in_registry_path}";
+
+
 javascript:
     document.addEventListener("DOMContentLoaded", function() {
         document.querySelectorAll('.copy-btn').forEach(function(copyBtn) {
@@ -86,6 +91,17 @@ javascript:
         }, function () {
             return false;
         });
+    }
+    async function copy_pull_command(sha256) {
+        const pullUrl = imagesRegistryHost.isNaN || imagesRegistryHost === '' ? window.location.host : imagesRegistryHost;
+        try {
+            const command_text = `docker pull ${pullUrl}${pathToImage}@sha256:${sha256}`;
+            navigator.clipboard.writeText(command_text).then(function() {
+                UIkit.notification({message: `Command '${command_text}' copied to clipboard`, status: 'success', pos: 'top-right'});
+            });
+        } catch (error) {
+            UIkit.notification({message: 'Error: ' + error, status: 'danger', pos: 'top-right'});
+        }
     }
 
 sass:
@@ -195,6 +211,8 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
           td.align-text-right
             - if !node_link[:node].sha256.nil?
               span.uk-icon-link.cursor-pointer uk-icon="icon: trash" onclick="delete_node(`#{node_link[:node].sha256}`)"
+              span.uk-icon-link.cursor-pointer uk-icon="icon: download" onclick="copy_pull_command(`#{node_link[:node].sha256}`)"
+              / docker pull builder-registry-ui.builder.giscloud.ru/gis/front/main/master:1.0
               / button.uk-icon-link.cursor-pointer type="button" uk-toggle="target: #modal-example" uk-icon="icon: trash"
               / #modal-example uk-modal="true"
               /   .uk-modal-dialog.uk-modal-body
