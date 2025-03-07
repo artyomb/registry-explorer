@@ -23,6 +23,12 @@ ruby:
                   puts "Error when parsing image title: #{e}"
                   nil
                 end
+  image_tag_size = begin
+                     represent_size(tag[:size]).to_s
+                   rescue Exception => e
+                     puts "Error when parsing image size: #{e}"
+                     nil
+                   end
   image_source = begin
                    environ.nil? ? nil : environ.select { |env_string| env_string.include?('ORG_OPENCONTAINERS_IMAGE_SOURCE') }.first.split('=')[1]
                  rescue Exception => e
@@ -92,6 +98,35 @@ javascript:
             return false;
         });
     }
+    async function delete_tag(sha256) {
+        // handle confirmation
+        UIkit.modal.confirm('Are you sure you want to delete this image?').then(async function (){
+            try {
+                // '/delete-image/$sha256/
+                const url = '/delete-image' + pathToImage + '/$sha256/' + sha256;
+                console.log(url);
+                const response = await fetch(url, {
+                    method: 'DELETE'
+                })
+                const responseText = await response.text(); // Wait for the response text
+
+                if (response.ok) {
+                    UIkit.notification({message: responseText, status: 'success', pos: 'top-right'});
+                } else {
+                    UIkit.notification({message: 'Error: ' + responseText, status: 'danger', pos: 'top-right'});
+                }
+            } catch (error) {
+                UIkit.notification({message: 'Error: ' + error, status: 'danger', pos: 'top-right'});
+            }
+            UIkit.notification({
+                message: 'Refresh page to see actual information about current tag',
+                status: 'primary',
+                pos: 'top-right'
+            });
+        }, function () {
+            return false;
+        });
+    }
     async function copy_pull_command(sha256) {
         const pullUrl = imagesRegistryHost.isNaN || imagesRegistryHost === '' ? window.location.host : imagesRegistryHost;
         try {
@@ -117,7 +152,9 @@ sass:
   a.uk-link-text href="/index"
     span.icon-padding-right.icon-padding-left.uk-text-primary uk-icon="icon: triangle-left"
     span Back to registry
-h1.uk-h1= "#{image_in_registry_path[1..-1] + ':' + tag_string }"
+.uk-flex.uk-margin-remove.uk-padding-remove.uk-width-expand.uk-flex-between.align-items-center
+  h1.uk-h1= "#{image_in_registry_path[1..-1] + ':' + tag_string }"
+  .uk-padding.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: trash; ratio: 2" onclick="delete_tag('#{tag_string}')"
 - if !image_title.nil? || !image_source.nil? || !image_documentation.nil? || !image_licenses.nil?
   .uk-card.uk-card-default.uk-card-body.uk-overflow-auto.uk-flex.uk-flex-middle.uk-flex-between
     - if !image_title.nil?
@@ -126,6 +163,12 @@ h1.uk-h1= "#{image_in_registry_path[1..-1] + ':' + tag_string }"
         span.uk-text-bold Title:
         br
         span= image_title.nil? ? "Title unknown" : image_title
+    - if !image_tag_size.nil?
+      .uk-container
+        span.icon-padding-right uk-icon="icon: database"
+        span.uk-text-bold Size:
+        br
+        span= image_tag_size.nil? ? "Size unknown" : image_tag_size
     - if !image_source.nil?
       .uk-container.uk-margin
         span.icon-padding-right uk-icon="icon: world"
@@ -205,12 +248,12 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
             - commit_message ||= node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_COMMIT_MESSAGE)
             - if !commit_message.nil?
               .inline-container
-                span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-right.uk-padding-remove-left= commit_message
+                span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-right.uk-padding-remove-left.white-space-pre= commit_message.gsub('\n', "\n")
           td.align-text-right= current_image_node_size
           td #{represent_datetime(node_link[:node].created_at)}
           td.align-text-right
             - if !node_link[:node].sha256.nil?
-              span.uk-icon-link.cursor-pointer uk-icon="icon: trash" onclick="delete_node(`#{node_link[:node].sha256}`)"
+              span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: trash" onclick="delete_node(`#{node_link[:node].sha256}`)"
               span.uk-icon-link.cursor-pointer uk-icon="icon: download" onclick="copy_pull_command(`#{node_link[:node].sha256}`)"
               / docker pull builder-registry-ui.builder.giscloud.ru/gis/front/main/master:1.0
               / button.uk-icon-link.cursor-pointer type="button" uk-toggle="target: #modal-example" uk-icon="icon: trash"
