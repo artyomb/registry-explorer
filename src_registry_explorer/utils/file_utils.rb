@@ -59,6 +59,10 @@ def extract_tar_gz_structure(tar_gz_sha256)
     end
 
     file_path = "#{$base_path}/blobs/sha256/#{tar_gz_sha256[0..1]}/#{tar_gz_sha256}/data"
+    if !File.exist?(file_path)
+      error_message = "Blob by following path not found: #{file_path}"
+      raise error_message
+    end
     structure = { size: 0, is_dir: true }
 
     # Create temp directory and extract the archive
@@ -229,7 +233,7 @@ def get_images_paths
   end
 end
 
-# Unnecessary function
+# It seems, unnecessary function for using in the future
 # def extract_index_created_at(sha256)
 #   begin
 #     index_json = CachesManager.json_blob_content(sha256)

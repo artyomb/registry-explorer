@@ -9,7 +9,13 @@ ruby:
   require_relative '../utils/file_utils'
   TimeMeasurer.start_measurement
   image_entries = get_referring_image_entries(params[:sha256])
-  structure = extract_tar_gz_structure(params[:sha256])
+  error_message = ""
+  structure ||= begin
+                  extract_tar_gz_structure(params[:sha256])
+                rescue Exception => e
+                  error_message = "Error when extracting archive structure:\n#{e}"
+                  nil
+                end
   previous_tag_id = params[:tag_id].nil? ? nil : params[:tag_id].gsub(" ", "/")
   previous_image_sha256 = params[:img_sha256].nil? ? nil : params[:img_sha256]
   tar_gz_node = nil
@@ -107,46 +113,49 @@ sass:
   h1.uk-h1
     span Archive blob exploring
     span.uk-text-primary uk-tooltip="title: #{params[:sha256]}; cls: uk-active; delay: 500;"= " #{params[:sha256]}"
-  h3.uk-h3= "Total size: #{represent_size(structure[:size])}"
-  -if !tar_gz_node.nil? && !tar_gz_node.created_by.nil?
-    h3.uk-h3= "Created by: #{tar_gz_node.created_by}"
-  .content-container
-    #directory-structure-container
-      .hdr-container
-        span.table-header= "Files"
-        span.table-header.uk-float-right= "Size"
-      .file-structure
-        - render_structure = ->(structure, parent_path = '', parent_id = 'root', counter = 0) do
-          - structure&.select{|n, c| c.is_a?(Hash) && c[:is_dir] }.each do |name, content|
-            li
-              - current_path = "#{parent_path}/#{name}"
-              - current_id = "node_#{parent_id}_#{counter}"
-              .dir-element
-                a.uk-toggle href="#" uk-toggle="target: ##{current_id}"
-                  span uk-icon="icon: folder"
+  - if(error_message.empty?)
+    h3.uk-h3= "Total size: #{represent_size(structure[:size])}"
+    -if !tar_gz_node.nil? && !tar_gz_node.created_by.nil?
+      h3.uk-h3= "Created by: #{tar_gz_node.created_by}"
+    .content-container
+      #directory-structure-container
+        .hdr-container
+          span.table-header= "Files"
+          span.table-header.uk-float-right= "Size"
+        .file-structure
+          - render_structure = ->(structure, parent_path = '', parent_id = 'root', counter = 0) do
+            - structure&.select{|n, c| c.is_a?(Hash) && c[:is_dir] }.each do |name, content|
+              li
+                - current_path = "#{parent_path}/#{name}"
+                - current_id = "node_#{parent_id}_#{counter}"
+                .dir-element
+                  a.uk-toggle href="#" uk-toggle="target: ##{current_id}"
+                    span uk-icon="icon: folder"
+                    = " #{name}"
+                  span.uk-float-right #{represent_size(content[:size])}
+                ul.uk-list.uk-margin-left id=current_id hidden=true
+                  - render_structure.call(content, current_path, current_id, 0)
+              - counter += 1
+            - structure&.select{|n, c| !(c.is_a?(Hash) && c[:is_dir]) && n != :size && c.is_a?(Hash) }.each do |name, content|
+              li
+                - current_path = "#{parent_path}/#{name}"
+                - current_id = "node_#{parent_id}_#{counter}"
+                .file-element data-href="'/file-in-archive/#{params[:sha256]}/$path#{parent_path}/#{name}'"
+                  span uk-icon="icon: file-text"
                   = " #{name}"
-                span.uk-float-right #{represent_size(content[:size])}
-              ul.uk-list.uk-margin-left id=current_id hidden=true
-                - render_structure.call(content, current_path, current_id, 0)
-            - counter += 1
-          - structure&.select{|n, c| !(c.is_a?(Hash) && c[:is_dir]) && n != :size && c.is_a?(Hash) }.each do |name, content|
-            li
-              - current_path = "#{parent_path}/#{name}"
-              - current_id = "node_#{parent_id}_#{counter}"
-              .file-element data-href="'/file-in-archive/#{params[:sha256]}/$path#{parent_path}/#{name}'"
-                span uk-icon="icon: file-text"
-                = " #{name}"
-                span.uk-float-right #{represent_size(content[:size])}
-            - counter += 1
+                  span.uk-float-right #{represent_size(content[:size])}
+              - counter += 1
 
-        - render_structure.call(structure)
-    #file-area.uk-padding.content-display Choose file to view content
+          - render_structure.call(structure)
+      #file-area.uk-padding.content-display Choose file to view content
 
-  p= "Images, referring to this archive:"
-  ul.uk-list.uk-list-large.uk-list-divider.uk-list-disc.uk-list-primary.uk-border-rounded.uk-box-shadow-small.uk-margin-remove-vertical.uk-padding
-    - image_entries.each do |entry|
-      li
-        a href="/tag-exploring#{entry[:image_name]}/#{entry[:tag_name]}" #{entry[:image_name] + ':' + entry[:tag_name] + '@sha256:' + entry[:index_node].sha256}
+    p= "Images, referring to this archive:"
+    ul.uk-list.uk-list-large.uk-list-divider.uk-list-disc.uk-list-primary.uk-border-rounded.uk-box-shadow-small.uk-margin-remove-vertical.uk-padding
+      - image_entries.each do |entry|
+        li
+          a href="/tag-exploring#{entry[:image_name]}/#{entry[:tag_name]}" #{entry[:image_name] + ':' + entry[:tag_name] + '@sha256:' + entry[:index_node].sha256}
+  - else
+    pre.uk-text-danger= error_message
 
   / a href="/file-in-archive/#{params[:sha256]}/$path/#{parent_path}/#{name}"
 - TimeMeasurer.log_measurers

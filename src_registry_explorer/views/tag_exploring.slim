@@ -243,7 +243,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
             - else
               .inline-container
                 span.uk-text-secondary="Could not find git commit url"
-          td
+          td.uk-overflow-auto
             - commit_message ||= node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_COMMIT_MESSAGE)
             - commit_message ||= node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_COMMIT_MESSAGE)
             - if !commit_message.nil?

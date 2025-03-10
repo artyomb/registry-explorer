@@ -34,7 +34,11 @@ class CachesManager
 
     # Version without cache
     TimeMeasurer.measure(:reading_jsons) do
-      JSON.parse(File.read($base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data"), symbolize_names: true)
+      begin
+        JSON.parse(File.read($base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data"), symbolize_names: true)
+      rescue Exception => e
+        raise "Error in json parsing: #{e}"
+      end
     end
   end
 

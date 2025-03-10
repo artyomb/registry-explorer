@@ -86,17 +86,21 @@ class Node
     # TimeMeasurer.measure(:finding_links_for_node) do
     return unless (n.is_a? Hash or n.is_a? Array)
     if n.is_a? Hash
-      if !(n.key?(:config) && n[:config].key?(:digest) && n.key?(:layers))
-        n.each do |key, value|
-          if value.is_a? Hash
-            add_link(path + [key], value) if value.key? :digest
-            find_links(value, path + [key])
-          elsif value.is_a? Array
-            find_links(value, path + [key])
-          end
+      if n.key?(:config) && n[:config].key?(:digest) && n.key?(:layers)
+        begin
+          add_links_by_config(n, path)
+          return
+        rescue Exception => e
+          puts "Error when processing config json: #{e}"
         end
-      else
-        add_links_by_config(n, path)
+      end
+      n.each do |key, value|
+        if value.is_a? Hash
+          add_link(path + [key], value) if value.key? :digest
+          find_links(value, path + [key])
+        elsif value.is_a? Array
+          find_links(value, path + [key])
+        end
       end
     elsif n.is_a? Array
       n.each_with_index do |sub_hash, id|
@@ -179,8 +183,12 @@ class Node
 
   def add_links_by_config(n, path)
     config_sha256 = n[:config][:digest].split(':').last
+    config_json ||= begin
+                      CachesManager.json_blob_content(config_sha256)
+                    rescue Exception => e
+                      raise "Error in configuration json by sha256#{config_sha256}: #{e}"
+                    end
     @links << { path: path.nil? ? ['config'] : path + ['config'], node: CachesManager.get_node(n[:config][:mediaType], config_sha256, n[:config][:size]) }
-    config_json = CachesManager.json_blob_content(config_sha256)
     if !config_json[:history].nil? && config_json[:history].size > 0
       history_without_empty_layers = config_json[:history].reject { |h| !h[:empty_layer].nil? && h[:empty_layer] }
       n[:layers].each_with_index do |layer, id|
