@@ -9,6 +9,8 @@ require_relative 'caches_manager'
 
 $base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../temp') + "/docker/registry/v2"
 $registry_host = ENV['DBG'].nil? ? ENV['REGISTRY_HOST'] : "172.22.0.1:5000"
+$hostname = ENV['DBG'].nil? ? $registry_host.split(':').first : "172.22.0.1"
+$port = ENV['DBG'].nil? ? ($registry_host.include?(':') ? $registry_host.split(':').last : nil ) : "5000"
 $temp_dir = Dir.pwd + '/temp_registry_blobs/blobs'
 $zip_time_limit = 60 * 10
 # def extract_tar_gz_structure(tar_gz_sha256)

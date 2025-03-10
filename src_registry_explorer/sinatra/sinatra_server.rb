@@ -94,7 +94,7 @@ class RegistryExplorerFront < Sinatra::Base
   end
 
   def delete_index(image_path, image_sha256, is_current)
-    request_url = "http://#{$registry_host}/v2/#{image_path}/manifests/sha256:#{image_sha256}"
+    request_url = "http://#{$hostname}#{$port.nil? ? '' : (':' + $port)}/v2/#{image_path}/manifests/sha256:#{image_sha256}"
 
     begin
       url = URI.parse(request_url)
