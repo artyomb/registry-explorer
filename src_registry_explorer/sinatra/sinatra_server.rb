@@ -110,18 +110,18 @@ class RegistryExplorerFront < Sinatra::Base
       if response.code.to_i / 100 == 2
         message = "#{is_current ? 'Tag' : 'Image'} by sha256:#{image_sha256} deleted successfully"
         puts message
-        CachesManager.execute_refresh_pipeline
+        # CachesManager.execute_refresh_pipeline
         return message
       else
         message = "Error deleting #{is_current ? 'tag' : 'image'} by sha256:#{image_sha256} from #{image_path}. Registry message: #{response.message}"
         puts message
-        CachesManager.execute_refresh_pipeline
+        # CachesManager.execute_refresh_pipeline
         return message
       end
     rescue StandardError => e
       message = "Error deleting image #{image_sha256} from #{image_path}: #{e.message}"
       puts message
-      CachesManager.execute_refresh_pipeline
+      # CachesManager.execute_refresh_pipeline
       status 400
       return message
     end

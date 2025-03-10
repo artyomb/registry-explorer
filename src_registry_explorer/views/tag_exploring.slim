@@ -53,6 +53,7 @@ script
   | var imagesRegistryHost = "#{ENV['IMAGES_REGISTRY_HOST'].nil? ? '' : ENV['IMAGES_REGISTRY_HOST']}";
   | var pathToImage = "#{image_in_registry_path}";
   | var currentIndexSha256 = "#{tag[:current_index_sha256]}";
+  | var tagString = "#{tag_string}";
 
 javascript:
     document.addEventListener("DOMContentLoaded", function() {
@@ -70,8 +71,9 @@ javascript:
         });
     });
 
-    async function delete_by_sha256(sha256, entityString, confirmationMessage) {
+    async function delete_by_sha256(sha256, entityString, confirmationMessage, deleteRow) {
         // handle confirmation
+        const tableElement = document.getElementById(`${pathToImage.substring(1)}/${tagString}/${sha256}`);
         UIkit.modal.confirm(confirmationMessage).then(async function () {
             try {
                 // '/delete-image/$sha256/
@@ -83,6 +85,13 @@ javascript:
                 const responseText = await response.text(); // Wait for the response text
 
                 if (response.ok) {
+                    if (deleteRow) {
+                        tableElement.remove();
+                    }
+                    if (entityString === 'tag') {
+                        window.location.href = '/index';
+                        return;
+                    }
                     UIkit.notification({message: responseText, status: 'success', pos: 'top-right'});
                 } else {
                     UIkit.notification({message: 'Error: ' + responseText, status: 'danger', pos: 'top-right'});
@@ -100,11 +109,11 @@ javascript:
         });
     }
 
-    async function delete_image(sha256) {
-        delete_by_sha256(sha256, 'image', 'Are you sure you want to delete this image?');
+    async function delete_image(sha256, deleteRow) {
+        delete_by_sha256(sha256, 'image', 'Are you sure you want to delete this image?', deleteRow);
     }
     async function delete_tag(tagString) {
-        delete_by_sha256(currentIndexSha256, 'tag', 'Are you sure you want to delete this tag?\nThis action cannot be undone!');
+        delete_by_sha256(currentIndexSha256, 'tag', 'Are you sure you want to delete this tag? After confirmation you will be returned to the main page.', false);
     }
     async function copy_pull_command(sha256) {
         const pullUrl = imagesRegistryHost.isNaN || imagesRegistryHost === '' ? window.location.host : imagesRegistryHost;
@@ -232,7 +241,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
           td #{represent_datetime(node_link[:node].created_at)}
           td.align-text-right
             - if !node_link[:node].sha256.nil?
-              span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: trash" onclick="delete_image(`#{node_link[:node].sha256}`)"
+              span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: trash" onclick="delete_image(`#{node_link[:node].sha256}`, true)"
               span.uk-icon-link.cursor-pointer uk-icon="icon: download" onclick="copy_pull_command(`#{node_link[:node].sha256}`)"
               / docker pull builder-registry-ui.builder.giscloud.ru/gis/front/main/master:1.0
               / button.uk-icon-link.cursor-pointer type="button" uk-toggle="target: #modal-example" uk-icon="icon: trash"
