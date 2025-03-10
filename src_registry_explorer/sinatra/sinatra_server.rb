@@ -80,45 +80,52 @@ class RegistryExplorerFront < Sinatra::Base
   end
 
   delete '/delete-image/*' do
-    message_in_response = "Unimplemented yet"
-    [400, message_in_response]
-    # path_data = params[:splat].first.split('/$sha256/')
-    # image_path = path_data[0]
-    # image_sha256 = path_data[1]
-    # # image_sha256 = '1cc7df3e7de17c9eb755dd0780ec551510ec4c5e7fe4374cf08fb525998326e4'
-    # request_url = "http://#{$registry_host}/v2/#{image_path}/manifests/sha256:#{image_sha256}"
-    #
-    # begin
-    #   url = URI.parse(request_url)
-    #   http = Net::HTTP.new(url.host, url.port)
-    #   request = Net::HTTP::Delete.new(url.request_uri)
-    #   error_message = $registry_host.nil? ? 'Registry host is not set' : ""
-    #   if !error_message.empty?
-    #     raise StandardError, error_message
-    #   end
-    #   request['Accept'] = CachesManager.find_node(image_sha256).node_type
-    #   # request['Accept'] = 'application/vnd.docker.distribution.manifest.v2+json'
-    #   response = http.request(request)
-    #   if response.code.to_i / 100 == 2
-    #     message = "Image #{image_sha256} deleted successfully"
-    #     puts message
-    #     CachesManager.execute_refresh_pipeline
-    #     return message
-    #   else
-    #     message = "Error deleting image #{image_sha256} from #{image_path}. Registry message: #{response.message}"
-    #     puts message
-    #     CachesManager.execute_refresh_pipeline
-    #     return message
-    #   end
-    # rescue StandardError => e
-    #   message = "Error deleting image #{image_sha256} from #{image_path}: #{e.message}"
-    #   puts message
-    #   CachesManager.execute_refresh_pipeline
-    #   status 400
-    #   return message
-    # end
+    path_data = params[:splat].first.split('/$sha256/')
+    image_path = path_data[0]
+    image_sha256 = path_data[1]
+    return delete_index(image_path, image_sha256, false)
   end
 
+  delete '/delete-tag/*' do
+    path_data = params[:splat].first.split('/$sha256/')
+    image_path = path_data[0]
+    image_sha256 = path_data[1]
+    return delete_index(image_path, image_sha256, true)
+  end
+
+  def delete_index(image_path, image_sha256, is_current)
+    request_url = "http://#{$registry_host}/v2/#{image_path}/manifests/sha256:#{image_sha256}"
+
+    begin
+      url = URI.parse(request_url)
+      http = Net::HTTP.new(url.host, url.port)
+      request = Net::HTTP::Delete.new(url.request_uri)
+      error_message = $registry_host.nil? ? 'Registry host is not set' : ""
+      if !error_message.empty?
+        raise StandardError, error_message
+      end
+      request['Accept'] = CachesManager.find_node(image_sha256).node_type
+      # request['Accept'] = 'application/vnd.docker.distribution.manifest.v2+json'
+      response = http.request(request)
+      if response.code.to_i / 100 == 2
+        message = "#{is_current ? 'Tag' : 'Image'} by sha256:#{image_sha256} deleted successfully"
+        puts message
+        CachesManager.execute_refresh_pipeline
+        return message
+      else
+        message = "Error deleting #{is_current ? 'tag' : 'image'} by sha256:#{image_sha256} from #{image_path}. Registry message: #{response.message}"
+        puts message
+        CachesManager.execute_refresh_pipeline
+        return message
+      end
+    rescue StandardError => e
+      message = "Error deleting image #{image_sha256} from #{image_path}: #{e.message}"
+      puts message
+      CachesManager.execute_refresh_pipeline
+      status 400
+      return message
+    end
+  end
 
   def self.get_session
     @@current_session

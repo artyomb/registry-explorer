@@ -14,6 +14,7 @@ ruby:
   total_nodes = 0
   TimeMeasurer.measure(:extract_tag) do
     tag= extract_tag(full_path_to_image_tag)
+
   end
   TimeMeasurer.log_measurers
   environ ||= tag[:index_Nodes].first.nil? || tag[:index_Nodes].first[:build_info].nil? ? nil : (tag[:index_Nodes].first[:build_info][:environment])
@@ -51,7 +52,7 @@ ruby:
 script
   | var imagesRegistryHost = "#{ENV['IMAGES_REGISTRY_HOST'].nil? ? '' : ENV['IMAGES_REGISTRY_HOST']}";
   | var pathToImage = "#{image_in_registry_path}";
-
+  | var currentIndexSha256 = "#{tag[:current_index_sha256]}";
 
 javascript:
     document.addEventListener("DOMContentLoaded", function() {
@@ -69,12 +70,12 @@ javascript:
         });
     });
 
-    async function delete_node(sha256) {
+    async function delete_by_sha256(sha256, entityString, confirmationMessage) {
         // handle confirmation
-        UIkit.modal.confirm('Are you sure you want to delete this image?').then(async function (){
+        UIkit.modal.confirm(confirmationMessage).then(async function () {
             try {
                 // '/delete-image/$sha256/
-                const url = '/delete-image' + pathToImage + '/$sha256/' + sha256;
+                const url = `/delete-${entityString}` + pathToImage + '/$sha256/' + sha256;
                 console.log(url);
                 const response = await fetch(url, {
                     method: 'DELETE'
@@ -98,34 +99,12 @@ javascript:
             return false;
         });
     }
-    async function delete_tag(sha256) {
-        // handle confirmation
-        UIkit.modal.confirm('Are you sure you want to delete this image?').then(async function (){
-            try {
-                // '/delete-image/$sha256/
-                const url = '/delete-image' + pathToImage + '/$sha256/' + sha256;
-                console.log(url);
-                const response = await fetch(url, {
-                    method: 'DELETE'
-                })
-                const responseText = await response.text(); // Wait for the response text
 
-                if (response.ok) {
-                    UIkit.notification({message: responseText, status: 'success', pos: 'top-right'});
-                } else {
-                    UIkit.notification({message: 'Error: ' + responseText, status: 'danger', pos: 'top-right'});
-                }
-            } catch (error) {
-                UIkit.notification({message: 'Error: ' + error, status: 'danger', pos: 'top-right'});
-            }
-            UIkit.notification({
-                message: 'Refresh page to see actual information about current tag',
-                status: 'primary',
-                pos: 'top-right'
-            });
-        }, function () {
-            return false;
-        });
+    async function delete_image(sha256) {
+        delete_by_sha256(sha256, 'image', 'Are you sure you want to delete this image?');
+    }
+    async function delete_tag(tagString) {
+        delete_by_sha256(currentIndexSha256, 'tag', 'Are you sure you want to delete this tag?\nThis action cannot be undone!');
     }
     async function copy_pull_command(sha256) {
         const pullUrl = imagesRegistryHost.isNaN || imagesRegistryHost === '' ? window.location.host : imagesRegistryHost;
@@ -253,7 +232,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
           td #{represent_datetime(node_link[:node].created_at)}
           td.align-text-right
             - if !node_link[:node].sha256.nil?
-              span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: trash" onclick="delete_node(`#{node_link[:node].sha256}`)"
+              span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: trash" onclick="delete_image(`#{node_link[:node].sha256}`)"
               span.uk-icon-link.cursor-pointer uk-icon="icon: download" onclick="copy_pull_command(`#{node_link[:node].sha256}`)"
               / docker pull builder-registry-ui.builder.giscloud.ru/gis/front/main/master:1.0
               / button.uk-icon-link.cursor-pointer type="button" uk-toggle="target: #modal-example" uk-icon="icon: trash"
@@ -263,6 +242,6 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
               /     p Are you sure you want to delete this node?
               /     p.uk-text-right
               /       button.uk-button.uk-button-default.uk-modal-close type="button" Cancel
-              /       button.uk-button.uk-button-primary.uk-modal-close type="button" onclick="delete_node(`#{node_link[:node].sha256}`)" Delete
+              /       button.uk-button.uk-button-primary.uk-modal-close type="button" onclick="delete_image(`#{node_link[:node].sha256}`)" Delete
 
     - TimeMeasurer.log_measurers
