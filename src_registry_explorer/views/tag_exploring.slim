@@ -166,25 +166,28 @@ a.uk-link-text.border-around.hover-darker.padding-xsmall.uk-padding-remove-left.
       span="Delete tag (all images)"
     button.switch-btn.uk-button.uk-button-default uk-tooltip="title: #{'Deleting all images, besides current'}; cls: uk-active; delay: 500;" onclick="delete_non_current_images()" style=""= "Delete non-current images"
 - if !image_title.nil? || !image_source.nil? || !image_documentation.nil? || !image_licenses.nil?
-  .uk-card.uk-card-default.uk-card-body.uk-overflow-auto.uk-flex.uk-flex-middle.uk-flex-between
+  .uk-card.uk-background-muted.uk-card-body.uk-overflow-auto.uk-flex.uk-flex-middle.uk-flex-between
     - if !image_title.nil?
       .uk-container
         span.icon-padding-right uk-icon="icon: tag"
         span.uk-text-bold Title:
         br
         span= image_title.nil? ? "Title unknown" : image_title
+      .uk-divider-vertical
     - if !image_tag_size.nil?
       .uk-container
         span.icon-padding-right uk-icon="icon: database"
         span.uk-text-bold Size:
         br
         span= image_tag_size.nil? ? "Size unknown" : image_tag_size
+      .uk-divider-vertical
     - if !image_source.nil?
       .uk-container.uk-margin
         span.icon-padding-right uk-icon="icon: world"
         span.uk-text-bold Source:
         br
         a href="#{image_source}"= image_source
+      .uk-divider-vertical
     / - if !image_documentation.nil? && image_documentation != image_source
     - if !image_documentation.nil?
       .uk-container.uk-margin
@@ -192,6 +195,7 @@ a.uk-link-text.border-around.hover-darker.padding-xsmall.uk-padding-remove-left.
         span.uk-text-bold Documentation:
         br
         a href="#{image_documentation}"= image_documentation
+      .uk-divider-vertical
     / - if !image_licenses.nil? && image_licenses != image_source
     - if !image_licenses.nil?
       .uk-container
@@ -203,7 +207,7 @@ a.uk-link-text.border-around.hover-darker.padding-xsmall.uk-padding-remove-left.
 table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
   thead
     tr
-      th style="min-width: 4%; width: 4%; max-width: 4%" Current
+      th style="min-width: 0%; width: 0%; max-width: 0%" Current
       th Image exploring
       th.uk-text-right Git pipeline
       th.uk-text-right Git commit
@@ -220,7 +224,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
         tr.tree-node style="cursor: default" id="#{img_pth_param}/#{tag_string}/#{node_link[:node].sha256}" class="#{class_string_warning}" onmouseover="this.querySelector('.to-be-hidden').classList.remove('uk-hidden')" onmouseout="this.querySelector('.to-be-hidden').classList.add('uk-hidden')"
           td.align-text-center
             - if node_is_current
-              span uk-icon="icon: check" style="color: green; min-width: max-content; padding: 0.5rem"
+              span.uk-padding-remove uk-icon="icon: check" style="color: green; min-width: max-content; padding: 0.5rem"
           td
             .inline-container-small
               a href="/image-exploring/#{img_pth_param + '/' + tag_string}/#{node_link[:node].sha256}" uk-tooltip="title: #{node_link[:node].sha256}; cls: uk-active; delay: 500;"= node_link[:node].sha256[0..6] + "..."

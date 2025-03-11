@@ -186,16 +186,18 @@ javascript:
 
 / h1.uk-h1= "Docker registry content (#{images.map{|img| img[:tags].map{ |tag| tag[:index_Nodes].size }.sum}.sum} images in #{images.map{|img| img[:tags].size}.sum} tags, total size = #{represent_size(CachesManager.get_repo_size("REPOSITORY", required_in_registry_blobs))})"
 h1.uk-h1= "Docker registry content"
-.uk-card.uk-card-default.uk-card-body.uk-overflow-auto.uk-flex.uk-flex-middle.uk-flex-between.uk-margin-bottom
+.uk-card.uk-background-muted.uk-card-body.uk-overflow-auto.uk-flex.uk-flex-middle.uk-flex-between.uk-margin-bottom
   .uk-container
     span.icon-padding-right uk-icon="icon: tag"
     span.uk-text-bold Tags amount:
     span= " #{images.map{|img| img[:tags].size}.sum}"
+  .uk-divider-vertical
   .uk-container
     / span uk-icon="icon: hashtag"
     span.icon-padding-right uk-icon="icon: album"
     span.uk-text-bold Total images amount:
     span= " #{images.map{|img| img[:tags].map{ |tag| tag[:index_Nodes].size }.sum}.sum}"
+  .uk-divider-vertical
   .uk-container
     span.icon-padding-right uk-icon="icon: database"
     span.uk-text-bold Memory costs:
