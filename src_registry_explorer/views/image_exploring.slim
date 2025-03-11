@@ -194,13 +194,12 @@ sass:
   .inline-container-small
     display: inline-block
     width: 3.5rem
-.uk-border-bottom.uk-padding-small.uk-padding-remove-left.uk-width-fit-content
-  a.uk-link-text href="/tag-exploring/#{img_pth_param}/#{tag_string}"
-    span.icon-padding-right.icon-padding-left.uk-text-primary uk-icon="icon: triangle-left"
-    span Back to tag
-    / "/tag-exploring#{entry[:image_name]}/#{entry[:tag_name]}" #{entry[:image_name] + ':' + entry[:tag_name] + '@sha256:' + entry[:index_node_link].sha256}
+a.uk-link-text.border-around.hover-darker.uk-padding-small.uk-padding-remove-left.uk-width-fit-content href="/tag-exploring/#{img_pth_param}/#{tag_string}"
+  span.icon-padding-right.icon-padding-left.uk-text-primary uk-icon="icon: triangle-left"
+  span Back to tag
+  / "/tag-exploring#{entry[:image_name]}/#{entry[:tag_name]}" #{entry[:image_name] + ':' + entry[:tag_name] + '@sha256:' + entry[:index_node_link].sha256}
 
-h1.uk-h1 = "#{image_in_registry_path[1..] + ':' + tag_string + '@sha256:' + index_node_link[:node].sha256 }"
+h1.uk-h1.uk-overflow-auto = "#{image_in_registry_path[1..] + ':' + tag_string + '@sha256:' + index_node_link[:node].sha256 }"
 
 .uk-card.uk-card-default.uk-card-body.uk-overflow-auto.uk-margin
   .uk-flex.uk-flex-row.uk-flex-between

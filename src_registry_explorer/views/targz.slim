@@ -99,18 +99,17 @@ sass:
       border: 0.1rem solid #ccc
       border-radius: 0.5rem
 / - if (!previous_tag_id.nil?)
-/   .uk-border-bottom.uk-padding-small.uk-padding-remove-left.uk-width-fit-content
+/   .border-bottom.uk-padding-small.uk-padding-remove-left.uk-width-fit-content
 /     a.uk-link-text href="/tag-exploring/#{previous_tag_id}"
 /       span.icon-padding-right.icon-padding-left.uk-text-primary uk-icon="icon: triangle-left"
 /       span Back to tag
 - TimeMeasurer.start_measurement
 - TimeMeasurer.measure(:rendering_gzip_structure_view) do
   - if(!previous_image_sha256.nil?)
-    .uk-border-bottom.uk-padding-small.uk-padding-remove-left.uk-width-fit-content
-      a.uk-link-text href="/image-exploring/#{previous_tag_id}/#{previous_image_sha256}"
-        span.icon-padding-right.icon-padding-left.uk-text-primary uk-icon="icon: triangle-left"
-        span Back to image
-  h1.uk-h1
+    a.uk-link-text.border-around.hover-darker.uk-padding-small.uk-padding-remove-left.uk-width-fit-content href="/image-exploring/#{previous_tag_id}/#{previous_image_sha256}"
+      span.icon-padding-right.icon-padding-left.uk-text-primary uk-icon="icon: triangle-left"
+      span Back to image
+  h1.uk-h1.uk-overflow-auto
     span Archive blob exploring
     span.uk-text-primary uk-tooltip="title: #{params[:sha256]}; cls: uk-active; delay: 500;"= " #{params[:sha256]}"
   - if(error_message.empty?)
