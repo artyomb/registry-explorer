@@ -13,6 +13,7 @@ $hostname = ENV['DBG'].nil? ? $registry_host.split(':').first : "172.22.0.1"
 $port = ENV['DBG'].nil? ? ($registry_host.include?(':') ? $registry_host.split(':').last : nil ) : "5000"
 $temp_dir = Dir.pwd + '/temp_registry_blobs/blobs'
 $zip_time_limit = 60 * 10
+$read_only_mode = ENV['DBG'].nil? ? ((ENV['READ_ONLY_MODE'].nil? || ENV['READ_ONLY_MODE'] == 'true') ? true : false) : false
 # def extract_tar_gz_structure(tar_gz_sha256)
 #   TimeMeasurer.measure(:extracting_gz_structure) do
 #     file_path = $base_path + "/blobs/sha256/#{tar_gz_sha256[0..1]}/#{tar_gz_sha256}/data"

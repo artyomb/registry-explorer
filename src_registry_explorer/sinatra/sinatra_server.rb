@@ -80,6 +80,9 @@ class RegistryExplorerFront < Sinatra::Base
   end
 
   delete '/delete-image/*' do
+    if $read_only_mode
+      return [403, 'Registry is in read-only mode']
+    end
     path_data = params[:splat].first.split('/$sha256/')
     image_path = path_data[0]
     image_sha256 = path_data[1]
@@ -94,6 +97,9 @@ class RegistryExplorerFront < Sinatra::Base
   end
 
   delete '/delete-non-current-images/*' do
+    if $read_only_mode
+      return [403, 'Registry is in read-only mode']
+    end
     path_data = params[:splat].first.split('/$sha256/')
     url_image_path = path_data[0].split('/')[0..-2].join('/')
     image_path = $base_path + '/repositories/' + url_image_path
@@ -117,6 +123,9 @@ class RegistryExplorerFront < Sinatra::Base
   end
 
   def delete_index(image_path, image_sha256, is_current)
+    if $read_only_mode
+      return [403, 'Registry is in read-only mode']
+    end
     request_url = "http://#{$hostname}#{$port.nil? ? '' : (':' + $port)}/v2/#{image_path}/manifests/sha256:#{image_sha256}"
 
     begin
