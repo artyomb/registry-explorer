@@ -93,6 +93,29 @@ class RegistryExplorerFront < Sinatra::Base
     return delete_index(image_path, image_sha256, true)
   end
 
+  delete '/delete-non-current-images/*' do
+    path_data = params[:splat].first.split('/$sha256/')
+    url_image_path = path_data[0].split('/')[0..-2].join('/')
+    image_path = $base_path + '/repositories/' + url_image_path
+    tag = path_data[0].split('/').last
+    tag_path = image_path + '/_manifests/tags/' + tag
+    current_image_sha256 = path_data[1]
+    list_of_non_current_images_sha256_to_delete = Dir.children(tag_path + '/index/sha256').select { |sha256| sha256 != current_image_sha256 && File.exist?("#{tag_path}/../../revisions/sha256/#{sha256}/link") }
+    error_messages_collector = []
+    list_of_non_current_images_sha256_to_delete.each do |sha256|
+      begin
+        delete_index(url_image_path, sha256, false)
+      rescue StandardError => e
+        error_messages_collector << e.message
+      end
+    end
+    if error_messages_collector.empty?
+      [200, 'All images deleted successfully']
+    else
+      [500, "Errors, occurred when deleting images: #{error_messages_collector.join('; ')}"]
+    end
+  end
+
   def delete_index(image_path, image_sha256, is_current)
     request_url = "http://#{$hostname}#{$port.nil? ? '' : (':' + $port)}/v2/#{image_path}/manifests/sha256:#{image_sha256}"
 
@@ -105,25 +128,21 @@ class RegistryExplorerFront < Sinatra::Base
         raise StandardError, error_message
       end
       request['Accept'] = CachesManager.find_node(image_sha256).node_type
-      # request['Accept'] = 'application/vnd.docker.distribution.manifest.v2+json'
       response = http.request(request)
       if response.code.to_i / 100 == 2
         message = "#{is_current ? 'Tag' : 'Image'} by sha256:#{image_sha256} deleted successfully"
         puts message
-        # CachesManager.execute_refresh_pipeline
         return message
       else
         message = "Error deleting #{is_current ? 'tag' : 'image'} by sha256:#{image_sha256} from #{image_path}. Registry message: #{response.message}"
         puts message
-        # CachesManager.execute_refresh_pipeline
-        return message
+        raise StandardError, message
       end
     rescue StandardError => e
       message = "Error deleting image #{image_sha256} from #{image_path}: #{e.message}"
       puts message
-      # CachesManager.execute_refresh_pipeline
       status 400
-      return message
+      raise StandardError, message
     end
   end
 

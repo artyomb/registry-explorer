@@ -76,9 +76,7 @@ javascript:
         const tableElement = document.getElementById(`${pathToImage.substring(1)}/${tagString}/${sha256}`);
         UIkit.modal.confirm(confirmationMessage).then(async function () {
             try {
-                // '/delete-image/$sha256/
                 const url = `/delete-${entityString}` + pathToImage + '/$sha256/' + sha256;
-                console.log(url);
                 const response = await fetch(url, {
                     method: 'DELETE'
                 })
@@ -110,6 +108,31 @@ javascript:
     async function delete_tag(tagString) {
         delete_by_sha256(currentIndexSha256, 'tag', 'Are you sure you want to delete this tag? After confirmation you will be returned to the main page.', false);
     }
+
+    async function delete_non_current_images() {
+        // const tableElement = document.getElementById(`${pathToImage.substring(1)}/${tagString}/${sha256}`);
+        UIkit.modal.confirm("Are you sure to delete all non-current images?").then(async function () {
+            try {
+                const url = `/delete-non-current-images` + pathToImage + "/" + tagString + '/$sha256/' + currentIndexSha256;
+                const response = await fetch(url, {
+                    method: 'DELETE'
+                })
+                const responseText = await response.text(); // Wait for the response text
+
+                if (response.ok) {
+                    UIkit.notification({message: responseText, status: 'success', pos: 'top-right'});
+                    window.location.reload();
+                } else {
+                    UIkit.notification({message: 'Error: ' + responseText, status: 'danger', pos: 'top-right'});
+                }
+            } catch (error) {
+                UIkit.notification({message: 'Error: ' + error, status: 'danger', pos: 'top-right'});
+            }
+        }, function () {
+            return false;
+        });
+    }
+
     async function copy_pull_command(sha256) {
         const pullUrl = imagesRegistryHost.isNaN || imagesRegistryHost === '' ? window.location.host : imagesRegistryHost;
         try {
@@ -137,7 +160,10 @@ sass:
     span Back to registry
 .uk-flex.uk-margin-remove.uk-padding-remove.uk-width-expand.uk-flex-between.align-items-center
   h1.uk-h1= "#{image_in_registry_path[1..-1] + ':' + tag_string }"
-  .uk-padding.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: trash; ratio: 2" onclick="delete_tag('#{tag_string}')"
+  / .uk-padding.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: trash; ratio: 2" onclick="delete_tag('#{tag_string}')"
+  .uk-button-group.uk-float-right
+    button.switch-btn.uk-button.uk-button-primary uk-tooltip="title: #{'Deleting tag leads to deleting all images'}; cls: uk-active; delay: 500;" style="" onclick="delete_tag('#{tag_string}')"= "Delete tag (all images)"
+    button.switch-btn.uk-button.uk-button-default uk-tooltip="title: #{'Deleting all images, besides current'}; cls: uk-active; delay: 500;" onclick="delete_non_current_images()" style=""= "Delete non-current images"
 - if !image_title.nil? || !image_source.nil? || !image_documentation.nil? || !image_licenses.nil?
   .uk-card.uk-card-default.uk-card-body.uk-overflow-auto.uk-flex.uk-flex-middle.uk-flex-between
     - if !image_title.nil?
@@ -176,7 +202,7 @@ sass:
 table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
   thead
     tr
-      th style="min-width: 4%; width: 4%; max-width: 4%" Main
+      th style="min-width: 4%; width: 4%; max-width: 4%" Current
       th Image exploring
       th.uk-text-right Git pipeline
       th.uk-text-right Git commit
@@ -191,7 +217,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
         - node_is_current = node_link[:node].sha256 == tag[:current_index_sha256]
         - class_string_warning = node_link[:node].get_problem_blobs.size > 0 || node_link[:node].get_problem_blobs.nil? ? 'warning-background' : ''
         tr.tree-node style="cursor: default" id="#{img_pth_param}/#{tag_string}/#{node_link[:node].sha256}" class="#{class_string_warning}" onmouseover="this.querySelector('.to-be-hidden').classList.remove('uk-hidden')" onmouseout="this.querySelector('.to-be-hidden').classList.add('uk-hidden')"
-          td
+          td.align-text-center
             - if node_is_current
               span uk-icon="icon: check" style="color: green; min-width: max-content; padding: 0.5rem"
           td
@@ -236,8 +262,8 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
           td #{represent_datetime(node_link[:node].created_at)}
           td.align-text-right
             - if !node_link[:node].sha256.nil?
-              span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: trash" onclick="delete_image(`#{node_link[:node].sha256}`, true)"
-              span.uk-icon-link.cursor-pointer uk-icon="icon: download" onclick="copy_pull_command(`#{node_link[:node].sha256}`)"
+              span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: trash" uk-tooltip="title: #{'Delete chosen image'}; cls: uk-active; delay: 500;" onclick="delete_image(`#{node_link[:node].sha256}`, true)"
+              span.uk-icon-link.cursor-pointer uk-icon="icon: copy" uk-tooltip="title: #{'Copy pulling this image command'}; cls: uk-active; delay: 500;" onclick="copy_pull_command(`#{node_link[:node].sha256}`)"
               / docker pull builder-registry-ui.builder.giscloud.ru/gis/front/main/master:1.0
               / button.uk-icon-link.cursor-pointer type="button" uk-toggle="target: #modal-example" uk-icon="icon: trash"
               / #modal-example uk-modal="true"
