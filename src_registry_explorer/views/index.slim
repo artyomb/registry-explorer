@@ -191,13 +191,13 @@ h1.uk-h1= "Docker registry content"
     span.icon-padding-right uk-icon="icon: tag"
     span.uk-text-bold Tags amount:
     span= " #{images.map{|img| img[:tags].size}.sum}"
-  .uk-divider-vertical
+  .uk-divider-vertical.uk-margin-remove-top.uk-margin-remove-bottom
   .uk-container
     / span uk-icon="icon: hashtag"
     span.icon-padding-right uk-icon="icon: album"
     span.uk-text-bold Total images amount:
     span= " #{images.map{|img| img[:tags].map{ |tag| tag[:index_Nodes].size }.sum}.sum}"
-  .uk-divider-vertical
+  .uk-divider-vertical.uk-margin-remove-top.uk-margin-remove-bottom
   .uk-container
     span.icon-padding-right uk-icon="icon: database"
     span.uk-text-bold Memory costs:

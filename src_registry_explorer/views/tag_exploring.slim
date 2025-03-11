@@ -173,21 +173,21 @@ a.uk-link-text.border-around.hover-darker.padding-xsmall.uk-padding-remove-left.
         span.uk-text-bold Title:
         br
         span= image_title.nil? ? "Title unknown" : image_title
-      .uk-divider-vertical
+      .uk-divider-vertical.uk-margin-remove-top.uk-margin-remove-bottom
     - if !image_tag_size.nil?
       .uk-container
         span.icon-padding-right uk-icon="icon: database"
         span.uk-text-bold Size:
         br
         span= image_tag_size.nil? ? "Size unknown" : image_tag_size
-      .uk-divider-vertical
+      .uk-divider-vertical.uk-margin-remove-top.uk-margin-remove-bottom
     - if !image_source.nil?
       .uk-container.uk-margin
         span.icon-padding-right uk-icon="icon: world"
         span.uk-text-bold Source:
         br
         a href="#{image_source}"= image_source
-      .uk-divider-vertical
+      .uk-divider-vertical.uk-margin-remove-top.uk-margin-remove-bottom
     / - if !image_documentation.nil? && image_documentation != image_source
     - if !image_documentation.nil?
       .uk-container.uk-margin
@@ -195,7 +195,7 @@ a.uk-link-text.border-around.hover-darker.padding-xsmall.uk-padding-remove-left.
         span.uk-text-bold Documentation:
         br
         a href="#{image_documentation}"= image_documentation
-      .uk-divider-vertical
+      .uk-divider-vertical.uk-margin-remove-top.uk-margin-remove-bottom
     / - if !image_licenses.nil? && image_licenses != image_source
     - if !image_licenses.nil?
       .uk-container
