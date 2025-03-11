@@ -154,14 +154,14 @@ sass:
   .inline-container
     display: inline-block
     width: 5rem
-a.uk-link-text.border-around.hover-darker.uk-padding-small.uk-padding-remove-left.uk-width-fit-content href="/index"
+a.uk-link-text.border-around.hover-darker.padding-xsmall.uk-padding-remove-left.uk-width-fit-content href="/index"
   span.icon-padding-right.icon-padding-left.uk-text-primary uk-icon="icon: triangle-left"
   span Back to registry
 .uk-flex.uk-padding.uk-padding-remove-horizontal.uk-width-expand.uk-flex-between.align-items-center
   h1.uk-h1.uk-margin-remove-bottom= "#{image_in_registry_path[1..-1] + ':' + tag_string }"
   / .uk-padding.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: trash; ratio: 2" onclick="delete_tag('#{tag_string}')"
   .uk-button-group.uk-float-right.small-column-gap
-    button.switch-btn.uk-button.uk-button-default uk-tooltip="title: #{'Deleting tag leads to deleting all images'}; cls: uk-active; delay: 500;" style="" onclick="delete_tag('#{tag_string}')"
+    button.switch-btn.uk-button.uk-button-default.uk-flex.align-items-center uk-tooltip="title: #{'Deleting tag leads to deleting all images'}; cls: uk-active; delay: 500;" style="" onclick="delete_tag('#{tag_string}')"
       span.icon-padding-right.icon-padding-right.uk-text-primary uk-icon="icon: trash" style="color: red !important"
       span="Delete tag (all images)"
     button.switch-btn.uk-button.uk-button-default uk-tooltip="title: #{'Deleting all images, besides current'}; cls: uk-active; delay: 500;" onclick="delete_non_current_images()" style=""= "Delete non-current images"
