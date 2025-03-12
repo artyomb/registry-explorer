@@ -133,7 +133,6 @@ def extract_images(images=Set.new)
       subfolders = image_path.split('/')
       image_name = "/" + subfolders[subfolders.find_index('repositories') + 1..].join('/')
       current_img = { name: image_name, tags: Set.new, total_size: -1, required_blobs: Set.new, problem_blobs: Set.new }
-      images.add current_img
       tag_paths = Dir.glob(image_path + "/_manifests/tags/*").select { |f| File.directory?(f) }
       TimeMeasurer.measure(:creating_tags) do
         tag_paths.map { |tag_path| extract_tag(tag_path) }.each do |tag|
@@ -142,6 +141,8 @@ def extract_images(images=Set.new)
           current_img[:problem_blobs].merge(tag[:problem_blobs])
         end
       end
+      next if current_img[:tags].empty?
+      images.add current_img
       current_img[:total_size] = CachesManager.get_repo_size(image_path, current_img[:required_blobs])
     end
   end
