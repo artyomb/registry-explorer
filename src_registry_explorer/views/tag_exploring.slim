@@ -183,7 +183,7 @@ a.uk-link-text.border-around.hover-darker.padding-xsmall.uk-padding-remove-left.
         span= image_tag_size.nil? ? "Size unknown" : image_tag_size
       .uk-divider-vertical.uk-margin-remove-top.uk-margin-remove-bottom
     - if !image_source.nil?
-      .uk-container.uk-margin
+      .uk-container
         span.icon-padding-right uk-icon="icon: world"
         span.uk-text-bold Source:
         br
@@ -191,7 +191,7 @@ a.uk-link-text.border-around.hover-darker.padding-xsmall.uk-padding-remove-left.
       .uk-divider-vertical.uk-margin-remove-top.uk-margin-remove-bottom
     / - if !image_documentation.nil? && image_documentation != image_source
     - if !image_documentation.nil?
-      .uk-container.uk-margin
+      .uk-container
         span.icon-padding-right uk-icon="icon: question"
         span.uk-text-bold Documentation:
         br

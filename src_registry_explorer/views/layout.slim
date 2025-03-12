@@ -32,7 +32,7 @@ body
 
   .uk-container-expand.uk-padding
     == yield
-  footer.uk-section.uk-section-small.uk-text-center.uk-background-secondary.uk-margin-auto-top
+  footer.uk-section.uk-section-small.uk-text-center.uk-background-muted.uk-margin-auto-top
     .uk-flex.uk-flex-around
       .uk-flex
         .uk-padding-small = "Registry explorer#{version.nil? ? '' : ' ' + version}#{ENV['COM_GITHUB_CI_BUILD_TIME'].nil? ? '' : ' from ' + ENV['COM_GITHUB_CI_BUILD_TIME']}"
