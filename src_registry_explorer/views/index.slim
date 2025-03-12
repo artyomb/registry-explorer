@@ -185,23 +185,23 @@ javascript:
     });
 
 / h1.uk-h1= "Docker registry content (#{images.map{|img| img[:tags].map{ |tag| tag[:index_Nodes].size }.sum}.sum} images in #{images.map{|img| img[:tags].size}.sum} tags, total size = #{represent_size(CachesManager.get_repo_size("REPOSITORY", required_in_registry_blobs))})"
-h1.uk-h1= "Docker registry content"
-.uk-card.uk-background-muted.uk-card-body.uk-overflow-auto.uk-flex.uk-flex-middle.uk-flex-between.uk-margin-bottom
-  .uk-container
-    span.icon-padding-right uk-icon="icon: tag"
-    span.uk-text-bold Tags amount:
-    span= " #{images.map{|img| img[:tags].size}.sum}"
-  .uk-divider-vertical.uk-margin-remove-top.uk-margin-remove-bottom
-  .uk-container
-    / span uk-icon="icon: hashtag"
-    span.icon-padding-right uk-icon="icon: album"
-    span.uk-text-bold Total images amount:
-    span= " #{images.map{|img| img[:tags].map{ |tag| tag[:index_Nodes].size }.sum}.sum}"
-  .uk-divider-vertical.uk-margin-remove-top.uk-margin-remove-bottom
-  .uk-container
-    span.icon-padding-right uk-icon="icon: database"
-    span.uk-text-bold Memory costs:
-    span= " #{represent_size(CachesManager.get_repo_size("REPOSITORY", required_in_registry_blobs))}"
+.uk-flex.uk-padding.uk-padding-remove-horizontal.uk-width-expand.uk-flex-between.align-items-center
+
+  h1.uk-h1= "Docker registry content"
+  .uk-flex.uk-flex-middle.uk-flex-between.small-column-gap
+    .uk-label.uk-label-success.label-paddings
+      span.icon-padding-right uk-icon="icon: tag"
+      span.uk-text-bold Tags:
+      span= " #{images.map{|img| img[:tags].size}.sum}"
+    .uk-label.uk-label-primary.label-paddings
+      / span uk-icon="icon: hashtag"
+      span.icon-padding-right uk-icon="icon: album"
+      span.uk-text-bold Images :
+      span= " #{images.map{|img| img[:tags].map{ |tag| tag[:index_Nodes].size }.sum}.sum}"
+    .uk-label.uk-label-warning.label-paddings
+      span.icon-padding-right uk-icon="icon: database"
+      span.uk-text-bold Memory:
+      span= " #{represent_size(CachesManager.get_repo_size("REPOSITORY", required_in_registry_blobs))}"
 .uk-button-group.uk-float-right
   button.switch-btn.uk-button.uk-button-primary style=""= "Tree view"
   button.switch-btn.uk-button.uk-button-default style=""= "Table view"
