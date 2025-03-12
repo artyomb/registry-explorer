@@ -189,16 +189,16 @@ javascript:
 
   h1.uk-h1= "Docker registry content"
   .uk-flex.uk-flex-middle.uk-flex-between.small-column-gap
-    .uk-label.uk-label-success.label-paddings
+    .uk-label.uk-label-success.label-paddings.unset-text-transform
       span.icon-padding-right uk-icon="icon: tag"
       span.uk-text-bold Tags:
       span= " #{images.map{|img| img[:tags].size}.sum}"
-    .uk-label.uk-label-primary.label-paddings
+    .uk-label.uk-label-primary.label-paddings.unset-text-transform
       / span uk-icon="icon: hashtag"
       span.icon-padding-right uk-icon="icon: album"
       span.uk-text-bold Images :
       span= " #{images.map{|img| img[:tags].map{ |tag| tag[:index_Nodes].size }.sum}.sum}"
-    .uk-label.uk-label-warning.label-paddings
+    .uk-label.uk-label-warning.label-paddings.unset-text-transform
       span.icon-padding-right uk-icon="icon: database"
       span.uk-text-bold Memory:
       span= " #{represent_size(CachesManager.get_repo_size("REPOSITORY", required_in_registry_blobs))}"
