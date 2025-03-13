@@ -249,7 +249,7 @@ javascript:
       span= " #{images.map{|img| img[:tags].map{ |tag| tag[:index_Nodes].size }.sum}.sum}"
     .uk-label.label-paddings.unset-text-transform.align-content-center.custom-label-background
       span.icon-padding-right uk-icon="icon: database"
-      span.uk-text-bold Disk space:
+      span.uk-text-bold Disk usage:
       span= " #{represent_size(CachesManager.get_repo_size("REPOSITORY", required_in_registry_blobs))}"
 .uk-padding-small.uk-padding-remove-horizontal.uk-padding-remove-bottom.uk-flex.uk-flex-between.align-items-center.uk-flex-wrap
   form.uk-search.uk-search-default onsubmit="performSearch(event); return false;"
