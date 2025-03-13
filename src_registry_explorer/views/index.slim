@@ -185,9 +185,8 @@ javascript:
     });
 
 / h1.uk-h1= "Docker registry content (#{images.map{|img| img[:tags].map{ |tag| tag[:index_Nodes].size }.sum}.sum} images in #{images.map{|img| img[:tags].size}.sum} tags, total size = #{represent_size(CachesManager.get_repo_size("REPOSITORY", required_in_registry_blobs))})"
-.uk-flex.uk-padding-small.uk-padding-remove-horizontal.uk-width-expand.uk-flex-between.align-items-center
-
-  h1.uk-h1= "Docker registry content"
+.uk-flex.uk-padding.uk-padding-remove-horizontal.uk-width-expand.uk-flex-between.align-items-center.uk-padding-remove-bottom
+  h1.uk-h1.uk-margin-remove= "Docker registry content"
   .uk-flex.uk-flex-middle.uk-flex-between.small-column-gap
     .uk-label.label-paddings.unset-text-transform.align-content-center.custom-label-background
       span.icon-padding-right uk-icon="icon: tag"
@@ -202,7 +201,7 @@ javascript:
       span.icon-padding-right uk-icon="icon: database"
       span.uk-text-bold Memory:
       span= " #{represent_size(CachesManager.get_repo_size("REPOSITORY", required_in_registry_blobs))}"
-.uk-button-group.uk-float-right
+.uk-button-group.uk-float-right.uk-padding-small
   button.switch-btn.uk-button.uk-button-primary style=""= "Tree view"
   button.switch-btn.uk-button.uk-button-default style=""= "Table view"
 table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
