@@ -137,7 +137,19 @@ javascript:
                 });
             }
         } else {
-            const rows = document.querySelectorAll("tbody tr.list-node");
+            // debug
+            document.querySelectorAll("tbody tr.tree-node").forEach(function (row) {
+                if (row.classList.contains(".table-view") || row.querySelectorAll(".table-view").length > 0) {
+                    const rowText = row.textContent.toLowerCase();
+                    if (rowText.includes(searchString)) {
+                        row.classList.remove("hidden");
+                        showAllChildren(row);
+                    } else {
+                        row.classList.add("hidden");
+                        hideAllChildren(row);
+                    }
+                }
+            });
         }
         updateRowStripes();
     }
@@ -180,6 +192,8 @@ javascript:
                 }
             }
         });
+
+        document.getElementById('imageSearch').addEventListener('input', performSearch);
 
         document.querySelectorAll('.switch-btn').forEach(btn => {
             btn.addEventListener('click', function() {
