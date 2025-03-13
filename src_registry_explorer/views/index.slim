@@ -56,6 +56,7 @@ ruby:
   puts "Flattened tree size: #{flattened.size}"
 
 javascript:
+    let viewMode = 'tree';
     function updateRowStripes() {
         const visibleRows = [...document.querySelectorAll('tbody tr.tree-node:not(.hidden)')];
 
@@ -116,14 +117,47 @@ javascript:
         updateRowStripes();
     }
 
-    document.addEventListener("DOMContentLoaded", function() {
+    function performSearch(event) {
+        const searchString = document.getElementById("imageSearch").value.toLowerCase();
+        if (viewMode === 'tree') {
+            if (searchString.length === 0) {
+                showDefaultTreeView();
+            }else {
+                const rows = document.querySelectorAll("tbody tr.tree-node");
+                rows.forEach(function (row) {
+                    const rowText = row.textContent.toLowerCase();
+                    if (rowText.includes(searchString)) {
+                        row.classList.remove("hidden");
+
+                        showAllChildren(row);
+                    } else {
+                        row.classList.add("hidden");
+                        hideAllChildren(row);
+                    }
+                });
+            }
+        } else {
+            const rows = document.querySelectorAll("tbody tr.list-node");
+        }
         updateRowStripes();
-        document.querySelectorAll(".tree-node").forEach(function(treeNode) {
+    }
+
+    function showDefaultTreeView(){
+        document.querySelectorAll(".tree-node").forEach(function (treeNode) {
             if (treeNode.dataset.level <= 0) {
                 treeNode.classList.remove("hidden");
                 treeNode.querySelector(".hide-show-arrow")?.classList.remove("rotate-arrow");
+            } else {
+                treeNode.classList.add("hidden");
+                treeNode.querySelector(".hide-show-arrow")?.classList.add("rotate-arrow");
             }
         });
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        updateRowStripes();
+
+        showDefaultTreeView();
 
         document.querySelector('body').addEventListener('click', function(event) {
             const row = event.target.closest('tr[data-href]');
@@ -162,6 +196,7 @@ javascript:
                             } else {
                                 elem.classList.remove('hidden');
                                 elem.querySelector('.hide-show-arrow')?.classList.remove('rotate-arrow'); }
+                            viewMode = "tree";
                         });
                     } else {
                         document.querySelectorAll('.tree-node').forEach(elem => {
@@ -173,6 +208,7 @@ javascript:
                         document.querySelectorAll('.table-view').forEach(elem => {
                             elem.classList.remove('hidden');
                         });
+                        viewMode = "table";
                     }
                     btn.classList.add('uk-button-primary');
                     if (btn.nextElementSibling) btn.nextElementSibling.classList.remove('uk-button-primary');
@@ -199,11 +235,15 @@ javascript:
       span= " #{images.map{|img| img[:tags].map{ |tag| tag[:index_Nodes].size }.sum}.sum}"
     .uk-label.label-paddings.unset-text-transform.align-content-center.custom-label-background
       span.icon-padding-right uk-icon="icon: database"
-      span.uk-text-bold Memory:
+      span.uk-text-bold Disk space:
       span= " #{represent_size(CachesManager.get_repo_size("REPOSITORY", required_in_registry_blobs))}"
-.uk-button-group.uk-float-right.uk-padding-small
-  button.switch-btn.uk-button.uk-button-primary style=""= "Tree view"
-  button.switch-btn.uk-button.uk-button-default style=""= "Table view"
+.uk-padding-small.uk-padding-remove-horizontal.uk-padding-remove-bottom.uk-flex.uk-flex-between.align-items-center.uk-flex-wrap
+  form.uk-search.uk-search-default onsubmit="performSearch(event); return false;"
+    input.uk-search-input type="search" id="imageSearch" placeholder="Type image name" aria-label="Search"
+    button.uk-search-icon-flip onclick="performSearch(event)" uk-search-icon=""
+  .uk-button-group.uk-float-right
+    button.switch-btn.uk-button.uk-button-primary id="treeViewButton" style=""= "Tree view"
+    button.switch-btn.uk-button.uk-button-default id="tableViewButton" style=""= "Table view"
 table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
   thead
     tr
