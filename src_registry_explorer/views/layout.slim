@@ -22,17 +22,17 @@ html lang="en"
 body
   == slim :style
   nav.uk-navbar-container.uk-navbar.uk-background-muted.uk-width-1-1.uk-box-shadow-small
-    .uk-navbar-left.uk-margin-left.uk-flex-between.uk-width-expand
+    .uk-navbar-left.uk-margin-left.uk-flex-between.uk-width-expand.uk-padding-small
       ul.uk-navbar-nav
         li
-          a.uk-link-heading href="/index" Registry
+          a.min-height-none href="/index" Registry
       a.uk-link-heading.uk-float-right.uk-margin-right href="https://github.com/artyomb/registry-explorer"
         span.uk-icon.uk-margin-small-right uk-icon="icon: github"
         span GitHub
 
-  .uk-container-expand.uk-padding
+  .uk-container-expand.uk-padding.uk-padding-remove-vertical
     == yield
-  footer.uk-section.uk-section-small.uk-text-center.uk-background-muted.uk-margin-auto-top
+  footer.uk-section.uk-section-small.uk-text-center.uk-background-muted.uk-margin-auto-top.uk-padding-small
     .uk-flex.uk-flex-around
       .uk-flex
         .uk-padding-small = "Registry explorer#{version.nil? ? '' : ' ' + version}#{ENV['COM_GITHUB_CI_BUILD_TIME'].nil? ? '' : ' from ' + ENV['COM_GITHUB_CI_BUILD_TIME']}"
