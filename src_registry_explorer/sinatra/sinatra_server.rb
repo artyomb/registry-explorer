@@ -27,7 +27,7 @@ class RegistryExplorerFront < Sinatra::Base
   set :root, '.' #File.dirname(__FILE__)
   get '/',         &->() { slim :index }
   get '/index',         &->() { slim :index }
-  # get '/blobs-exploring',         &->() { slim :blobs_exploring }
+  get '/blobs-exploring',         &->() { slim :blobs_exploring }
   # get '/tag-exploring/*', &->() { slim :tag_exploring }
   get '/tag-exploring/*' do
     full_tag_path = params[:splat].first || ''

@@ -56,30 +56,33 @@ ruby:
   puts "Flattened tree size: #{flattened.size}"
 
   # CALCULATION OF DISK USAGE
-
-  blobs_path = $base_path + '/blobs/sha256'
-  required_blobs = images.map { _1[:required_blobs] }.reduce(Set.new, :merge)
-  stored_blobs = Set.new
-  Dir.children(blobs_path).each do |path|
-    stored_blobs.merge(Dir.children(File.join(blobs_path, path)))
+  disk_size_tooltip = nil
+  TimeMeasurer.start_measurement
+  TimeMeasurer.measure(:calculate_disk_usage) do
+    blobs_path = $base_path + '/blobs/sha256'
+    required_blobs = images.map { _1[:required_blobs] }.reduce(Set.new, :merge)
+    stored_blobs = Set.new
+    Dir.children(blobs_path).each do |path|
+      stored_blobs.merge(Dir.children(File.join(blobs_path, path)))
+    end
+    # TODO: implement exploring unnecessary blobs
+    puts "Directory size: #{represent_size(Dir.glob(File.join(blobs_path, '**', '*')) # Get all files and subdirectories
+                                              .select { |file| File.file?(file) } # Filter only files
+                                              .sum { |file| File.size(file) })}"
+    unused_blobs = stored_blobs - required_blobs
+    not_existing_blobs = required_blobs - stored_blobs
+    required_blobs_size = required_blobs.map { |b| CachesManager.blob_size(b) }.sum
+    stored_blobs_size = stored_blobs.map { |b| CachesManager.blob_size(b) }.sum
+    unused_blobs_size = unused_blobs.map { |b| CachesManager.blob_size(b) }.sum
+    disk_size_tooltip = "title:" +
+            "Disk usage is calculated as the sum of all blobs in the registry.<br><br>" +
+            "Actual data:<br>" +
+            "#{required_blobs.size} required blobs disk usage: #{represent_size(required_blobs_size)}<br>" +
+            "#{stored_blobs.size} stored blobs disk usage: #{represent_size(stored_blobs_size)}<br>" +
+            "#{unused_blobs.size} unused blobs disk usage: #{represent_size(unused_blobs_size)}<br>" +
+            "#{not_existing_blobs.size} not existing blobs"
   end
-  # TODO: implement exploring unnecessary blobs
-  puts "Directory size: #{represent_size(Dir.glob(File.join(blobs_path, '**', '*')) # Get all files and subdirectories
-                                            .select { |file| File.file?(file) } # Filter only files
-                                            .sum { |file| File.size(file) })}"
-  unused_blobs = stored_blobs - required_blobs
-  not_existing_blobs = required_blobs - stored_blobs
-  required_blobs_size = required_blobs.map { |b| CachesManager.blob_size(b) }.sum
-  stored_blobs_size = stored_blobs.map { |b| CachesManager.blob_size(b) }.sum
-  unused_blobs_size = unused_blobs.map { |b| CachesManager.blob_size(b) }.sum
-  disk_size_tooltip = "title:" +
-          "Disk usage is calculated as the sum of all blobs in the registry.<br><br>" +
-          "Actual data:<br>" +
-          "#{required_blobs.size} required blobs disk usage: #{represent_size(required_blobs_size)}<br>" +
-          "#{stored_blobs.size} stored blobs disk usage: #{represent_size(stored_blobs_size)}<br>" +
-          "#{unused_blobs.size} unused blobs disk usage: #{represent_size(unused_blobs_size)}<br>" +
-          "#{not_existing_blobs.size} not existing blobs"
-
+  TimeMeasurer.log_measurers
   #puts "#{required_blobs.size} required blobs disk usage: #{represent_size(required_blobs_size)}"
   #puts "#{stored_blobs.size} stored blobs disk usage: #{represent_size(stored_blobs_size)}"
   #puts "#{unused_blobs.size} unused blobs disk usage: #{represent_size(unused_blobs_size)}"
@@ -258,6 +261,7 @@ javascript:
                     if (btn.nextElementSibling) btn.nextElementSibling.classList.remove('uk-button-primary');
                     else btn.previousElementSibling.classList.remove('uk-button-primary');
                 }
+                performSearch(null)
                 updateRowStripes();
             });
         });
@@ -281,7 +285,7 @@ javascript:
       span.icon-padding-right uk-icon="icon: database"
       span.uk-text-bold Disk usage:
       span.icon-padding-right= " #{represent_size(CachesManager.get_repo_size("REPOSITORY", required_in_registry_blobs))}"
-      span.icon-padding-left.cursor-help uk-icon="icon: info" uk-tooltip="#{disk_size_tooltip}"
+      a.icon-padding-left.cursor-pointer uk-icon="icon: info" href="/blobs-exploring"
 .uk-padding-small.uk-padding-remove-horizontal.uk-padding-remove-bottom.uk-flex.uk-flex-between.align-items-center.uk-flex-wrap
   form.uk-search.uk-search-default onsubmit="performSearch(event); return false;"
     input.uk-search-input type="search" id="imageSearch" placeholder="Type image name" aria-label="Search"
