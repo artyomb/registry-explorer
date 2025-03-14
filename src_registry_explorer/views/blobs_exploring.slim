@@ -19,10 +19,15 @@ ruby:
     blobs_path = $base_path + '/blobs/sha256'
     required_blobs = images.map { _1[:required_blobs] }.reduce(Set.new, :merge)
     stored_blobs = Set.new
-    Dir.children(blobs_path).each do |path|
-      current_blobs = Dir.children(File.join(blobs_path, path))
+    Dir.children(blobs_path).each do |intermediate_path|
+      current_blobs = Dir.children(File.join(blobs_path, intermediate_path))
       stored_blobs.merge(current_blobs)
-      current_blobs.each { |blob| blobs_set.add({"sha256" => blob, "size" => CachesManager.blob_size(blob), "is_required" => required_blobs.include?(blob) }) }
+      current_blobs.each { |blob| blobs_set.add(
+              {
+                      "sha256" => blob, "size" => CachesManager.blob_size(blob),
+                      "is_required" => required_blobs.include?(blob),
+                      "created_at" => File.exist?(File.join(blobs_path, intermediate_path, blob)) ? File.mtime(File.join(blobs_path, intermediate_path, blob)) : '-',
+              }) }
     end
     # TODO: implement exploring unnecessary blobs
     puts "Directory size: #{represent_size(Dir.glob(File.join(blobs_path, '**', '*')) # Get all files and subdirectories
@@ -168,7 +173,7 @@ sass:
                 span.uk-text-bold= "#{unused_blobs.size} unused blobs: #{represent_size(unused_blobs_size)}"
 - if !$read_only_mode
   .uk-button-group.uk-float-right.small-column-gap
-    button.switch-btn.uk-button.uk-button-default.uk-flex.align-items-center uk-tooltip="title: #{'Deleting tag leads to deleting all images'}; cls: uk-active; delay: 500;" style="" onclick="delete_all_blobs()"
+    button.switch-btn.uk-button.uk-button-default.uk-flex.align-items-center uk-tooltip="title: #{'Delete all blobs, which were not used by any image in your registry'}; cls: uk-active; delay: 500;" style="" onclick="delete_all_blobs()"
       span.icon-padding-right.icon-padding-right.uk-text-primary uk-icon="icon: trash" style="color: red !important"
       span="Delete unused blobs"
     / button.switch-btn.uk-button.uk-button-default uk-tooltip="title: #{'Deleting all images, besides current'}; cls: uk-active; delay: 500;" onclick="delete_non_current_images()" style=""= "Delete non-current images"
@@ -198,7 +203,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
             - current_image_node_size = represent_size(blob_hash["size"])
           td.align-text-right= current_image_node_size
           / td #{represent_datetime(node_link[:node].created_at)}
-          td #{'-'}
+          td #{blob_hash["created_at"]}
           td.align-text-right
             - if !blob_hash["sha256"].nil?
               - if !$read_only_mode
