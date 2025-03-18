@@ -37,8 +37,21 @@ class RegistryExplorerFront < Sinatra::Base
     tag_image_path = params[:splat].first || '' # expect following url: /image-exploring/re/po/si/to/ry/tag_name/imgsha256
     slim :image_exploring, locals: { tag_image_path: tag_image_path }
   end
+  get '/blob-exploring/:sha256', &->() {
+    json_content = begin
+                      CachesManager.json_blob_content(params[:sha256])
+                    rescue StandardError => e
+                      nil
+                    end
+    if json_content
+      redirect "/json/#{params[:sha256]}"
+    else
+      redirect "/tar-gz/#{params[:sha256]}"
+    end
+  }
   get '/json/:sha256', &->() { slim :json }
   get '/tar-gz/:sha256', &->() { slim :targz }
+
   get '/file-in-archive/:sha256', &->() { slim :file_in_archive }
   get '/test', &->() { slim :test }
 
