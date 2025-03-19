@@ -52,8 +52,17 @@ javascript:
     let sourceBlobs = #{{blobs_set.to_a.to_json}};
     let readOnlyMode = #{{$read_only_mode}};
     let pageSize = 25;
-    let visualizationOptions = { 'Filtering' : null, 'Sorting' : null };
-    let blobs = sourceBlobs.sort((a, b) => b.size - a.size);
+    const blobsNotRequiredPredicate = blob => !blob.is_required && (document.getElementById('include-unused')?.checked ?? true);
+    const blobsRequiredPredicate = blob => blob.is_required && (document.getElementById('include-required')?.checked ?? true);
+
+    let visualizationOptions = { 'including_conditions' : [blobsNotRequiredPredicate, blobsRequiredPredicate], 'Sorting' : [] };
+    let blobs = null;
+
+    function updateBlobs() {
+        blobs = sourceBlobs
+            .filter(blob => visualizationOptions['including_conditions'].some(predicate => predicate(blob)))
+            .sort((a, b) => b.size - a.size);
+    }
 
     function represent_size(bytes) {
         try {
@@ -71,6 +80,7 @@ javascript:
     }
 
     function updatePage(pageNumber) {
+        updateBlobs();
         updatePaginationBar(pageNumber);
         updateTable(pageNumber);
     }
@@ -196,6 +206,14 @@ javascript:
         UIkit.util.on(document, 'beforeshow', '.uk-tooltip.uk-active', function () {
             this.classList.add('uk-width-auto');
         });
+
+        document.addEventListener('click', function(event) {
+            const menu = document.getElementById('include-menu');
+            if (!menu.classList.contains('uk-hidden') && !menu.contains(event.target)) {
+                menu.classList.add('uk-hidden');
+            }
+        });
+
     });
 
     async function delete_by_sha256(sha256, entityString, confirmationMessage, deleteRow) {
@@ -285,7 +303,25 @@ sass:
 table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped id="blobs-table"
   thead
     tr
-      th style="min-width: 0%; width: 0%; max-width: 0%" Required
+      th style="min-width: 0%; width: 0%; max-width: 0%"
+        / span Filter
+        span.icon-padding-left.uk-text-primary.cursor-pointer uk-tooltip="title: #{'Choose including options'}; cls: uk-active; delay: 500;" uk-icon="icon: menu" onclick="event.stopPropagation(); document.getElementById('include-menu').classList.toggle('uk-hidden')"
+        #include-menu.uk-hidden.uk-card.uk-card-default.uk-position-absolute.uk-padding-small style="z-index: 1000"
+          .uk-margin-small
+            label.uk-form-label Include in exploring:
+            .uk-margin-small
+              label
+                input.uk-checkbox type="checkbox" name="include-required" checked="checked" id="include-required" onchange="updatePage(0)"
+                span.uk-margin-small-left Required blobs
+            .uk-margin-small
+              label
+                input.uk-checkbox type="checkbox" name="include-unused" checked="checked" id="include-unused" onchange="updatePage(0)"
+                span.uk-margin-small-left Unused blobs
+          / .uk-margin-small
+          /   label.uk-form-label Search by SHA256:
+          /   .uk-inline.uk-width-1-1
+          /     span.uk-form-icon uk-icon="icon: search"
+          /     input.uk-input type="text" placeholder="Enter SHA256..." id="sha-include"
       th style="min-width: 25%; width: 25%; max-width: 25%" Blob exploring
       th.uk-float-right Blob size
       th Created at
