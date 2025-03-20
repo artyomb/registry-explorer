@@ -136,6 +136,14 @@ class RegistryExplorerFront < Sinatra::Base
     end
   end
 
+  get '/perform-garbage-collection' do
+    if $read_only_mode && params[:dry_run] != 'false'
+      return [403, 'Registry is in read-only mode']
+    else
+      slim :garbage_collection_stats
+    end
+  end
+
   def delete_index(image_path, image_sha256, is_current)
     if $read_only_mode
       return [403, 'Registry is in read-only mode']

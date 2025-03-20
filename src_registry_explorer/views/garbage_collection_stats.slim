@@ -1,0 +1,213 @@
+ruby:
+  require_relative '../utils/time_measurer'
+  require_relative '../utils/garbage_collection'
+  require_relative '../utils/file_utils'
+  require_relative '../utils/common_utils'
+
+  # EXPLORING BLOBS FOR FURTHER GARBAGE COLLECTION
+  stored_blobs = nil
+  stored_blobs_size = nil
+  required_blobs = nil
+  required_blobs_size = nil
+  unused_blobs = nil
+  unused_blobs_size = nil
+  not_existing_blobs = Set.new
+  blobs_set = Set.new
+  images = extract_images()
+  TimeMeasurer.start_measurement
+  TimeMeasurer.measure(:calculate_disk_usage) do
+    blobs_path = $base_path + '/blobs/sha256'
+    required_blobs = images.map { _1[:required_blobs] }.reduce(Set.new, :merge)
+    stored_blobs = Set.new
+    Dir.children(blobs_path).each do |path|
+      current_blobs = Dir.children(File.join(blobs_path, path))
+      stored_blobs.merge(current_blobs)
+      current_blobs.each { |blob| blobs_set.add({ "sha256" => blob, "size" => CachesManager.blob_size(blob), "is_required" => required_blobs.include?(blob) }) }
+    end
+    # TODO: implement exploring unnecessary blobs
+    puts "Directory size: #{represent_size(Dir.glob(File.join(blobs_path, '**', '*')) # Get all files and subdirectories
+                                              .select { |file| File.file?(file) } # Filter only files
+                                              .sum { |file| File.size(file) })}"
+    unused_blobs = stored_blobs - required_blobs
+    not_existing_blobs = required_blobs - stored_blobs
+    required_blobs_size = required_blobs.map { |b| CachesManager.blob_size(b) }.sum
+    stored_blobs_size = stored_blobs.map { |b| CachesManager.blob_size(b) }.sum
+    unused_blobs_size = unused_blobs.map { |b| CachesManager.blob_size(b) }.sum
+    disk_size_tooltip = "title:" +
+            "Disk usage is calculated as the sum of all blobs in the registry.<br><br>" +
+            "Actual data:<br>" +
+            "#{required_blobs.size} required blobs disk usage: #{represent_size(required_blobs_size)}<br>" +
+            "#{stored_blobs.size} stored blobs disk usage: #{represent_size(stored_blobs_size)}<br>" +
+            "#{unused_blobs.size} unused blobs disk usage: #{represent_size(unused_blobs_size)}<br>" +
+            "#{not_existing_blobs.size} not existing blobs"
+  end
+  TimeMeasurer.log_measurers
+
+  # MAIN PART WITH REVISONS STATS
+  images_paths = get_images_paths
+
+  #all_revisions_set = Set.new
+  #unlinked_revisions_set = Set.new
+  #linked_and_unused_revisions_set = Set.new
+
+  # Exploring each revisions directory (suggestion: even if blob is unused in any tag index, it still can be used in other revisions despite they are not referenced)
+
+  revisions_no_link_has_blob = Set.new
+  revisions_no_link_no_blob = Set.new
+  revisions_linked_has_blob = Set.new
+  revisions_linked_no_blob = Set.new
+  images_paths.each do |image_path|
+    revisions_paths = Dir.children(File.join(image_path, '_manifests', 'revisions', 'sha256'))
+    revisions_paths.each do |revision_path|
+      # Check revisions without link
+      if !File.exist?(File.join(image_path, '_manifests', 'revisions', 'sha256', revision_path, 'link'))
+        if stored_blobs.include?(revision_path)
+          revisions_no_link_has_blob.add(revision_path)
+        else
+          revisions_no_link_no_blob.add(revision_path)
+        end
+      else
+        if stored_blobs.include?(revision_path)
+          revisions_linked_has_blob.add(revision_path)
+        else
+          revisions_linked_no_blob.add(revision_path)
+        end
+      end
+    end
+  end
+  garbage_collect_candidates_nodes = []
+  revisions_no_link_has_blob.each do |revision_path|
+    garbage_collect_candidates_nodes << CachesManager.get_node(nil, revision_path)
+  end
+  all_blobs_from_garbage_collect_candidates = Set.new
+  garbage_collect_candidates_nodes.each do |node|
+    all_blobs_from_garbage_collect_candidates.merge(node.get_included_blobs)
+  end
+  all_unused_garbage_collect_candidate_blobs = all_blobs_from_garbage_collect_candidates.select { |b| unused_blobs.include?(b) }
+  revisions_linked_has_blob_nodes = []
+  revisions_linked_has_blob.each do |revision_path|
+    revisions_linked_has_blob_nodes << CachesManager.get_node(nil, revision_path)
+  end
+  all_blobs_from_revisions_linked_has_blob = Set.new
+  revisions_linked_has_blob_nodes.each do |node|
+    all_blobs_from_revisions_linked_has_blob.merge(node.get_included_blobs)
+  end
+  unused_revisions = Set.new
+  revisions_linked_has_blob.each do |revision_path|
+    unused_revisions.add(revision_path) if unused_blobs.include?(revision_path)
+  end
+  unused_revisions_nodes = []
+  unused_revisions.each do |revision_path|
+    unused_revisions_nodes << CachesManager.get_node(nil, revision_path)
+  end
+  unused_revisions_blobs = Set.new
+  unused_revisions_nodes.each do |node|
+    unused_revisions_blobs.merge(node.get_included_blobs)
+  end
+
+  actually_unused_blobs = unused_revisions_blobs.select { |b| unused_blobs.include?(b) }
+  if actually_unused_blobs.select { |b| unused_revisions.include?(b) }.size != unused_revisions.size
+    raise "Not all unused revisions have unused blobs"
+  end
+  actually_unused_blobs_size = 0
+  actually_unused_blobs.each do |blob|
+    actually_unused_blobs_size += CachesManager.blob_size(blob)
+  end
+  ####################################################################################################################################
+  all_revisions_set = revisions_linked_no_blob + revisions_linked_has_blob + revisions_no_link_no_blob + revisions_no_link_has_blob
+  all_revisions_nodes = []
+  all_revisions_blobs = Set.new
+  all_revisions_blobs_total_size = 0
+  all_revisions_set.each do |revision_path|
+    all_revisions_nodes << CachesManager.get_node(nil, revision_path)
+    all_revisions_blobs.merge(CachesManager.get_node(nil, revision_path).get_included_blobs)
+  end
+  all_revisions_blobs_total_size = all_revisions_blobs.map { |b| CachesManager.blob_size(b) }.sum
+sass:
+  .copy-btn
+    margin-left: 3.5rem
+
+  .inline-container-small
+    display: inline-block
+    width: 3rem
+
+  .inline-container
+    display: inline-block
+    width: 5rem
+
+.uk-flex.uk-flex-row.align-items-center.uk-padding.uk-padding-remove-horizontal
+  a.uk-link-text.border-around.hover-darker.padding-xsmall.uk-width-fit-content.uk-margin-right.align-content-center.uk-text-center href = "/blobs-exploring"
+    span.icon-padding-right.icon-padding-left.uk-text-primary uk-icon = "icon: chevron-left"
+  .uk-flex.uk-width-expand.uk-flex-between.align-items-center
+    h1.uk-h1.uk-margin-remove-bottom = " #{ 'Garbage collection review' }"
+table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped id="blobs-table"
+  thead
+    tr
+      / th.align-text-center style="min-width: 3%; width: 3%; max-width: 3%"
+      /   / span Filter
+      /   span.icon-padding-left.uk-text-primary.cursor-pointer uk-tooltip="title: #{'Choose including options'}; cls: uk-active; delay: 500;" uk-icon="icon: menu" onclick="event.stopPropagation(); document.getElementById('include-menu').classList.toggle('uk-hidden')"
+      /   #include-menu.align-text-left.uk-hidden.uk-card.uk-card-default.uk-position-absolute.uk-padding-small style="z-index: 1000"
+      /     .uk-margin-small
+      /       label.uk-form-label Include in exploring:
+      /       .uk-margin-small
+      /         label
+      /           input.uk-checkbox type="checkbox" name="include-required" checked="checked" id="include-required" onchange="updatePage(0)"
+      /           span.uk-margin-small-left Required blobs
+      /       .uk-margin-small
+      /         label
+      /           input.uk-checkbox type="checkbox" name="include-unused" checked="checked" id="include-unused" onchange="updatePage(0)"
+      /           span.uk-margin-small-left Unused blobs
+      / / .uk-margin-small
+      / /   label.uk-form-label Search by SHA256:
+      / /   .uk-inline.uk-width-1-1
+      / /     span.uk-form-icon uk-icon="icon: search"
+      / /     input.uk-input type="text" placeholder="Enter SHA256..." id="sha-include"
+      / th style="min-width: 25%; width: 25%; max-width: 25%" Blob exploring
+      / th.uk-float-right Blob size
+      / th Created at
+      / th.uk-text-right Actions
+      th style="min-width: 20%; width: 20%; max-width: 20%" Category name
+      th.uk-text-right style="min-width: 20%; width: 20%; max-width: 20%" Elements in category
+      th.uk-text-right style="min-width: 20%; width: 20%; max-width: 20%" Blobs amount
+      th.uk-text-right style="min-width: 40%; width: 40%; max-width: 40%" Blobs size
+  tbody
+    - TimeMeasurer.start_measurement
+    - TimeMeasurer.measure(:calculating_table_data) do
+      tr
+        td All revisions
+        td.uk-text-right #{all_revisions_set.size}
+        td.uk-text-right #{all_revisions_blobs.size}
+        td.uk-text-right #{represent_size(all_revisions_blobs_total_size)}
+      tr
+        td Unused revisions (revision exists, but no link)
+        td.uk-text-right #{garbage_collect_candidates_nodes.size}
+        td.uk-text-right #{all_blobs_from_garbage_collect_candidates.size}
+        td.uk-text-right #{represent_size(all_blobs_from_garbage_collect_candidates.map { |b| CachesManager.blob_size(b) }.sum)}
+      tr
+        td Indexes with no link in revisions
+        td.uk-text-right Unknown for now
+        td.uk-text-right Unknown for now
+        td.uk-text-right Unknown for now
+      / - blobs_set.each do |blob_hash|
+        /   tr.tree-node style="cursor: default" id="#{blob_hash["sha256"]}" onmouseover="this.querySelector('.to-be-hidden').classList.remove('uk-hidden')" onmouseout="this.querySelector('.to-be-hidden').classList.add('uk-hidden')"
+        /     td.align-text-center
+        /       - if blob_hash["is_required"]
+        /         span.uk-padding-remove uk-icon="icon: check" style="color: green; min-width: max-content; padding: 0.5rem"
+        /       - else
+        /         span.uk-padding-remove uk-icon="icon: ban" style="color: red; min-width: max-content; padding: 0.5rem"
+        /     td
+        /       .inline-container-small
+        /         a href="/blob-exploring/#{blob_hash["sha256"]}" uk-tooltip="title: #{blob_hash["sha256"]}; cls: uk-active; delay: 500;"= blob_hash["sha256"][0..6] + "..."
+        /       a.to-be-hidden.uk-hidden
+        /         span.copy-btn.cursor-pointer data-buffervalue="#{blob_hash["sha256"]}" uk-icon="icon: copy"
+        /       - current_image_node_size = represent_size(blob_hash["size"])
+        /     td.align-text-right= current_image_node_size
+        /     / td #{represent_datetime(node_link[:node].created_at)}
+        /     td #{blob_hash["created_at"]}
+        /     td.align-text-right
+        /       - if !blob_hash["sha256"].nil?
+        /         - if !$read_only_mode
+        /           span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: trash" uk-tooltip="title: #{'Delete chosen blob'}; cls: uk-active; delay: 500;" onclick="delete_blob(`#{blob_hash["sha256"]}`)"
+nav aria-label="Pagination"
+  ul.uk-pagination.uk-flex-center.uk-margin-remove-bottom id="pagination-list"
+    - TimeMeasurer.log_measurers
