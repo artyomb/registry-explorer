@@ -109,14 +109,14 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped id="blobs-table"
     tr
       td
       td.uk-text-italic.uk-text-bold Total
-      td.uk-text-italic.uk-text-bold.align-text-right= affected_images_structure.map{|i| i[:tags].size}.sum
-      td.uk-text-italic.uk-text-bold.align-text-right= affected_images_structure.map{|i| i[:revisions].size}.sum
-      td.uk-text-italic.uk-text-bold.align-text-right= affected_images_structure.map{|i| i[:layers].size}.sum
+      td.uk-text-italic.uk-text-bold.align-text-right= affected_images_structure.map{ |image| image[:tags].map{ |tag| tag[:index_Nodes].size }.sum }.sum
+      td.uk-text-italic.uk-text-bold.align-text-right= affected_images_structure.map{ |i| i[:revisions].size}.sum
+      td.uk-text-italic.uk-text-bold.align-text-right= affected_images_structure.map{ |i| i[:layers].size}.sum
     - affected_images_structure.each do |image|
       tr
         td
         td.uk-text-italic.uk-text-bold= image[:name]
-        td.uk-text-italic.uk-text-bold.align-text-right= image[:tags].size
+        td.uk-text-italic.uk-text-bold.align-text-right= image[:tags].map{ |tag| tag[:index_Nodes].size }.sum
         td.uk-text-italic.uk-text-bold.align-text-right= image[:revisions].size
         td.uk-text-italic.uk-text-bold.align-text-right= image[:layers].size
 

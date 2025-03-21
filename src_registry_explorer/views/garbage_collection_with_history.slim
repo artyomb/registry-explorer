@@ -102,21 +102,18 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped id="blobs-table"
         / span Filter
         span.icon-padding-left.uk-text-primary.cursor-pointer  uk-icon="icon: menu" onclick="event.stopPropagation(); document.getElementById('include-menu').classList.toggle('uk-hidden')"
       th style="min-width: 25%; width: 25%; max-width: 25%" Image name
-      th.align-text-right Unreferenced indexes
       th.align-text-right Unused revision
       th.uk-text-right Unused layers
   tbody
     tr
       td
       td.uk-text-italic.uk-text-bold Total
-      td.uk-text-italic.uk-text-bold.align-text-right= affected_images_structure.map{|i| i[:tags].size}.sum
       td.uk-text-italic.uk-text-bold.align-text-right= affected_images_structure.map{|i| i[:revisions].size}.sum
       td.uk-text-italic.uk-text-bold.align-text-right= affected_images_structure.map{|i| i[:layers].size}.sum
     - affected_images_structure.each do |image|
       tr
         td
         td.uk-text-italic.uk-text-bold= image[:name]
-        td.uk-text-italic.uk-text-bold.align-text-right= image[:tags].size
         td.uk-text-italic.uk-text-bold.align-text-right= image[:revisions].size
         td.uk-text-italic.uk-text-bold.align-text-right= image[:layers].size
 
