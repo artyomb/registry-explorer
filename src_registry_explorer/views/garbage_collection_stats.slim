@@ -123,6 +123,14 @@ ruby:
     all_revisions_blobs.merge(CachesManager.get_node(nil, revision_path).get_included_blobs)
   end
   all_revisions_blobs_total_size = all_revisions_blobs.map { |b| CachesManager.blob_size(b) }.sum
+  #####################################################################################################################################
+  images_structure = get_indexes_without_revisions # retirns images structure with tags and indexes, where indexes are without link in revisions
+  revisions_nodes_from_indexes_without_link = images_structure.flat_map{|img| img[:tags].flat_map { |tag| tag[:index_Nodes] } }.flatten
+  revisions_nodes_from_indexes_without_link_blobs = Set.new
+  images_structure.each{ |img| revisions_nodes_from_indexes_without_link_blobs.merge(img[:required_blobs]) }
+  revisions_nodes_from_indexes_without_link_blobs_total_size = revisions_nodes_from_indexes_without_link_blobs.map { |b| CachesManager.blob_size(b) }.sum
+
+
 sass:
   .copy-btn
     margin-left: 3.5rem
@@ -184,10 +192,15 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped id="blobs-table"
         td.uk-text-right #{all_blobs_from_garbage_collect_candidates.size}
         td.uk-text-right #{represent_size(all_blobs_from_garbage_collect_candidates.map { |b| CachesManager.blob_size(b) }.sum)}
       tr
+        td Linked revisions, not referenced in indexes with link in revisions
+        td.uk-text-right= unused_revisions_nodes.size
+        td.uk-text-right= unused_revisions_blobs.size
+        td.uk-text-right= represent_size(unused_revisions_blobs.map{ |b| CachesManager.blob_size(b) }.sum)
+      tr
         td Indexes with no link in revisions
-        td.uk-text-right Unknown for now
-        td.uk-text-right Unknown for now
-        td.uk-text-right Unknown for now
+        td.uk-text-right= revisions_nodes_from_indexes_without_link.size
+        td.uk-text-right= revisions_nodes_from_indexes_without_link_blobs.size
+        td.uk-text-right= represent_size(revisions_nodes_from_indexes_without_link_blobs_total_size)
       / - blobs_set.each do |blob_hash|
         /   tr.tree-node style="cursor: default" id="#{blob_hash["sha256"]}" onmouseover="this.querySelector('.to-be-hidden').classList.remove('uk-hidden')" onmouseout="this.querySelector('.to-be-hidden').classList.add('uk-hidden')"
         /     td.align-text-center
