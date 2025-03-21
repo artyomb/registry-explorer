@@ -59,7 +59,7 @@ def get_all_revisions_set(revisions_linked_no_blob, revisions_linked_has_blob, r
   revisions_linked_no_blob + revisions_linked_has_blob + revisions_no_link_no_blob + revisions_no_link_has_blob
 end
 
-def get_images_structure_affected_by_gc(images_structure = Set.new, unused_blobs_set)
+def get_images_structure_affected_by_gc(images_structure = Set.new, required_blobs)
   images_paths = get_images_paths
   images_paths.each do |image_path|
     subfolders = image_path.split('/')
@@ -71,8 +71,8 @@ def get_images_structure_affected_by_gc(images_structure = Set.new, unused_blobs
       current_img[:required_blobs].merge(tag[:required_blobs])
       current_img[:problem_blobs].merge(tag[:problem_blobs])
     end
-    Dir.children(File.join(image_path,'_layers', 'sha256')).each{ |l| current_img[:layers].add l if unused_blobs_set.include?(l) }
-    Dir.children(File.join(image_path, '_manifests', 'revisions', 'sha256')).each{ |l| current_img[:revisions].add l if unused_blobs_set.include?(l) }
+    Dir.children(File.join(image_path,'_layers', 'sha256')).each{ |l| current_img[:layers].add l if !required_blobs.include?(l) }
+    Dir.children(File.join(image_path, '_manifests', 'revisions', 'sha256')).each{ |l| current_img[:revisions].add l if !required_blobs.include?(l) }
     images_structure.add current_img
     current_img[:total_size] = CachesManager.get_repo_size(image_path, current_img[:required_blobs])
   end

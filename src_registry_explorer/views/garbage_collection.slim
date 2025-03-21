@@ -49,98 +49,9 @@ ruby:
             "#{not_existing_blobs.size} not existing blobs"
   end
   TimeMeasurer.log_measurers
-
-  # MAIN PART WITH REVISONS STATS
-  images_paths = get_images_paths
-
-  #all_revisions_set = Set.new
-  #unlinked_revisions_set = Set.new
-  #linked_and_unused_revisions_set = Set.new
-
-  # Exploring each revisions directory (suggestion: even if blob is unused in any tag index, it still can be used in other revisions despite they are not referenced)
-
-  revisions_no_link_has_blob = Set.new
-  revisions_no_link_no_blob = Set.new
-  revisions_linked_has_blob = Set.new
-  revisions_linked_no_blob = Set.new
-  images_paths.each do |image_path|
-    revisions_paths = Dir.children(File.join(image_path, '_manifests', 'revisions', 'sha256'))
-    revisions_paths.each do |revision_path|
-      # Check revisions without link
-      if !File.exist?(File.join(image_path, '_manifests', 'revisions', 'sha256', revision_path, 'link'))
-        if stored_blobs.include?(revision_path)
-          revisions_no_link_has_blob.add(revision_path)
-        else
-          revisions_no_link_no_blob.add(revision_path)
-        end
-      else
-        if stored_blobs.include?(revision_path)
-          revisions_linked_has_blob.add(revision_path)
-        else
-          revisions_linked_no_blob.add(revision_path)
-        end
-      end
-    end
-  end
-  garbage_collect_candidates_nodes = []
-  revisions_no_link_has_blob.each do |revision_path|
-    garbage_collect_candidates_nodes << CachesManager.get_node(nil, revision_path)
-  end
-  all_blobs_from_garbage_collect_candidates = Set.new
-  garbage_collect_candidates_nodes.each do |node|
-    all_blobs_from_garbage_collect_candidates.merge(node.get_included_blobs)
-  end
-  all_unused_garbage_collect_candidate_blobs = all_blobs_from_garbage_collect_candidates.select { |b| unused_blobs.include?(b) }
-  revisions_linked_has_blob_nodes = []
-  revisions_linked_has_blob.each do |revision_path|
-    revisions_linked_has_blob_nodes << CachesManager.get_node(nil, revision_path)
-  end
-  all_blobs_from_revisions_linked_has_blob = Set.new
-  revisions_linked_has_blob_nodes.each do |node|
-    all_blobs_from_revisions_linked_has_blob.merge(node.get_included_blobs)
-  end
-  unused_revisions = Set.new
-  revisions_linked_has_blob.each do |revision_path|
-    unused_revisions.add(revision_path) if unused_blobs.include?(revision_path)
-  end
-  unused_revisions_nodes = []
-  unused_revisions.each do |revision_path|
-    unused_revisions_nodes << CachesManager.get_node(nil, revision_path)
-  end
-  unused_revisions_blobs = Set.new
-  unused_revisions_nodes.each do |node|
-    unused_revisions_blobs.merge(node.get_included_blobs)
-  end
-
-  actually_unused_blobs = unused_revisions_blobs.select { |b| unused_blobs.include?(b) }
-  if actually_unused_blobs.select { |b| unused_revisions.include?(b) }.size != unused_revisions.size
-    raise "Not all unused revisions have unused blobs"
-  end
-  actually_unused_blobs_size = 0
-  actually_unused_blobs.each do |blob|
-    actually_unused_blobs_size += CachesManager.blob_size(blob)
-  end
   ####################################################################################################################################
-  all_revisions_set = get_all_revisions_set(revisions_linked_no_blob, revisions_linked_has_blob, revisions_no_link_no_blob, revisions_no_link_has_blob)
-  all_revisions_nodes = []
-  all_revisions_blobs = Set.new
-  all_revisions_blobs_total_size = 0
-  all_revisions_set.each do |revision_path|
-    all_revisions_nodes << CachesManager.get_node(nil, revision_path)
-    all_revisions_blobs.merge(CachesManager.get_node(nil, revision_path).get_included_blobs)
-  end
-  all_revisions_blobs_total_size = all_revisions_blobs.map { |b| CachesManager.blob_size(b) }.sum
-  #####################################################################################################################################
-  images_structure = get_images_strictire_where_indexes_without_revisions # retirns images structure with tags and indexes, where indexes are without link in revisions
-  revisions_nodes_from_indexes_without_link = images_structure.flat_map{|img| img[:tags].flat_map { |tag| tag[:index_Nodes] } }.flatten
-  revisions_nodes_from_indexes_without_link_blobs = Set.new
-  images_structure.each{ |img| revisions_nodes_from_indexes_without_link_blobs.merge(img[:required_blobs]) }
-  revisions_nodes_from_indexes_without_link_blobs_total_size = revisions_nodes_from_indexes_without_link_blobs.map { |b| CachesManager.blob_size(b) }.sum
+  affected_images_structure = get_images_structure_affected_by_gc(Set.new, required_blobs)
   ####################################################################################################################################
-  affected_images_structure = get_images_structure_affected_by_gc(Set.new, unused_blobs)
-  ####################################################################################################################################
-  linked_index_nodes = []
-  images.map { |img| img[:tags].each { |tag| linked_index_nodes << tag[:index_Nodes] } }
   session[:attestations_exploring] = previous_session_flag
 
 sass:
@@ -191,7 +102,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped id="blobs-table"
         / span Filter
         span.icon-padding-left.uk-text-primary.cursor-pointer  uk-icon="icon: menu" onclick="event.stopPropagation(); document.getElementById('include-menu').classList.toggle('uk-hidden')"
       th style="min-width: 25%; width: 25%; max-width: 25%" Image name
-      th.uk-float-right Unreferenced indexes
+      th.align-text-right Unreferenced indexes
       th.align-text-right Unused revision
       th.uk-text-right Unused layers
   tbody
