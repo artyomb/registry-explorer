@@ -249,32 +249,32 @@ javascript:
         // });
     }
 
-    async function delete_blob(sha256) {
-        delete_by_sha256(sha256, 'image', 'Are you sure you want to delete this image?', true);
-    }
-    async function delete_all_blobs(isDryRun) {
-        // handle confirmation
-        UIkit.modal.confirm(`Do you want to start DELETING ALL BLOBS ${isDryRun ? 'with' : 'WITH NO'} DRY-RUN option`).then(async function () {
-            if (isDryRun) {
-                try {
-                    window.location.href = '/perform-garbage-collection?dry_run=true';
-                    if (true) {
-                        UIkit.notification({
-                            message: "Soon you will see deleting process summary",
-                            status: 'success',
-                            pos: 'top-right'
-                        });
-                    } else {
-                        UIkit.notification({message: 'Error: ' + responseText, status: 'danger', pos: 'top-right'});
-                    }
-                } catch (error) {
-                    UIkit.notification({message: 'Error: ' + error, status: 'danger', pos: 'top-right'});
-                }
-            } else { UIkit.notification({ message: 'This operation is not supported yet. Try dry-run option to see garbage collection review', status: 'danger', pos: 'top-right' }); }
-          }, function () {
-              return false;
-        });
-    }
+    // async function delete_blob(sha256) {
+    //     delete_by_sha256(sha256, 'image', 'Are you sure you want to delete this image?', true);
+    // }
+    // async function delete_all_blobs(isDryRun) {
+    //     // handle confirmation
+    //     UIkit.modal.confirm(`Do you want to start DELETING ALL BLOBS ${isDryRun ? 'with' : 'WITH NO'} DRY-RUN option`).then(async function () {
+    //         if (isDryRun) {
+    //             try {
+    //                 window.location.href = '/perform-garbage-collection?dry_run=true';
+    //                 if (true) {
+    //                     UIkit.notification({
+    //                         message: "Soon you will see deleting process summary",
+    //                         status: 'success',
+    //                         pos: 'top-right'
+    //                     });
+    //                 } else {
+    //                     UIkit.notification({message: 'Error: ' + responseText, status: 'danger', pos: 'top-right'});
+    //                 }
+    //             } catch (error) {
+    //                 UIkit.notification({message: 'Error: ' + error, status: 'danger', pos: 'top-right'});
+    //             }
+    //         } else { UIkit.notification({ message: 'This operation is not supported yet. Try dry-run option to see garbage collection review', status: 'danger', pos: 'top-right' }); }
+    //       }, function () {
+    //           return false;
+    //     });
+    // }
 
     async function copy_pull_command(sha256) {
         const pullUrl = imagesRegistryHost.isNaN || imagesRegistryHost === '' ? window.location.host : imagesRegistryHost;
@@ -316,14 +316,20 @@ sass:
                 span.icon-padding-right uk-icon="icon: trash"
                 span.uk-text-bold= "#{unused_blobs.size} unused blobs: #{represent_size(unused_blobs_size)}"
 - if !$read_only_mode
-  .uk-button-group.uk-float-right.small-column-gap
-    button.switch-btn.uk-button.uk-button-default.uk-flex.align-items-center uk-tooltip="title: #{'Delete all blobs, which were not used by any revision in your registry'}; cls: uk-active; delay: 500;" style="" onclick="delete_all_blobs(false)"
-      span.icon-padding-right.icon-padding-right.uk-text-primary uk-icon="icon: trash" style="color: red !important"
-      span="Delete unused blobs (no rollback)"
-  .uk-button-group.uk-float-right.small-column-gap
-    button.switch-btn.uk-button.uk-button-default.uk-flex.align-items-center uk-tooltip="title: #{'Delete all blobs, which were not used by any revision in your registry'}; cls: uk-active; delay: 500;" style="" onclick="delete_all_blobs(true)"
-      span.icon-padding-right.icon-padding-right.uk-text-primary uk-icon="icon: trash" style="color: red !important"
-      span="Delete unused blobs (dry-run)"
+  .uk-flex.uk-flex-right.small-column-gap
+    .uk-button-group.uk-float-right.small-column-gap
+      a.switch-btn.uk-button.uk-button-default.uk-flex.align-items-center style="" href="/revisions"
+        span.icon-padding-right.icon-padding-right.uk-text-primary uk-icon="icon: search" style="color: red !important"
+        span="Explore revisions"
+    .uk-button-group.uk-float-right.small-column-gap
+      a.switch-btn.uk-button.uk-button-default.uk-flex.align-items-center style="" href="/garbage-collection?with_history=false"
+        span.icon-padding-right.icon-padding-right.uk-text-primary uk-icon="icon: trash" style="color: red !important"
+        span="Preview light garbage-collect (only unused blobs)"
+    .uk-button-group.uk-float-right.small-column-gap
+      a.switch-btn.uk-button.uk-button-default.uk-flex.align-items-center style="" href="/garbage-collection?with_history=true"
+        span.icon-padding-right.icon-padding-right.uk-text-primary uk-icon="icon: trash" style="color: red !important"
+        span= "Preview hard garbage-collect (with history)"
+
 table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped id="blobs-table"
   thead
     tr

@@ -136,11 +136,24 @@ class RegistryExplorerFront < Sinatra::Base
     end
   end
 
+  get '/revisions' do
+    slim :revisions
+  end
+
+  get '/garbage-collection' do
+    if params[:with_history] == 'true'
+      slim :garbage_collection_with_history
+    elsif params[:with_history] == 'false'
+      slim :garbage_collection
+    end
+  end
+
   get '/perform-garbage-collection' do
     if $read_only_mode && params[:dry_run] != 'false'
       return [403, 'Registry is in read-only mode']
     else
-      slim :garbage_collection_stats
+      # slim :garbage_collection_stats
+
     end
   end
 
