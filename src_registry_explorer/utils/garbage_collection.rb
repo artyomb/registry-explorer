@@ -53,3 +53,7 @@ def extract_tag_with_unlinked_indexes(tag_path)
   current_tag[:size] = CachesManager.get_repo_size(tag_path, current_tag[:required_blobs])
   current_tag
 end
+
+def get_all_revisions_set(revisions_linked_no_blob, revisions_linked_has_blob, revisions_no_link_no_blob, revisions_no_link_has_blob)
+  revisions_linked_no_blob + revisions_linked_has_blob + revisions_no_link_no_blob + revisions_no_link_has_blob
+end
