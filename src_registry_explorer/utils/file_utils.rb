@@ -313,3 +313,8 @@ def flatten_tree(node, level = 0, pname = nil)
   end
   result
 end
+
+
+def debugging(val)
+  puts "DEBUGGING: #{val}"
+end

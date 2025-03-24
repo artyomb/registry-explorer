@@ -6,6 +6,7 @@ require 'uri'
 require 'net/http'
 require 'cgi'
 require_relative '../utils/file_utils'
+require_relative '../utils/garbage_collection'
 
 class RegistryExplorerFront < Sinatra::Base
   use Rack::SassC, css_location: "#{__dir__}/../public/css", scss_location: "#{__dir__}/../css",
@@ -148,12 +149,15 @@ class RegistryExplorerFront < Sinatra::Base
     end
   end
 
-  get '/perform-garbage-collection' do
-    if $read_only_mode && params[:dry_run] != 'false'
-      return [403, 'Registry is in read-only mode']
-    else
-      # slim :garbage_collection_stats
+  delete '/perform-garbage-collection' do
+    raise(StandardError, "You can't perform garbage collection as you boot your service in read-only mode") if $read_only_mode
+    #
+    if params[:with_history] == 'true'
+      [500, 'Garbage collection with history is not implemented yet']
+    elsif params[:with_history] == 'false'
+      request_body = JSON.parse(request.body.read, symbolize_names: true)
 
+      status, message = garbage_collect_without_history(request_body[:blobs])
     end
   end
 

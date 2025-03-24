@@ -104,3 +104,48 @@ def extract_tag_current_only(tag_path)
   current_tag[:size] = CachesManager.get_repo_size(tag_path, current_tag[:required_blobs])
   current_tag
 end
+
+def garbage_collect_without_history(blobs)
+  # Removing blobs from blobs directory
+  blobs_removed = 0
+  layers_removed = 0
+  revisions_removed = 0
+  indexes_removed = 0
+  blobs.each do |blob|
+    blob_path = $base_path + '/blobs/sha256/' + blob[0..1] + '/' + blob
+    puts "Removing blob #{blob_path}"
+    # FileUtils.rm_rf(blob_path)
+    blobs_removed += 1
+  end
+
+  # Removing references to blobs form _layers and _manifests/revisions directories
+  images_paths = get_images_paths
+  images_paths.each do |image_path|
+    layers_path = File.join(image_path, '_layers', 'sha256')
+    revisions_path = File.join(image_path, '_manifests', 'revisions', 'sha256')
+    blobs.each do |blob|
+      if File.exist?(File.join(layers_path, blob))
+        puts "Removing layer #{File.join(layers_path, blob)}"
+        # FileUtils.rm_rf(File.join(layers_path, blob))
+        layers_removed += 1
+      end
+      if File.exist?(File.join(revisions_path, blob))
+        puts "Removing revision #{File.join(revisions_path, blob)}"
+        # FileUtils.rm_rf(File.join(revisions_path, blob))
+        revisions_removed += 1
+      end
+    end
+    tags_paths = Dir.children(File.join(image_path, '_manifests', 'tags'))
+    tags_paths.each do |tag_path|
+      indexes_paths = Dir.children(File.join(image_path, '_manifests', 'tags', tag_path, 'index', 'sha256'))
+      indexes_paths.each do |index_path|
+        if !File.exist?(File.join(revisions_path, index_path, 'link'))
+          puts("Removing index #{File.join(image_path, '_manifests', 'tags', tag_path, 'index', 'sha256', index_path)}")
+          # FileUtils.rm_rf(File.join(image_path, '_manifests', 'tags', tag_path, 'index', 'sha256', index_path))
+          indexes_removed += 1
+        end
+      end
+    end
+  end
+  [200, '(THIS IS DRY RUN)Garbage collection completed successfully: ' + blobs_removed.to_s + ' blobs, ' + layers_removed.to_s + ' layers, ' + revisions_removed.to_s + ' revisions, ' + indexes_removed.to_s + ' indexes removed']
+end
