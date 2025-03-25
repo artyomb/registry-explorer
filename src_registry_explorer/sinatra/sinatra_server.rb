@@ -153,11 +153,21 @@ class RegistryExplorerFront < Sinatra::Base
     raise(StandardError, "You can't perform garbage collection as you boot your service in read-only mode") if $read_only_mode
     #
     if params[:with_history] == 'true'
-      [500, 'Garbage collection with history is not implemented yet']
+      request_body = JSON.parse(request.body.read, symbolize_names: true)
+      session = RegistryExplorerFront.get_session
+      previous_session_flag = session[:attestations_exploring]
+      session[:attestations_exploring] = true
+      status, message = garbage_collect_with_history(request_body[:blobs])
+      session[:attestations_exploring] = previous_session_flag
+      [status, message]
     elsif params[:with_history] == 'false'
       request_body = JSON.parse(request.body.read, symbolize_names: true)
-
+      session = RegistryExplorerFront.get_session
+      previous_session_flag = session[:attestations_exploring]
+      session[:attestations_exploring] = true
       status, message = garbage_collect_without_history(request_body[:blobs])
+      session[:attestations_exploring] = previous_session_flag
+      [status, message]
     end
   end
 
