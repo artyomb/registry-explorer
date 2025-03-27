@@ -2,6 +2,7 @@ source 'https://rubygems.org'
 ruby File.read("#{__dir__}/.ruby-version").strip
 
 gem 'rubocop', group: 'development', require: false
+gem 'rest-client', group: 'development', require: false
 gem 'grape'
 gem 'grape-swagger'
 gem 'grape-swagger-entity'
