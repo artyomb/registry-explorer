@@ -114,7 +114,7 @@ def garbage_collect_without_history(blobs)
   blobs.each do |blob|
     blob_path = $base_path + '/blobs/sha256/' + blob[0..1] + '/' + blob
     puts "Removing blob #{blob_path}"
-    # FileUtils.rm_rf(blob_path)
+    FileUtils.rm_rf(blob_path)
     blobs_removed += 1
   end
 
@@ -126,12 +126,12 @@ def garbage_collect_without_history(blobs)
     blobs.each do |blob|
       if File.exist?(File.join(layers_path, blob))
         puts "Removing layer #{File.join(layers_path, blob)}"
-        # FileUtils.rm_rf(File.join(layers_path, blob))
+        FileUtils.rm_rf(File.join(layers_path, blob))
         layers_removed += 1
       end
       if File.exist?(File.join(revisions_path, blob))
         puts "Removing revision #{File.join(revisions_path, blob)}"
-        # FileUtils.rm_rf(File.join(revisions_path, blob))
+        FileUtils.rm_rf(File.join(revisions_path, blob))
         revisions_removed += 1
       end
     end
@@ -141,13 +141,13 @@ def garbage_collect_without_history(blobs)
       indexes_paths.each do |index_path|
         if !File.exist?(File.join(revisions_path, index_path, 'link')) || blobs.include?(index_path)
           puts("Removing index #{File.join(image_path, '_manifests', 'tags', tag_path, 'index', 'sha256', index_path)}")
-          # FileUtils.rm_rf(File.join(image_path, '_manifests', 'tags', tag_path, 'index', 'sha256', index_path))
+          FileUtils.rm_rf(File.join(image_path, '_manifests', 'tags', tag_path, 'index', 'sha256', index_path))
           indexes_removed += 1
         end
       end
     end
   end
-  [200, '(THIS IS DRY RUN)Garbage collection completed successfully: ' + blobs_removed.to_s + ' blobs, ' + layers_removed.to_s + ' layers, ' + revisions_removed.to_s + ' revisions, ' + indexes_removed.to_s + ' indexes removed']
+  [200, 'Garbage collection completed successfully: ' + blobs_removed.to_s + ' blobs, ' + layers_removed.to_s + ' layers, ' + revisions_removed.to_s + ' revisions, ' + indexes_removed.to_s + ' indexes removed']
 end
 
 def garbage_collect_with_history(blobs)
