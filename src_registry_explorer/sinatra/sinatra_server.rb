@@ -137,6 +137,10 @@ class RegistryExplorerFront < Sinatra::Base
     end
   end
 
+  get '/registry-healthcheck' do
+    slim :registry_healthcheck
+  end
+
   get '/revisions' do
     slim :revisions
   end
