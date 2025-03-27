@@ -35,9 +35,11 @@ body
   footer.uk-section.uk-section-small.uk-text-center.uk-background-muted.uk-margin-auto-top.uk-padding-small
     .uk-flex.uk-flex-around
       .uk-flex
+        - commit_url = ENV['COM_GITHUB_CI_COMMITURL'].nil? ? 'Commit unknown' : ENV['COM_GITHUB_CI_COMMITURL']
+        - action_url = ENV['COM_GITHUB_CI_ACTIONURL'].nil? ? 'Action unknown' : ENV['COM_GITHUB_CI_ACTIONURL']
         .uk-padding-small = "Registry explorer#{version.nil? ? '' : ' ' + version}#{ENV['COM_GITHUB_CI_BUILD_TIME'].nil? ? '' : ' from ' + ENV['COM_GITHUB_CI_BUILD_TIME']}"
-        a.uk-link-heading.uk-padding-small href="#{ENV['COM_GITHUB_CI_COMMITURL'].nil? ? '' : ENV['COM_GITHUB_CI_COMMITURL']}"="Commit #{ENV['COM_GITHUB_CI_COMMITURL'].split('/').last}"
-        a.uk-link-heading.uk-padding-small href="#{ENV['COM_GITHUB_CI_ACTIONURL'].nil? ? '' : ENV['COM_GITHUB_CI_ACTIONURL']}"="Action #{ENV['COM_GITHUB_CI_ACTIONURL'].split('/').last}"
+        a.uk-link-heading.uk-padding-small href="#{commit_url}"="Commit #{commit_url.split('/').last}"
+        a.uk-link-heading.uk-padding-small href="#{action_url}"="Action #{action_url.split('/').last}"
       a.uk-link-heading.uk-padding-small href="https://github.com/artyomb/registry-explorer"
         span.uk-icon.uk-margin-small-right uk-icon="icon: github"
         span GitHub
