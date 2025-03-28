@@ -16,7 +16,8 @@ WORKDIR /app
 COPY .ruby-version Gemfile* /app/
 #COPY --from=rbase Gemfile *.gemspec ../src_rbase/
 
-RUN bundle install --jobs $(nproc) --retry=3
+RUN bundle install --jobs $(nproc) --retry=3 && \
+    bundle clean --force && rm -rf /usr/local/bundle/cache/*
 
 COPY yarn.loc[k] package.jso[n] /app/
 RUN [ -f yarn.lock ] && yarn install ---frozen-lockfile || exit 0
