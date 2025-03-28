@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  registry-debugger-before:
+    image: registry:2.8.3
+    container_name: debugging-registry-before
+    ports:
+      - "5001:5000"
+    environment:
+      REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /var/lib/registry
+      REGISTRY_STORAGE_DELETE_ENABLED: true
+    volumes:
+      - ../temp-registry-debugger-before:/var/lib/registry
+#      - ./data:/var/lib/registry
+    restart: always

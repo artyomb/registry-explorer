@@ -271,8 +271,8 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
     tr
       th Image/tag name
       th style="text-align: right" Images amount
+      th style="text-align: right" Image size
       th style="text-align: right" Disk usage
-      th style="text-align: right" Size
       th Created at
   tbody
     - TimeMeasurer.start_measurement
@@ -289,7 +289,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
               span.hide-show-arrow uk-icon="icon: chevron-right"
             span = node[:name]
           td.alight-text-right
-          td.align-text-right #{node[:children_count] == 0 ? represent_size(node[:image][:total_size]) : represent_size(CachesManager.get_repo_size("#{repo_path}/#{node[:name]}", node[:required_blobs]))}
+          td.align-text-right
           td.align-text-right #{node[:children_count] == 0 ? represent_size(node[:image][:total_size]) : represent_size(CachesManager.get_repo_size("#{repo_path}/#{node[:name]}", node[:required_blobs]))}
           td -
         - node[:image][:tags]&.each do |tag|
@@ -303,7 +303,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
               span #{tag[:name]}
             td.align-text-right #{tag[:index_Nodes].size}
             / Adjust disk usage
-            td.align-text-right #{represent_size(tag[:size]).to_s + (tag[:problem_blobs].size > 0 ? ' (some blobs not found)' : '')}
             td.align-text-right #{represent_size(tag[:index_Nodes].first[:node].get_effective_size).to_s + (tag[:problem_blobs].size > 0 ? ' (some blobs not found)' : '')}
+            td.align-text-right #{represent_size(tag[:size]).to_s + (tag[:problem_blobs].size > 0 ? ' (some blobs not found)' : '')}
             td #{represent_datetime(tag[:index_Nodes]&.select{ |nd| tag[:current_index_sha256] == nd[:node].sha256 }.first[:node].created_at)}
     - TimeMeasurer.log_measurers
