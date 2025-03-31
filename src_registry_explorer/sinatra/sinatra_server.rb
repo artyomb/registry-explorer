@@ -175,6 +175,64 @@ class RegistryExplorerFront < Sinatra::Base
     end
   end
 
+  get '/blobs-exploring-data' do
+    # REFRESHING CACHE WITH EXPLORING ATTESTATIONS
+    session = RegistryExplorerFront.get_session
+    previous_session_flag = session[:attestations_exploring]
+    session[:attestations_exploring] = true
+    CachesManager.execute_refresh_pipeline
+
+
+    # CALCULATION OF DISK USAGE
+    stored_blobs = nil
+    stored_blobs_size = nil
+    required_blobs = nil
+    required_blobs_size = nil
+    unused_blobs = nil
+    unused_blobs_size = nil
+    not_existing_blobs = Set.new
+    blobs_set = Set.new
+    images = extract_images()
+
+    TimeMeasurer.start_measurement
+    TimeMeasurer.measure(:calculate_disk_usage) do
+      blobs_path = $base_path + '/blobs/sha256'
+      required_blobs = images.map { _1[:required_blobs] }.reduce(Set.new, :merge)
+      stored_blobs = Set.new
+      Dir.children(blobs_path).each do |intermediate_path|
+        current_blobs = Dir.children(File.join(blobs_path, intermediate_path))
+        stored_blobs.merge(current_blobs)
+        current_blobs.each { |blob| blobs_set.add(
+          {
+            "sha256" => blob, "size" => CachesManager.blob_size(blob),
+            "is_required" => required_blobs.include?(blob),
+            "created_at" => File.exist?(File.join(blobs_path, intermediate_path, blob)) ? File.mtime(File.join(blobs_path, intermediate_path, blob)) : '-',
+          }
+        ) }
+      end
+      # TODO: implement exploring unnecessary blobs
+      puts "Directory size: #{represent_size(Dir.glob(File.join(blobs_path, '**', '*')) # Get all files and subdirectories
+                                                .select { |file| File.file?(file) } # Filter only files
+                                                .sum { |file| File.size(file) })}"
+      unused_blobs = stored_blobs - required_blobs
+      not_existing_blobs = required_blobs - stored_blobs
+      required_blobs_size = required_blobs.map { |b| CachesManager.blob_size(b) }.sum
+      stored_blobs_size = stored_blobs.map { |b| CachesManager.blob_size(b) }.sum
+      unused_blobs_size = unused_blobs.map { |b| CachesManager.blob_size(b) }.sum
+    end
+    TimeMeasurer.log_measurers
+    session[:attestations_exploring] = previous_session_flag
+    response_body = { stored_blobs_amount: stored_blobs.size,
+                      stored_blobs_size: represent_size(stored_blobs_size),
+                      required_blobs_amount: required_blobs.size,
+                      required_blobs_size: represent_size(required_blobs_size),
+                      unused_blobs_amount: unused_blobs.size,
+                      unused_blobs_size: represent_size(unused_blobs_size),
+                      source_blobs: blobs_set.to_a.to_json
+    }.to_json
+    body response_body
+  end
+
   def delete_index(image_path, image_sha256, is_current)
     if $read_only_mode
       return [403, 'Registry is in read-only mode']

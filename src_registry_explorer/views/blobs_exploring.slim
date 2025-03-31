@@ -5,63 +5,10 @@ ruby:
   require_relative '../utils/time_measurer'
   margin_coef=1.5
 
-  # REFRESHING CACHE WITH EXPLORING ATTESTATIONS
-  session = RegistryExplorerFront.get_session
-  previous_session_flag = session[:attestations_exploring]
-  session[:attestations_exploring] = true
-  CachesManager.execute_refresh_pipeline
-
-
-  # CALCULATION OF DISK USAGE
-  stored_blobs = nil
-  stored_blobs_size = nil
-  required_blobs = nil
-  required_blobs_size = nil
-  unused_blobs = nil
-  unused_blobs_size = nil
-  not_existing_blobs = Set.new
-  blobs_set = Set.new
-  images = extract_images()
-
-  TimeMeasurer.start_measurement
-  TimeMeasurer.measure(:calculate_disk_usage) do
-    blobs_path = $base_path + '/blobs/sha256'
-    required_blobs = images.map { _1[:required_blobs] }.reduce(Set.new, :merge)
-    stored_blobs = Set.new
-    Dir.children(blobs_path).each do |intermediate_path|
-      current_blobs = Dir.children(File.join(blobs_path, intermediate_path))
-      stored_blobs.merge(current_blobs)
-      current_blobs.each { |blob| blobs_set.add(
-              {
-                      "sha256" => blob, "size" => CachesManager.blob_size(blob),
-                      "is_required" => required_blobs.include?(blob),
-                      "created_at" => File.exist?(File.join(blobs_path, intermediate_path, blob)) ? File.mtime(File.join(blobs_path, intermediate_path, blob)) : '-',
-              }
-      ) }
-    end
-    # TODO: implement exploring unnecessary blobs
-    puts "Directory size: #{represent_size(Dir.glob(File.join(blobs_path, '**', '*')) # Get all files and subdirectories
-                                              .select { |file| File.file?(file) } # Filter only files
-                                              .sum { |file| File.size(file) })}"
-    unused_blobs = stored_blobs - required_blobs
-    not_existing_blobs = required_blobs - stored_blobs
-    required_blobs_size = required_blobs.map { |b| CachesManager.blob_size(b) }.sum
-    stored_blobs_size = stored_blobs.map { |b| CachesManager.blob_size(b) }.sum
-    unused_blobs_size = unused_blobs.map { |b| CachesManager.blob_size(b) }.sum
-    disk_size_tooltip = "title:" +
-            "Disk usage is calculated as the sum of all blobs in the registry.<br><br>" +
-            "Actual data:<br>" +
-            "#{required_blobs.size} required blobs disk usage: #{represent_size(required_blobs_size)}<br>" +
-            "#{stored_blobs.size} stored blobs disk usage: #{represent_size(stored_blobs_size)}<br>" +
-            "#{unused_blobs.size} unused blobs disk usage: #{represent_size(unused_blobs_size)}<br>" +
-            "#{not_existing_blobs.size} not existing blobs"
-  end
-  TimeMeasurer.log_measurers
-  session[:attestations_exploring] = previous_session_flag
 
 
 javascript:
-    let sourceBlobs = #{{blobs_set.to_a.to_json}};
+    let sourceBlobs = null;
     let readOnlyMode = #{{$read_only_mode}};
     let pageSize = 25;
     const blobsNotRequiredPredicate = blob => !blob.is_required && (document.getElementById('include-unused')?.checked ?? true);
@@ -213,8 +160,61 @@ javascript:
         });
     }
 
+    async function loadBlobsData() {
+        try {
+            const fetchUrl = "/blobs-exploring-data";
+            const response = await fetch(fetchUrl, {method: 'GET'});
+
+            // ✅ Ensure the response is OK before parsing JSON
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const responseBody = await response.json(); // Now it's safe to parse JSON
+
+            // ✅ Ensure the responseBody is valid JSON
+            if (!responseBody || typeof responseBody !== "object") {
+                throw new Error("Invalid JSON response");
+            }
+
+            const storedBlobsAmount = responseBody.stored_blobs_amount;
+            const storedBlobsSize = responseBody.stored_blobs_size;
+            const requiredBlobsAmount = responseBody.required_blobs_amount;
+            const requiredBlobsSize = responseBody.required_blobs_size;
+            const unusedBlobsAmount = responseBody.unused_blobs_amount;
+            const unusedBlobsSize = responseBody.unused_blobs_size;
+            sourceBlobs = JSON.parse(responseBody.source_blobs);
+            let metadataHtml = `
+                <li>
+                    <span class="icon-padding-right" uk-icon="icon: database"></span>
+                    <span class="uk-text-bold">${storedBlobsAmount} stored blobs: ${storedBlobsSize}</span>
+                    <ul class="uk-margin-remove-bottom uk-margin-remove-top">
+                        <li>
+                            <span class="icon-padding-right" uk-icon="icon: database"></span>
+                            <span class="uk-text-bold">${requiredBlobsAmount} required blobs: ${requiredBlobsSize}</span>
+                        </li>
+                        <li>
+                            <span class="icon-padding-right" uk-icon="icon: trash"></span>
+                            <span class="uk-text-bold">${unusedBlobsAmount} unused blobs: ${unusedBlobsSize}</span>
+                        </li>
+                    </ul>
+                </li>
+            `;
+
+            document.getElementById("loading-spinner-meta").style.display = "none";
+            document.getElementById("metadata-info").style.display = "list-item";
+            document.getElementById("metadata-info").innerHTML = metadataHtml;
+            document.getElementById("loading-spinner-table").style.display = "none";
+
+            updatePage(0);
+        } catch (error) {
+            UIkit.notification({message: 'Error: ' + error.message, status: 'danger', pos: 'top-right'});
+            console.error("Fetch Error:", error); // 🔹 Debugging output
+        }
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
-        updatePage(0);
+        loadBlobsData();
         UIkit.util.on(document, 'beforeshow', '.uk-tooltip.uk-active', function () {
             this.classList.add('uk-width-auto');
         });
@@ -227,66 +227,6 @@ javascript:
         });
 
     });
-
-    async function delete_by_sha256(sha256, entityString, confirmationMessage, deleteRow) {
-        UIkit.notification({ message: 'This operation is not supported yet', status: 'danger', pos: 'top-right' });
-
-        // handle confirmation
-        // const tableElement = document.getElementById(`${pathToImage.substring(1)}/${tagString}/${sha256}`);
-        // UIkit.modal.confirm(confirmationMessage).then(async function () {
-        //     try {
-        //         const url = `/delete-${entityString}` + pathToImage + '/$sha256/' + sha256;
-        //         const response = await fetch(url, {
-        //             method: 'DELETE'
-        //         })
-        //         const responseText = await response.text(); // Wait for the response text
-        //
-        //         if (response.ok) {
-        //             if (deleteRow) {
-        //                 tableElement.remove();
-        //             }
-        //             if (entityString === 'tag') {
-        //                 window.location.href = '/index';
-        //                 return;
-        //             }
-        //             UIkit.notification({message: responseText, status: 'success', pos: 'top-right'});
-        //         } else {
-        //             UIkit.notification({message: 'Error: ' + responseText, status: 'danger', pos: 'top-right'});
-        //         }
-        //     } catch (error) {
-        //         UIkit.notification({message: 'Error: ' + error, status: 'danger', pos: 'top-right'});
-        //     }
-        // }, function () {
-        //     return false;
-        // });
-    }
-
-    // async function delete_blob(sha256) {
-    //     delete_by_sha256(sha256, 'image', 'Are you sure you want to delete this image?', true);
-    // }
-    // async function delete_all_blobs(isDryRun) {
-    //     // handle confirmation
-    //     UIkit.modal.confirm(`Do you want to start DELETING ALL BLOBS ${isDryRun ? 'with' : 'WITH NO'} DRY-RUN option`).then(async function () {
-    //         if (isDryRun) {
-    //             try {
-    //                 window.location.href = '/perform-garbage-collection?dry_run=true';
-    //                 if (true) {
-    //                     UIkit.notification({
-    //                         message: "Soon you will see deleting process summary",
-    //                         status: 'success',
-    //                         pos: 'top-right'
-    //                     });
-    //                 } else {
-    //                     UIkit.notification({message: 'Error: ' + responseText, status: 'danger', pos: 'top-right'});
-    //                 }
-    //             } catch (error) {
-    //                 UIkit.notification({message: 'Error: ' + error, status: 'danger', pos: 'top-right'});
-    //             }
-    //         } else { UIkit.notification({ message: 'This operation is not supported yet. Try dry-run option to see garbage collection review', status: 'danger', pos: 'top-right' }); }
-    //       }, function () {
-    //           return false;
-    //     });
-    // }
 
     async function copy_pull_command(sha256) {
         const pullUrl = imagesRegistryHost.isNaN || imagesRegistryHost === '' ? window.location.host : imagesRegistryHost;
@@ -310,23 +250,25 @@ sass:
     display: inline-block
     width: 5rem
 .uk-flex.uk-flex-row.align-items-center.uk-padding.uk-padding-remove-horizontal
-  a.uk-link-text.border-around.hover-darker.padding-xsmall.uk-width-fit-content.uk-margin-right.align-content-center.uk-text-center onclick="history.back()"
+  a.uk-link-text.hover-darker.padding-xsmall.uk-width-fit-content.uk-margin-right.align-content-center.uk-text-center onclick="history.back()"
     span.icon-padding-right.icon-padding-left.uk-text-primary uk-icon="icon: chevron-left"
   .uk-flex.uk-width-expand.uk-flex-between.align-items-center
     h1.uk-h1.uk-margin-remove-bottom= "#{'Disk space usage'}"
     .uk-flex.uk-flex-middle.uk-flex-between.small-column-gap
-      .uk-label.uk-label-success.label-paddings.custom-label-background.unset-text-transform.align-content-center.border-around
-        ul.uk-list.uk-list-divider.uk-list-collapse.uk-list-large.uk-margin-remove-bottom
-          li
-            span.icon-padding-right uk-icon="icon: database"
-            span.uk-text-bold= "#{stored_blobs.size} stored blobs: #{represent_size(stored_blobs_size)}"
-            ul
-              li
-                span.icon-padding-right uk-icon="icon: database"
-                span.uk-text-bold= "#{required_blobs.size} required blobs: #{represent_size(required_blobs_size)}"
-              li
-                span.icon-padding-right uk-icon="icon: trash"
-                span.uk-text-bold= "#{unused_blobs.size} unused blobs: #{represent_size(unused_blobs_size)}"
+      .uk-label.label-paddings.custom-label-background.unset-text-transform.align-content-center.border-around.uk-width-expand
+        ul.uk-list.uk-list-divider.uk-list-collapse.uk-list-large.uk-margin-remove-bottom.uk-width-expand
+          #loading-spinner-meta.uk-padding-remove.uk-margin-remove uk-spinner="ratio: 1.5"
+          #metadata-info
+          / li
+          /   span.icon-padding-right uk-icon="icon: database"
+          /   span.uk-text-bold= "#{stored_blobs.size} stored blobs: #{represent_size(stored_blobs_size)}"
+          /   ul
+          /     li
+          /       span.icon-padding-right uk-icon="icon: database"
+          /       span.uk-text-bold= "#{required_blobs.size} required blobs: #{represent_size(required_blobs_size)}"
+          /     li
+          /       span.icon-padding-right uk-icon="icon: trash"
+          /       span.uk-text-bold= "#{unused_blobs.size} unused blobs: #{represent_size(unused_blobs_size)}"
 - if !$read_only_mode
   .uk-flex.uk-flex-right.small-column-gap
     .uk-button-group.uk-float-right.small-column-gap
@@ -346,7 +288,6 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped id="blobs-table"
   thead
     tr
       th.align-text-center style="min-width: 3%; width: 3%; max-width: 3%"
-        / span Filter
         span.icon-padding-left.uk-text-primary.cursor-pointer uk-tooltip="title: #{'Choose including options'}; cls: uk-active; delay: 500;" uk-icon="icon: menu" onclick="event.stopPropagation(); document.getElementById('include-menu').classList.toggle('uk-hidden')"
         #include-menu.align-text-left.uk-hidden.uk-card.uk-card-default.uk-position-absolute.uk-padding-small style="z-index: 1000"
           .uk-margin-small
@@ -359,38 +300,13 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped id="blobs-table"
               label
                 input.uk-checkbox type="checkbox" name="include-unused" checked="checked" id="include-unused" onchange="updatePage(0)"
                 span.uk-margin-small-left Unused blobs
-          / .uk-margin-small
-          /   label.uk-form-label Search by SHA256:
-          /   .uk-inline.uk-width-1-1
-          /     span.uk-form-icon uk-icon="icon: search"
-          /     input.uk-input type="text" placeholder="Enter SHA256..." id="sha-include"
       th style="min-width: 25%; width: 25%; max-width: 25%" Blob exploring
       th.uk-float-right Blob size
       th Created at
       th.uk-text-right Actions
   tbody
-    - TimeMeasurer.start_measurement
-    - TimeMeasurer.measure(:rendering_tag_page) do
-      / - blobs_set.each do |blob_hash|
-      /   tr.tree-node style="cursor: default" id="#{blob_hash["sha256"]}" onmouseover="this.querySelector('.to-be-hidden').classList.remove('uk-hidden')" onmouseout="this.querySelector('.to-be-hidden').classList.add('uk-hidden')"
-      /     td.align-text-center
-      /       - if blob_hash["is_required"]
-      /         span.uk-padding-remove uk-icon="icon: check" style="color: green; min-width: max-content; padding: 0.5rem"
-      /       - else
-      /         span.uk-padding-remove uk-icon="icon: ban" style="color: red; min-width: max-content; padding: 0.5rem"
-      /     td
-      /       .inline-container-small
-      /         a href="/blob-exploring/#{blob_hash["sha256"]}" uk-tooltip="title: #{blob_hash["sha256"]}; cls: uk-active; delay: 500;"= blob_hash["sha256"][0..6] + "..."
-      /       a.to-be-hidden.uk-hidden
-      /         span.copy-btn.cursor-pointer data-buffervalue="#{blob_hash["sha256"]}" uk-icon="icon: copy"
-      /       - current_image_node_size = represent_size(blob_hash["size"])
-      /     td.align-text-right= current_image_node_size
-      /     / td #{represent_datetime(node_link[:node].created_at)}
-      /     td #{blob_hash["created_at"]}
-      /     td.align-text-right
-      /       - if !blob_hash["sha256"].nil?
-      /         - if !$read_only_mode
-      /           span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: trash" uk-tooltip="title: #{'Delete chosen blob'}; cls: uk-active; delay: 500;" onclick="delete_blob(`#{blob_hash["sha256"]}`)"
 nav aria-label="Pagination"
   ul.uk-pagination.uk-flex-center.uk-margin-remove-bottom id="pagination-list"
-    - TimeMeasurer.log_measurers
+
+#loading-spinner-table.uk-flex.uk-flex-center.uk-flex-middle.uk-position-fixed.uk-position-center.uk-margin-top.uk-margin-bottom uk-spinner="ratio: 1.5"
+
