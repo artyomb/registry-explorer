@@ -58,7 +58,7 @@ ruby:
 javascript:
     let readyToDeleteBlobs = #{{unused_blobs.to_a.to_json}};
     async function performGarbageCollectionWithoutHistory(blobs, diskUsage) {
-        UIkit.modal.confirm(`Do you want start DELETING ${blobs} UNUSED BLOBS and FREE ${diskUsage} disk space? Now even this confirmation will perform DRY RUN`).then(async function () {
+        UIkit.modal.confirm(`Do you want start DELETING ${blobs} UNUSED BLOBS and FREE ${diskUsage} disk space? This action CANNOT BE UNDONE`).then(async function () {
             requestURL = '/perform-garbage-collection?with_history=true';
             try {
                 UIkit.notification({

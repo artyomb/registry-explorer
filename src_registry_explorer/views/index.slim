@@ -249,16 +249,17 @@ javascript:
       span.icon-padding-right uk-icon="icon: album"
       span.uk-text-bold Images :
       span= " #{images.map{|img| img[:tags].map{ |tag| tag[:index_Nodes].size }.sum}.sum}"
-    .uk-label.label-paddings.unset-text-transform.align-content-center.custom-label-background
+    a.link-tag.uk-label.label-paddings.unset-text-transform.align-content-center.border-around href="/registry-healthcheck"
       span.icon-padding-right uk-icon="icon: ban"
       span.uk-text-bold Problem blobs:
       span.icon-padding-right= " #{problem_blobs.size}"
-      a.icon-padding-left.cursor-pointer uk-icon="icon: warning" href="/registry-healthcheck"
-    .uk-label.label-paddings.unset-text-transform.align-content-center.custom-label-background
+      / span.icon-padding-left.cursor-pointer uk-icon="icon: warning"
+    a.link-tag.uk-label.label-paddings.unset-text-transform.align-content-center.border-around href="/blobs-exploring"
       span.icon-padding-right uk-icon="icon: database"
       span.uk-text-bold Disk usage:
       span.icon-padding-right= " #{represent_size(CachesManager.get_repo_size("REPOSITORY", required_in_registry_blobs))}"
-      a.icon-padding-left.cursor-pointer uk-icon="icon: info" href="/blobs-exploring"
+      / span.icon-padding-left.cursor-pointer uk-icon="icon: info"
+hr
 .uk-padding-small.uk-padding-remove-horizontal.uk-padding-remove-bottom.uk-flex.uk-flex-between.align-items-center.uk-flex-wrap
   form.uk-search.uk-search-default onsubmit="performSearch(event); return false;"
     input.uk-search-input type="search" id="imageSearch" placeholder="Type image name" aria-label="Search"
