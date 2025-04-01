@@ -153,6 +153,74 @@ class RegistryExplorerFront < Sinatra::Base
     end
   end
 
+  get '/garbage-collection-data' do
+    session = RegistryExplorerFront.get_session
+    previous_session_flag = session[:attestations_exploring]
+    session[:attestations_exploring] = true
+    CachesManager.execute_refresh_pipeline
+    # EXPLORING BLOBS FOR FURTHER GARBAGE COLLECTION
+    stored_blobs = Set.new
+    stored_blobs_size = 0
+    required_blobs = Set.new
+    required_blobs_size = 0
+    unused_blobs = Set.new
+    unused_blobs_size = 0
+    not_existing_blobs = Set.new
+    blobs_set = Set.new
+    images = nil
+    if params[:with_history] == "false"
+      images = extract_images()
+    elsif params[:with_history] == "true"
+      images = get_images_structure_tags_wth_only_current()
+    end
+    TimeMeasurer.start_measurement
+    TimeMeasurer.measure(:calculate_disk_usage) do
+      blobs_path = $base_path + '/blobs/sha256'
+      required_blobs = images.map { _1[:required_blobs] }.reduce(Set.new, :merge)
+      stored_blobs = Set.new
+      Dir.children(blobs_path).each do |path|
+        current_blobs = Dir.children(File.join(blobs_path, path))
+        stored_blobs.merge(current_blobs)
+        current_blobs.each { |blob| blobs_set.add({ "sha256" => blob, "size" => CachesManager.blob_size(blob), "is_required" => required_blobs.include?(blob) }) }
+      end
+      # TODO: implement exploring unnecessary blobs
+      puts "Directory size: #{represent_size(Dir.glob(File.join(blobs_path, '**', '*')) # Get all files and subdirectories
+                                                .select { |file| File.file?(file) } # Filter only files
+                                                .sum { |file| File.size(file) })}"
+      unused_blobs = stored_blobs - required_blobs
+      not_existing_blobs = required_blobs - stored_blobs
+      required_blobs_size = required_blobs.map { |b| CachesManager.blob_size(b) }.sum
+      stored_blobs_size = stored_blobs.map { |b| CachesManager.blob_size(b) }.sum
+      unused_blobs_size = unused_blobs.map { |b| CachesManager.blob_size(b) }.sum
+    end
+    TimeMeasurer.log_measurers
+    ####################################################################################################################################
+    affected_images_structure = get_images_structure_affected_by_gc(Set.new, required_blobs)
+    ####################################################################################################################################
+
+    rows_in_table = []
+    if params[:with_history] == "false"
+      rows_in_table << {image_name: "Total", unreferenced_indexes: affected_images_structure.map{ |image| image[:tags].map{ |tag| tag[:index_Nodes].size }.sum }.sum, unused_revision: affected_images_structure.map{ |i| i[:revisions].size}.sum, unused_layers: affected_images_structure.map{ |i| i[:layers].size}.sum }
+      affected_images_structure.each do |image|
+        rows_in_table << { image_name: image[:name], unreferenced_indexes: image[:tags].map{ |tag| tag[:index_Nodes].size }.sum, unused_revision: image[:revisions].size, unused_layers: image[:layers].size }
+      end
+    elsif params[:with_history] == "true"
+      rows_in_table << { image_name: "Total", unused_revision: affected_images_structure.map{ |i| i[:revisions].size}.sum, unused_layers: affected_images_structure.map{ |i| i[:layers].size}.sum }
+      affected_images_structure.each do |image|
+        rows_in_table << { image_name: image[:name], unused_revision: image[:revisions].size, unused_layers: image[:layers].size }
+      end
+    end
+    session[:attestations_exploring] = previous_session_flag
+    response_body = {
+      stored_blobs_amount: stored_blobs.size,
+      stored_blobs_size: represent_size(stored_blobs_size),
+      unused_blobs_amount: unused_blobs.size,
+      unused_blobs_size: represent_size(unused_blobs_size),
+      rows_in_table: rows_in_table
+    }.to_json
+    body response_body
+  end
+
   delete '/perform-garbage-collection' do
     raise(StandardError, "You can't perform garbage collection as you boot your service in read-only mode") if $read_only_mode
     #

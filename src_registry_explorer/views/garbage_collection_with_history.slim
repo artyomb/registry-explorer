@@ -1,62 +1,65 @@
-ruby:
-  require_relative '../sinatra/sinatra_server'
-  require_relative '../utils/time_measurer'
-  require_relative '../utils/garbage_collection'
-  require_relative '../utils/file_utils'
-  require_relative '../utils/common_utils'
-
-  session = RegistryExplorerFront.get_session
-  previous_session_flag = session[:attestations_exploring]
-  session[:attestations_exploring] = true
-  CachesManager.execute_refresh_pipeline
-
-
-  # EXPLORING BLOBS FOR FURTHER GARBAGE COLLECTION
-  stored_blobs = nil
-  stored_blobs_size = nil
-  required_blobs = nil
-  required_blobs_size = nil
-  unused_blobs = nil
-  unused_blobs_size = nil
-  not_existing_blobs = Set.new
-  blobs_set = Set.new
-  images = get_images_structure_tags_wth_only_current()
-  TimeMeasurer.start_measurement
-  TimeMeasurer.measure(:calculate_disk_usage) do
-    blobs_path = $base_path + '/blobs/sha256'
-    required_blobs = images.map { _1[:required_blobs] }.reduce(Set.new, :merge)
-    stored_blobs = Set.new
-    Dir.children(blobs_path).each do |path|
-      current_blobs = Dir.children(File.join(blobs_path, path))
-      stored_blobs.merge(current_blobs)
-      current_blobs.each { |blob| blobs_set.add({ "sha256" => blob, "size" => CachesManager.blob_size(blob), "is_required" => required_blobs.include?(blob) }) }
-    end
-    # TODO: implement exploring unnecessary blobs
-    puts "Directory size: #{represent_size(Dir.glob(File.join(blobs_path, '**', '*')) # Get all files and subdirectories
-                                              .select { |file| File.file?(file) } # Filter only files
-                                              .sum { |file| File.size(file) })}"
-    unused_blobs = stored_blobs - required_blobs
-    not_existing_blobs = required_blobs - stored_blobs
-    required_blobs_size = required_blobs.map { |b| CachesManager.blob_size(b) }.sum
-    stored_blobs_size = stored_blobs.map { |b| CachesManager.blob_size(b) }.sum
-    unused_blobs_size = unused_blobs.map { |b| CachesManager.blob_size(b) }.sum
-    disk_size_tooltip = "title:" +
-            "Disk usage is calculated as the sum of all blobs in the registry.<br><br>" +
-            "Actual data:<br>" +
-            "#{required_blobs.size} required blobs disk usage: #{represent_size(required_blobs_size)}<br>" +
-            "#{stored_blobs.size} stored blobs disk usage: #{represent_size(stored_blobs_size)}<br>" +
-            "#{unused_blobs.size} unused blobs disk usage: #{represent_size(unused_blobs_size)}<br>" +
-            "#{not_existing_blobs.size} not existing blobs"
-  end
-  TimeMeasurer.log_measurers
-  ####################################################################################################################################
-  affected_images_structure = get_images_structure_affected_by_gc(Set.new, required_blobs)
-  ####################################################################################################################################
-  session[:attestations_exploring] = previous_session_flag
-
-
 javascript:
-    let readyToDeleteBlobs = #{{unused_blobs.to_a.to_json}};
+    let readyToDeleteBlobs = null;
+    let unusedBlobsAmount = null;
+    let unusedBlobsSize = null;
+
+    async function loadBlobsData() {
+        try {
+            const fetchUrl = "/garbage-collection-data?with_history=true";
+            const response = await fetch(fetchUrl, {method: 'GET'});
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const responseBody = await response.json(); // Now it's safe to parse JSON
+
+            if (!responseBody || typeof responseBody !== "object") {
+                throw new Error("Invalid JSON response");
+            }
+            readyToDeleteBlobs = responseBody.unused_blobs;
+            const storedBlobsAmount = responseBody.stored_blobs_amount;
+            const storedBlobsSize = responseBody.stored_blobs_size;
+            unusedBlobsAmount = responseBody.unused_blobs_amount;
+            unusedBlobsSize = responseBody.unused_blobs_size;
+
+            let descriptionParagraphContent = `
+                    <span>In registry</span>
+                    <span class="uk-text-italic uk-text-bold">${storedBlobsAmount}</span>
+                    <span>blobs, which use</span>
+                    <span class="uk-text-italic uk-text-bold">${storedBlobsSize}</span>
+                    <span>disk space</span>
+                    <br>
+                    <span class="uk-text-italic uk-text-bold">Unused ${unusedBlobsAmount}</span>
+                    <span>blobs, which use</span>
+                    <span class="uk-text-italic uk-text-bold">${unusedBlobsSize}</span>
+                `;
+            document.getElementById("loading-spinner-meta").style.display = "none";
+            document.getElementById('description').innerHTML = descriptionParagraphContent;
+
+            const rowsInTable = responseBody.rows_in_table;
+            const rowsHtml = rowsInTable.map(row => `
+                <tr>
+                    <td/>
+                    <td class="uk-text-italic uk-text-bold">${row.image_name}</td>
+                    <td class="uk-text-italic uk-text-bold align-text-right">${row.unused_revision}</td>
+                    <td class="uk-text-italic uk-text-bold align-text-right">${row.unused_layers}</td>
+                </tr>
+                `).join('');
+            document.getElementById('affected-images-table').innerHTML = rowsHtml;
+            document.getElementById('loading-spinner-table').style.display = 'none';
+            document.getElementById('bottom-button').style.display = 'inline-block';
+        } catch (error) {
+            UIkit.notification({message: 'Error: ' + error.message, status: 'danger', pos: 'top-right'});
+            console.error("Fetch Error:", error); // 🔹 Debugging output
+        }
+        UIkit.notification({message: "Data loading ended", status: 'primary', pos: 'top-right'});
+    }
+
+    async function performGarbageCollectionWithoutHistory() {
+        performGarbageCollectionWithoutHistory(unusedBlobsAmount, unusedBlobsSize);
+    }
+
     async function performGarbageCollectionWithoutHistory(blobs, diskUsage) {
         UIkit.modal.confirm(`Do you want start DELETING ${blobs} UNUSED BLOBS and FREE ${diskUsage} disk space? This action CANNOT BE UNDONE`).then(async function () {
             requestURL = '/perform-garbage-collection?with_history=true';
@@ -92,6 +95,9 @@ javascript:
         });
     }
 
+    document.addEventListener("DOMContentLoaded", function () {
+        loadBlobsData();
+    });
 
 sass:
   .copy-btn
@@ -107,24 +113,14 @@ sass:
 .uk-flex.uk-flex-row.uk-flex-between.align-items-center
   .uk-flex.uk-flex-column
     .uk-flex.uk-flex-row.align-items-center.uk-padding.uk-padding-remove-horizontal
-      a.uk-link-text.border-around.hover-darker.padding-xsmall.uk-width-fit-content.uk-margin-right.align-content-center.uk-text-center href = "/blobs-exploring"
+      a.uk-link-text.border-around.hover-darker.padding-xsmall.uk-width-fit-content.uk-margin-right.align-content-center.uk-text-center onclick="history.back()"
         span.icon-padding-right.icon-padding-left.uk-text-primary uk-icon = "icon: chevron-left"
       .uk-flex.uk-width-expand.uk-flex-between.align-items-center
         h1.uk-h1.uk-margin-remove-bottom = " #{ 'Garbage collection with history deleting preview' }"
-    p
-      span In registry exist
-      span.uk-text-italic.uk-text-bold= " #{stored_blobs.size} "
-      span blobs, which use
-      span.uk-text-italic.uk-text-bold= " #{represent_size(stored_blobs_size)} "
-      span disk space
-      br
-      span Unused
-      span.uk-text-italic.uk-text-bold= " #{unused_blobs.size} "
-      span blobs, which use
-      span.uk-text-italic.uk-text-bold= " #{represent_size(unused_blobs_size)} "
-      span disk space, which will be removed from all images
+    p id="description"
+      #loading-spinner-meta.uk-padding-remove.uk-margin-remove uk-spinner="ratio: 1.5"
   .uk-flex.uk-text-bold style="height: 3rem"
-    button.uk-button.uk-button-danger.uk-button-small onclick="performGarbageCollectionWithoutHistory(#{unused_blobs.size}, #{'`' + represent_size(unused_blobs_size) + '`'})" Perform garbage collection
+    button.uk-button.uk-button-danger.uk-button-small onclick="performGarbageCollectionWithoutHistory()" Perform garbage collection
 
 table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped id="blobs-table"
   thead
@@ -135,17 +131,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped id="blobs-table"
       th style="min-width: 25%; width: 25%; max-width: 25%" Image name
       th.align-text-right Unused revision
       th.uk-text-right Unused layers
-  tbody
-    tr
-      td
-      td.uk-text-italic.uk-text-bold Total
-      td.uk-text-italic.uk-text-bold.align-text-right= affected_images_structure.map{|i| i[:revisions].size}.sum
-      td.uk-text-italic.uk-text-bold.align-text-right= affected_images_structure.map{|i| i[:layers].size}.sum
-    - affected_images_structure.each do |image|
-      tr
-        td
-        td.uk-text-italic.uk-text-bold= image[:name]
-        td.uk-text-italic.uk-text-bold.align-text-right= image[:revisions].size
-        td.uk-text-italic.uk-text-bold.align-text-right= image[:layers].size
+  tbody id="affected-images-table"
+    #loading-spinner-table.uk-flex.uk-flex-center.uk-flex-middle.uk-position-fixed.uk-position-center.uk-margin-top.uk-margin-bottom uk-spinner="ratio: 1.5"
 .uk-flex.uk-margin-large.justify-self-right.uk-text-bold style="height: 3rem"
-  button.uk-button.uk-button-danger.uk-button-small onclick="performGarbageCollectionWithoutHistory(#{unused_blobs.size}, #{'`' + represent_size(unused_blobs_size) + '`'})" Perform garbage collection
+  button.uk-button.uk-button-danger.uk-button-small id="bottom-button" onclick="performGarbageCollectionWithoutHistory()" style="display: none" Perform garbage collection
