@@ -1,5 +1,7 @@
 require_relative 'file_utils'
 class CachesManager
+
+  @@latest_update_time = nil
   @@cache_dict = { json_contents: { latest_update: Time.now, values: {} },
                    sizes: { latest_update: Time.now, values: {} },
                    nodes: { latest_update: Time.now, values: {} },
@@ -181,19 +183,25 @@ class CachesManager
     Thread.new do
       self.execute_refresh_pipeline
       loop do
-        sleep @@cache_refresh_interval
-        self.execute_refresh_pipeline
+        if Time.now - @@latest_update_time > @@cache_refresh_interval
+          self.execute_refresh_pipeline
+          sleep @@cache_refresh_interval
+        end
+        interval = @@cache_refresh_interval - (Time.now - @@latest_update_time)
+        sleep interval if interval > 0
       end
     end
   end
 
   def self.execute_refresh_pipeline
+    @@latest_update_time = Time.now
     @@refreshing_in_progress_with_attest = true
     refresh_nodes_cache(@@cache_dict_with_attest)
     @@refreshing_in_progress_with_attest = false
     @@refreshing_in_progress_no_attest = true
     refresh_nodes_cache(@@cache_dict)
     @@refreshing_in_progress_no_attest = false
+    @@latest_update_time = Time.now
   end
 
 
