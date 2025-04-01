@@ -161,10 +161,14 @@ javascript:
     }
 
     async function loadBlobsData() {
+        document.getElementById("loading-spinner-meta").style.display = "flex";
+        document.getElementById("metadata-info").style.display = "none";
+        document.getElementById("metadata-info").innerHTML = ``;
+        document.getElementById("loading-spinner-table").style.display = "inline-block";
         try {
             const fetchUrl = "/blobs-exploring-data";
+            // throw Error("Not implemented");
             const response = await fetch(fetchUrl, {method: 'GET'});
-
 
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
@@ -208,7 +212,21 @@ javascript:
             updatePage(0);
         } catch (error) {
             UIkit.notification({message: 'Error: ' + error.message, status: 'danger', pos: 'top-right'});
-            console.error("Fetch Error:", error); // 🔹 Debugging output
+            console.error("Fetch Error:", error);
+            const metadataHtml = `
+                <div class="uk-margin uk-flex uk-flex-column align-items-center">
+                    <p class="uk-text-danger">Failed to load blobs data</p>
+                    <button class="uk-button uk-button-primary" onclick="loadBlobsData()">
+                        Try Again
+                    </button>
+                </div>
+            `;
+
+            document.getElementById("loading-spinner-meta").style.display = "none";
+            document.getElementById("metadata-info").style.display = "list-item";
+            document.getElementById("metadata-info").innerHTML = metadataHtml;
+            document.getElementById("loading-spinner-table").style.display = "none";
+
         }
     }
 
