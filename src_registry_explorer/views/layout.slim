@@ -27,9 +27,13 @@ body
       ul.uk-navbar-nav
         li
           a.min-height-none href="/index" Registry
-      a.uk-link-heading.uk-float-right.uk-margin-right href="https://github.com/artyomb/registry-explorer"
-        span.uk-icon.uk-margin-small-right uk-icon="icon: github"
-        span GitHub
+      .uk-flex.uk-flex-middle
+        a.uk-link-heading.uk-float-right.uk-margin-right href="https://github.com/artyomb/registry-explorer"
+          span.uk-icon.uk-margin-small-right uk-icon="icon: github"
+          span GitHub
+        a.uk-link-heading.uk-float-right.uk-margin-right onclick="navigator.clipboard.writeText('docker pull dtorry/registry-explorer:latest').then(function() { UIkit.notification({message: 'Pull command copied to clipboard', status: 'success', pos: 'top-right'}); });"
+          span.uk-icon.uk-margin-small-right uk-icon="icon: arrow-down"
+          span Pull image
 
   .uk-container-expand.uk-padding.uk-padding-remove-vertical
     == yield

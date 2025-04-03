@@ -194,6 +194,9 @@ class CachesManager
   end
 
   def self.execute_refresh_pipeline
+    if is_refreshing_in_progress?
+      raise "Refreshing is already in progress"
+    end
     @@latest_update_time = Time.now
     @@refreshing_in_progress_with_attest = true
     refresh_nodes_cache(@@cache_dict_with_attest)
