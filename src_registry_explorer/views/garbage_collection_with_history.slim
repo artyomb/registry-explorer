@@ -40,7 +40,6 @@ javascript:
             const rowsInTable = responseBody.rows_in_table;
             const rowsHtml = rowsInTable.map(row => `
                 <tr>
-                    <td/>
                     <td class="uk-text-italic uk-text-bold">${row.image_name}</td>
                     <td class="uk-text-italic uk-text-bold align-text-right">${row.unused_revision}</td>
                     <td class="uk-text-italic uk-text-bold align-text-right">${row.unused_layers}</td>
@@ -125,9 +124,6 @@ sass:
 table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped id="blobs-table"
   thead
     tr
-      th.align-text-center style="min-width: 3%; width: 3%; max-width: 3%"
-        / span Filter
-        span.icon-padding-left.uk-text-primary.cursor-pointer  uk-icon="icon: menu" onclick="event.stopPropagation(); document.getElementById('include-menu').classList.toggle('uk-hidden')"
       th style="min-width: 25%; width: 25%; max-width: 25%" Image name
       th.align-text-right Unused revision
       th.uk-text-right Unused layers

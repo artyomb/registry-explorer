@@ -28,8 +28,6 @@ class RegistryExplorerFront < Sinatra::Base
   set :root, '.' #File.dirname(__FILE__)
   get '/',         &->() { slim :index }
   get '/index',         &->() { slim :index }
-  get '/blobs-exploring',         &->() { slim :blobs_exploring }
-  # get '/tag-exploring/*', &->() { slim :tag_exploring }
   get '/tag-exploring/*' do
     full_tag_path = params[:splat].first || ''
     slim :tag_exploring, locals: { full_tag_path: full_tag_path }
@@ -55,10 +53,6 @@ class RegistryExplorerFront < Sinatra::Base
 
   get '/file-in-archive/:sha256', &->() { slim :file_in_archive }
   get '/test', &->() { slim :test }
-
-  # get '/file-in-archive/*/$path/*' do
-  #   blob_sha256 = params[:splat].first
-  #   file_path = '/' + params[:splat][1]
 
   get '/file-in-archive/*' do
     path_data = params[:splat].first.split('/$path/')
@@ -183,7 +177,6 @@ class RegistryExplorerFront < Sinatra::Base
         stored_blobs.merge(current_blobs)
         current_blobs.each { |blob| blobs_set.add({ "sha256" => blob, "size" => CachesManager.blob_size(blob), "is_required" => required_blobs.include?(blob) }) }
       end
-      # TODO: implement exploring unnecessary blobs
       puts "Directory size: #{represent_size(Dir.glob(File.join(blobs_path, '**', '*')) # Get all files and subdirectories
                                                 .select { |file| File.file?(file) } # Filter only files
                                                 .sum { |file| File.size(file) })}"
@@ -224,24 +217,16 @@ class RegistryExplorerFront < Sinatra::Base
   delete '/perform-garbage-collection' do
     raise(StandardError, "You can't perform garbage collection as you boot your service in read-only mode") if $read_only_mode
     #
-    if params[:with_history] == 'true'
-      request_body = JSON.parse(request.body.read, symbolize_names: true)
-      session = RegistryExplorerFront.get_session
-      previous_session_flag = session[:attestations_exploring]
-      session[:attestations_exploring] = true
-      status, message = garbage_collect_with_history(request_body[:blobs])
-      session[:attestations_exploring] = previous_session_flag
-      [status, message]
-    elsif params[:with_history] == 'false'
-      request_body = JSON.parse(request.body.read, symbolize_names: true)
-      session = RegistryExplorerFront.get_session
-      previous_session_flag = session[:attestations_exploring]
-      session[:attestations_exploring] = true
-      status, message = garbage_collect_without_history(request_body[:blobs])
-      session[:attestations_exploring] = previous_session_flag
-      [status, message]
-    end
+    request_body = JSON.parse(request.body.read, symbolize_names: true)
+    session = RegistryExplorerFront.get_session
+    previous_session_flag = session[:attestations_exploring]
+    session[:attestations_exploring] = true
+    status, message = perform_gc(request_body[:blobs])
+    session[:attestations_exploring] = previous_session_flag
+    [status, message]
   end
+
+  get '/blobs-exploring',         &->() { slim :blobs_exploring }
 
   get '/blobs-exploring-data' do
     # REFRESHING CACHE WITH EXPLORING ATTESTATIONS
@@ -278,7 +263,6 @@ class RegistryExplorerFront < Sinatra::Base
           }
         ) }
       end
-      # TODO: implement exploring unnecessary blobs
       puts "Directory size: #{represent_size(Dir.glob(File.join(blobs_path, '**', '*')) # Get all files and subdirectories
                                                 .select { |file| File.file?(file) } # Filter only files
                                                 .sum { |file| File.size(file) })}"

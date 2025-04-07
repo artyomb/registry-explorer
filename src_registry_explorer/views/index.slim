@@ -9,34 +9,6 @@ ruby:
   images = Set.new
   TimeMeasurer.start_measurement
 
-  build_tree_l = lambda do |images, tree|
-    images.each do |image|
-      path_parts = image[:name].split('/')[1..] # Skip first empty element from leading '/'
-      current = tree
-      path_parts.each do |part|
-        current[:total_images_amount] += 1
-        current[:required_blobs].merge!(image[:required_blobs])
-        if image[:problem_blobs].size > 0
-          current[:problem_blobs].merge(image[:problem_blobs])
-        end
-        current[:children][part] ||= { children: {}, image: {}, total_images_amount: 0, required_blobs: Set.new, problem_blobs: Set.new }
-        current = current[:children][part]
-      end
-      current[:image] = image
-      current[:problem_blobs] ||= Set.new
-      current[:problem_blobs].merge(image[:problem_blobs])
-    end
-  end
-  # deep flatten tree
-  flatten_tree_l = lambda do |node, level = 0, pname = nil|
-    result = []
-    node[:children].each do |name, child|
-      result << { name: [pname, name].flatten.compact.join('/'), level: level, image: child[:image], children_count: child[:total_images_amount], required_blobs: child[:required_blobs], problem_blobs: child[:problem_blobs] }
-      result.concat(flatten_tree[child, level + 1, [pname, name]])
-    end
-    result
-  end
-
   tree = { children: {}, image: {}, total_images_amount: 0, required_blobs: Set.new, problem_blobs: Set.new }
 
   flattened = nil
@@ -253,12 +225,10 @@ javascript:
       span.icon-padding-right uk-icon="icon: ban"
       span.uk-text-bold Problem blobs:
       span.icon-padding-right= " #{problem_blobs.size}"
-      / span.icon-padding-left.cursor-pointer uk-icon="icon: warning"
     a.link-tag.uk-label.label-paddings.unset-text-transform.align-content-center.border-around href="/blobs-exploring"
       span.icon-padding-right uk-icon="icon: database"
       span.uk-text-bold Disk usage:
       span.icon-padding-right= " #{represent_size(CachesManager.get_repo_size("REPOSITORY", required_in_registry_blobs))}"
-      / span.icon-padding-left.cursor-pointer uk-icon="icon: info"
 hr
 .uk-padding-small.uk-padding-remove-horizontal.uk-padding-remove-bottom.uk-flex.uk-flex-between.align-items-center.uk-flex-wrap
   form.uk-search.uk-search-default onsubmit="performSearch(event); return false;"
@@ -276,35 +246,32 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
       th style="text-align: right" Disk usage
       th Created at
   tbody
-    - TimeMeasurer.start_measurement
-    - TimeMeasurer.measure(:rendering_flattened_tree) do
-      - flattened.each do |node|
-        - warn_node_condition = node[:problem_blobs].size > 0 || (!node[:image].nil? && node[:image].size > 0 && node[:image][:problem_blobs].size > 0)
-        tr.tree-node.tree-view.hidden class="#{warn_node_condition ? 'warning-background' : ''}" data-level="#{node[:level]}"
+    - flattened.each do |node|
+      - warn_node_condition = node[:problem_blobs].size > 0 || (!node[:image].nil? && node[:image].size > 0 && node[:image][:problem_blobs].size > 0)
+      tr.tree-node.tree-view.hidden class="#{warn_node_condition ? 'warning-background' : ''}" data-level="#{node[:level]}"
+        td
+          - if warn_node_condition
+            - puts "Node #{node[:name]} has problem blobs #{node[:problem_blobs].map { |s| s[0..25] + '...' }.join(', ')}"
+            span.warning-icon uk-tooltip="title: #{(node[:problem_blobs].size == 0) ? 'Full size of tag' : "Some layers of tag not found:<br>" + node[:problem_blobs].map { |s| s[0..25] + '...' }.join('<br>')}; delay: 500;" uk-icon="icon: warning"
+          span style="padding-left: #{node[:level]}em"
+          - unless node[:children_count] == 0 && (node[:image][:tags] || []).empty?
+            span.hide-show-arrow uk-icon="icon: chevron-right"
+          span = node[:name]
+        td.alight-text-right
+        td.align-text-right
+        td.align-text-right #{node[:children_count] == 0 ? represent_size(node[:image][:total_size]) : represent_size(CachesManager.get_repo_size("#{repo_path}/#{node[:name]}", node[:required_blobs]))}
+        td -
+      - node[:image][:tags]&.each do |tag|
+        tr.tree-node.hidden class="#{tag[:problem_blobs].size > 0 ? 'warning-background' : ''}" data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}"
           td
-            - if warn_node_condition
-              - puts "Node #{node[:name]} has problem blobs #{node[:problem_blobs].map { |s| s[0..25] + '...' }.join(', ')}"
-              span.warning-icon uk-tooltip="title: #{(node[:problem_blobs].size == 0) ? 'Full size of tag' : "Some layers of tag not found:<br>" + node[:problem_blobs].map { |s| s[0..25] + '...' }.join('<br>')}; delay: 500;" uk-icon="icon: warning"
-            span style="padding-left: #{node[:level]}em"
-            - unless node[:children_count] == 0 && (node[:image][:tags] || []).empty?
-              span.hide-show-arrow uk-icon="icon: chevron-right"
-            span = node[:name]
-          td.alight-text-right
-          td.align-text-right
-          td.align-text-right #{node[:children_count] == 0 ? represent_size(node[:image][:total_size]) : represent_size(CachesManager.get_repo_size("#{repo_path}/#{node[:name]}", node[:required_blobs]))}
-          td -
-        - node[:image][:tags]&.each do |tag|
-          tr.tree-node.hidden class="#{tag[:problem_blobs].size > 0 ? 'warning-background' : ''}" data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}"
-            td
-              - if tag[:problem_blobs].size != 0
-                span.warning-icon uk-tooltip="title: #{(tag[:problem_blobs].size == 0) ? 'Full size of tag' : "Some layers of tag not found:<br>" + tag[:problem_blobs].map{|s| s[0..25] + '...' }.join('<br>')}; delay: 500;"  uk-icon="icon: warning"
-              span.tree-view style="padding-left: #{node[:level] + 1}em"
-              span uk-icon="icon: tag" style="padding: 0.5rem"
-              span.table-view.hidden #{node[:image][:name][1..]}:
-              span #{tag[:name]}
-            td.align-text-right #{tag[:index_Nodes].size}
-            / Adjust disk usage
-            td.align-text-right #{represent_size(tag[:index_Nodes].first[:node].get_effective_size).to_s + (tag[:problem_blobs].size > 0 ? ' (some blobs not found)' : '')}
-            td.align-text-right #{represent_size(tag[:size]).to_s + (tag[:problem_blobs].size > 0 ? ' (some blobs not found)' : '')}
-            td #{represent_datetime(tag[:index_Nodes]&.select{ |nd| tag[:current_index_sha256] == nd[:node].sha256 }.first[:node].created_at)}
-    - TimeMeasurer.log_measurers
+            - if tag[:problem_blobs].size != 0
+              span.warning-icon uk-tooltip="title: #{(tag[:problem_blobs].size == 0) ? 'Full size of tag' : "Some layers of tag not found:<br>" + tag[:problem_blobs].map{|s| s[0..25] + '...' }.join('<br>')}; delay: 500;"  uk-icon="icon: warning"
+            span.tree-view style="padding-left: #{node[:level] + 1}em"
+            span uk-icon="icon: tag" style="padding: 0.5rem"
+            span.table-view.hidden #{node[:image][:name][1..]}:
+            span #{tag[:name]}
+          td.align-text-right #{tag[:index_Nodes].size}
+          / Adjust disk usage
+          td.align-text-right #{represent_size(tag[:index_Nodes].first[:node].get_effective_size).to_s + (tag[:problem_blobs].size > 0 ? ' (some blobs not found)' : '')}
+          td.align-text-right #{represent_size(tag[:size]).to_s + (tag[:problem_blobs].size > 0 ? ' (some blobs not found)' : '')}
+          td #{represent_datetime(tag[:index_Nodes]&.select{ |nd| tag[:current_index_sha256] == nd[:node].sha256 }.first[:node].created_at)}

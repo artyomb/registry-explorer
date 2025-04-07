@@ -14,43 +14,6 @@ $port = ENV['DBG'].nil? ? ($registry_host.include?(':') ? $registry_host.split('
 $temp_dir = Dir.pwd + '/temp_registry_blobs/blobs'
 $zip_time_limit = 60 * 10
 $read_only_mode = ENV['DBG'].nil? ? ((ENV['READ_ONLY_MODE'].nil? || ENV['READ_ONLY_MODE'] == 'true') ? true : false) : false
-# old version of extract_tar_gz_structure
-# def extract_tar_gz_structure(tar_gz_sha256)
-#   TimeMeasurer.measure(:extracting_gz_structure) do
-#     file_path = $base_path + "/blobs/sha256/#{tar_gz_sha256[0..1]}/#{tar_gz_sha256}/data"
-#     structure = { size: 0, is_dir: true }
-#     Zlib::GzipReader.open(file_path) do |gz|
-#       Archive::Tar::Minitar::Reader.open(gz) do |tar|
-#         tar.each_entry do |entry|
-#           # puts "#{entry.directory? ? 'DIRECTORY ' : 'FILE'} #{entry.size} #{entry.name}"
-#           parts = entry.prefix.split('/') + entry.name.split('/')
-#           current_level = structure
-#           parts.each_with_index do |part, index|
-#             if index == parts.length - 1 # Last part is a file or directory
-#               if !(entry.directory?)
-#                 entry_size = entry.size
-#                 current_level[part] = { size: entry_size, is_dir: false }
-#                 tmp = structure
-#
-#                 parts.each_with_index do |tmp_part, id|
-#                   tmp[:size] += entry_size unless id == 0
-#                   tmp = tmp[tmp_part]
-#                 end
-#               else
-#                 current_level[part] = { size: 0 , is_dir: true} # Mark of Directory
-#               end
-#             else # Intermediate part is a directory
-#               current_level[part] ||= { size: 0, is_dir: true }
-#               current_level = current_level[part]
-#             end
-#           end
-#           structure[:size] += entry.size unless entry.directory?
-#         end
-#       end
-#     end
-#     structure
-#   end
-# end
 
 def extract_tar_gz_structure(tar_gz_sha256)
   TimeMeasurer.measure(:extracting_gz_structure) do
@@ -237,28 +200,6 @@ def get_images_paths
     images_paths
   end
 end
-
-# It seems, unnecessary function for using in the future
-# def extract_index_created_at(sha256)
-#   begin
-#     index_json = CachesManager.json_blob_content(sha256)
-#     if index_json[:manifests].nil?
-#       manifest_json = index_json
-#     else
-#       man_sha256 = index_json[:manifests]
-#                      &.select { |mf| !mf[:platform][:os].nil? && mf[:platform][:os] != 'unknown'}
-#                      .map { |mf| mf[:digest].split(':').last }
-#                      .first
-#       manifest_json = CachesManager.json_blob_content(man_sha256)
-#     end
-#     date_sha256 = manifest_json[:config][:digest].split(':').last
-#     date = CachesManager.json_blob_content(date_sha256)[:created]
-#   rescue Exception => e
-#     puts "Error in extracting create date: #{e}"
-#     date =  nil
-#   end
-#   date
-# end
 
 def get_referring_image_entries(blob_sha256)
   TimeMeasurer.measure(:referring_image_entries) do

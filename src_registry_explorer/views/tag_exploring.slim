@@ -1,10 +1,16 @@
 / TODO add columns: size of current and total size
+/ script
+/   | var imagesRegistryHost = "#{ENV['IMAGES_REGISTRY_HOST'].nil? ? '' : ENV['IMAGES_REGISTRY_HOST']}";
+/   | var pathToImage = "#{image_in_registry_path}";
+/   | var currentIndexSha256 = "#{tag[:current_index_sha256]}";
+/   | var tagString = "#{tag_string}";
 ruby:
   require_relative '../utils/Node'
   require_relative '../utils/file_utils'
   require_relative '../utils/time_measurer'
   margin_coef=1.5
-  possible_statuses = ['error', 'ok', 'warning']
+  reg_host = ENV['IMAGES_REGISTRY_HOST'].nil? ? '' : ENV['IMAGES_REGISTRY_HOST']
+  puts("Reg host: #{reg_host}")
   TimeMeasurer.start_measurement
   img_pth_param = full_tag_path[0..(full_tag_path.rindex('/') - 1)]
   image_in_registry_path = "/" + img_pth_param
@@ -13,10 +19,7 @@ ruby:
   full_path_to_image_tag = path_to_repositories + image_in_registry_path + '/_manifests/tags/' + tag_string
   tag = nil
   total_nodes = 0
-  TimeMeasurer.measure(:extract_tag) do
-    tag= extract_tag(full_path_to_image_tag)
-
-  end
+  tag= extract_tag(full_path_to_image_tag)
   TimeMeasurer.log_measurers
   environ ||= tag[:index_Nodes].first.nil? || tag[:index_Nodes].first[:build_info].nil? ? nil : (tag[:index_Nodes].first[:build_info][:environment])
   image_title = begin
@@ -49,14 +52,12 @@ ruby:
                      puts "Error when parsing image licenses: #{e}"
                      nil
                    end
-/ script="var pathToImage = `#{image_in_registry_path}`;"
-script
-  | var imagesRegistryHost = "#{ENV['IMAGES_REGISTRY_HOST'].nil? ? '' : ENV['IMAGES_REGISTRY_HOST']}";
-  | var pathToImage = "#{image_in_registry_path}";
-  | var currentIndexSha256 = "#{tag[:current_index_sha256]}";
-  | var tagString = "#{tag_string}";
 
 javascript:
+    let imagesRegistryHost = #{{$reg_host.to_json}};
+    let pathToImage = #{{image_in_registry_path.to_json}};
+    let currentIndexSha256 = #{{tag[:current_index_sha256].to_json}};
+    let tagString = #{{tag_string.to_json}};
     document.addEventListener("DOMContentLoaded", function() {
         document.querySelectorAll('.copy-btn').forEach(function(copyBtn) {
             copyBtn.addEventListener('click', function(event) {
@@ -135,7 +136,7 @@ javascript:
     }
 
     async function copy_pull_command(sha256) {
-        const pullUrl = imagesRegistryHost.isNaN || imagesRegistryHost === '' ? window.location.host : imagesRegistryHost;
+        const pullUrl = imagesRegistryHost == null || imagesRegistryHost === '' ? window.location.host : imagesRegistryHost;
         try {
             const command_text = `docker pull ${pullUrl}${pathToImage}@sha256:${sha256}`;
             navigator.clipboard.writeText(command_text).then(function() {
@@ -202,68 +203,55 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
       th Created at
       th.uk-text-right Actions
   tbody
-    - TimeMeasurer.start_measurement
-    - TimeMeasurer.measure(:rendering_tag_page) do
-      - tag[:index_Nodes].each do |node_link|
-        - node_is_current = node_link[:node].sha256 == tag[:current_index_sha256]
-        - class_string_warning = node_link[:node].get_problem_blobs.size > 0 || node_link[:node].get_problem_blobs.nil? ? 'warning-background' : ''
-        tr.tree-node style="cursor: default" id="#{img_pth_param}/#{tag_string}/#{node_link[:node].sha256}" class="#{class_string_warning}" onmouseover="this.querySelector('.to-be-hidden').classList.remove('uk-hidden')" onmouseout="this.querySelector('.to-be-hidden').classList.add('uk-hidden')"
-          td.align-text-center
-            - if node_is_current
-              span.uk-padding-remove uk-icon="icon: check" style="color: green; min-width: max-content; padding: 0.5rem"
-          td
-            .inline-container-small
-              a href="/image-exploring/#{img_pth_param + '/' + tag_string}/#{node_link[:node].sha256}" uk-tooltip="title: #{node_link[:node].sha256}; cls: uk-active; delay: 500;"= node_link[:node].sha256[0..6] + "..."
-            a.to-be-hidden.uk-hidden
-              span.copy-btn.cursor-pointer data-buffervalue="#{node_link[:node].sha256}" uk-icon="icon: copy"
-            - current_node_size = node_link[:node].actual_blob_size.nil? ? "-" : represent_size(node_link[:node].actual_blob_size)
-            - current_image_node_size = represent_size(node_link[:node].get_effective_size)
-          td.uk-text-right.uk-text-primary.cursor-pointer
-            - git_pipeline_url ||= node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_PIPELINEURL)
-            - git_pipeline_url ||= node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_ACTIONURL)
-            - git_pipeline_iid ||= node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_PIPELINE_IID)
-            - git_pipeline_iid ||= git_pipeline_url.nil? ? nil : git_pipeline_url.split('/').last
-            - if !git_pipeline_url.nil?
-              a href="#{git_pipeline_url}"
-                .inline-container
-                  span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-right.uk-padding-remove-left= git_pipeline_iid
-            - else
+    - tag[:index_Nodes].each do |node_link|
+      - node_is_current = node_link[:node].sha256 == tag[:current_index_sha256]
+      - class_string_warning = node_link[:node].get_problem_blobs.size > 0 || node_link[:node].get_problem_blobs.nil? ? 'warning-background' : ''
+      tr.tree-node style="cursor: default" id="#{img_pth_param}/#{tag_string}/#{node_link[:node].sha256}" class="#{class_string_warning}" onmouseover="this.querySelector('.to-be-hidden').classList.remove('uk-hidden')" onmouseout="this.querySelector('.to-be-hidden').classList.add('uk-hidden')"
+        td.align-text-center
+          - if node_is_current
+            span.uk-padding-remove uk-icon="icon: check" style="color: green; min-width: max-content; padding: 0.5rem"
+        td
+          .inline-container-small
+            a href="/image-exploring/#{img_pth_param + '/' + tag_string}/#{node_link[:node].sha256}" uk-tooltip="title: #{node_link[:node].sha256}; cls: uk-active; delay: 500;"= node_link[:node].sha256[0..6] + "..."
+          a.to-be-hidden.uk-hidden
+            span.copy-btn.cursor-pointer data-buffervalue="#{node_link[:node].sha256}" uk-icon="icon: copy"
+          - current_node_size = node_link[:node].actual_blob_size.nil? ? "-" : represent_size(node_link[:node].actual_blob_size)
+          - current_image_node_size = represent_size(node_link[:node].get_effective_size)
+        td.uk-text-right.uk-text-primary.cursor-pointer
+          - git_pipeline_url ||= node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_PIPELINEURL)
+          - git_pipeline_url ||= node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_ACTIONURL)
+          - git_pipeline_iid ||= node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_PIPELINE_IID)
+          - git_pipeline_iid ||= git_pipeline_url.nil? ? nil : git_pipeline_url.split('/').last
+          - if !git_pipeline_url.nil?
+            a href="#{git_pipeline_url}"
               .inline-container
-                span.uk-text-secondary= "Could not find git pipeline url"
-          td.uk-text-right.uk-text-primary.cursor-pointer
-            - git_commit_url ||= node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_COMMITURL)
-            - git_commit_url ||= node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_COMMITURL)
-            - git_commit_short_sha ||= node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_COMMIT_SHORT_SHA)
-            - git_commit_short_sha ||= node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_COMMIT_SHORT_SHA)
-            - if !git_commit_url.nil?
-              a href="#{git_commit_url}"
-                span uk-icon="icon: git-branch"
-                .inline-container.uk-text-right
-                  span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-right.uk-padding-remove-left= git_commit_short_sha
-            - else
-              .inline-container
-                span.uk-text-secondary="Could not find git commit url"
-          td.uk-overflow-auto
-            - commit_message ||= node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_COMMIT_MESSAGE)
-            - commit_message ||= node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_COMMIT_MESSAGE)
-            - if !commit_message.nil?
-              .inline-container
-                span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-right.uk-padding-remove-left.white-space-pre= commit_message.gsub('\n', "\n")
-          td.align-text-right= current_image_node_size
-          td #{represent_datetime(node_link[:node].created_at)}
-          td.align-text-right
-            - if !node_link[:node].sha256.nil?
-              - if !$read_only_mode
-                span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: trash" uk-tooltip="title: #{'Delete chosen image'}; cls: uk-active; delay: 500;" onclick="delete_image(`#{node_link[:node].sha256}`, true)"
-              span.uk-icon-link.cursor-pointer uk-icon="icon: copy" uk-tooltip="title: #{'Copy pulling this image command'}; cls: uk-active; delay: 500;" onclick="copy_pull_command(`#{node_link[:node].sha256}`)"
-              / docker pull builder-registry-ui.builder.giscloud.ru/gis/front/main/master:1.0
-              / button.uk-icon-link.cursor-pointer type="button" uk-toggle="target: #modal-example" uk-icon="icon: trash"
-              / #modal-example uk-modal="true"
-              /   .uk-modal-dialog.uk-modal-body
-              /     h2.uk-modal-title Delete node
-              /     p Are you sure you want to delete this node?
-              /     p.uk-text-right
-              /       button.uk-button.uk-button-default.uk-modal-close type="button" Cancel
-              /       button.uk-button.uk-button-primary.uk-modal-close type="button" onclick="delete_image(`#{node_link[:node].sha256}`)" Delete
-
-    - TimeMeasurer.log_measurers
+                span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-right.uk-padding-remove-left= git_pipeline_iid
+          - else
+            .inline-container
+              span.uk-text-secondary= "Could not find git pipeline url"
+        td.uk-text-right.uk-text-primary.cursor-pointer
+          - git_commit_url ||= node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_COMMITURL)
+          - git_commit_url ||= node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_COMMITURL)
+          - git_commit_short_sha ||= node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_COMMIT_SHORT_SHA)
+          - git_commit_short_sha ||= node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_COMMIT_SHORT_SHA)
+          - if !git_commit_url.nil?
+            a href="#{git_commit_url}"
+              span uk-icon="icon: git-branch"
+              .inline-container.uk-text-right
+                span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-right.uk-padding-remove-left= git_commit_short_sha
+          - else
+            .inline-container
+              span.uk-text-secondary="Could not find git commit url"
+        td.uk-overflow-auto
+          - commit_message ||= node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_COMMIT_MESSAGE)
+          - commit_message ||= node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_COMMIT_MESSAGE)
+          - if !commit_message.nil?
+            .inline-container
+              span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-right.uk-padding-remove-left.white-space-pre= commit_message.gsub('\n', "\n")
+        td.align-text-right= current_image_node_size
+        td #{represent_datetime(node_link[:node].created_at)}
+        td.align-text-right
+          - if !node_link[:node].sha256.nil?
+            - if !$read_only_mode
+              span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: trash" uk-tooltip="title: #{'Delete chosen image'}; cls: uk-active; delay: 500;" onclick="delete_image(`#{node_link[:node].sha256}`, true)"
+            span.uk-icon-link.cursor-pointer uk-icon="icon: copy" uk-tooltip="title: #{'Copy pulling this image command'}; cls: uk-active; delay: 500;" onclick="copy_pull_command(`#{node_link[:node].sha256}`)"

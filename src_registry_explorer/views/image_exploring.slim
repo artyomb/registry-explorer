@@ -13,9 +13,7 @@ ruby:
   path_to_repositories = $base_path + "/repositories"
   full_path_to_image_tag = path_to_repositories + image_in_registry_path + '/_manifests/tags/' + tag_string
   index_node_link = nil
-  TimeMeasurer.measure(:extract_image_by_sha256) do
-    index_node_link = extract_index(image_sha256)
-  end
+  index_node_link = extract_index(image_sha256)
   TimeMeasurer.log_measurers
 javascript:
     let attestationExploring = false
@@ -329,7 +327,4 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
           td.limit-max-width= node_link[:node].created_by.nil? ? "" : node_link[:node].created_by
         - if node_link[:node].links.any?
           - render_node_links.call(node_link[:node].links, depth + 1)
-    - TimeMeasurer.start_measurement
-    - TimeMeasurer.measure(:rendering_tag_page) do
-      - render_node_links.call([index_node_link], 0)
-    - TimeMeasurer.log_measurers
+    - render_node_links.call([index_node_link], 0)

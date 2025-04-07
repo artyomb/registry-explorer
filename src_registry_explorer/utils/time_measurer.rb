@@ -35,7 +35,6 @@ class TimeMeasurer
   def add_measurement_key(key, one_simultaneous = true)
     # one_simultaneous is used to avoid measuring the same key multiple times
     @times_dict.key?(key) ? nil : @times_dict[key] = { time_ranges: Set.new, one_simultaneous: one_simultaneous }
-    # @times_dict.key?(key) ? nil : @times_dict[key] = 0
   end
 
   def initialize()
@@ -72,6 +71,5 @@ class TimeMeasurer
         range[:end_time] - range[:start_time]
       end
     end
-    # @times_dict[key]
   end
 end

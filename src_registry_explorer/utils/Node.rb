@@ -204,27 +204,3 @@ class Node
     end
   end
 end
-
-
-#     begin
-#         if !CachesManager.is_refreshing_in_progress?
-#           if RegistryExplorerFront.get_session.nil? || RegistryExplorerFront.get_session[:attestations_exploring]
-#             if json_blob_content[:predicate] && json_blob_content[:predicate].is_a?(Hash)
-#               json_blob_content[:predicate].delete(:materials)
-#             end
-#           else
-#             return
-#           end
-#         else
-#           if CachesManager.is_refreshing_in_progress_no_attest?
-#             return
-#           elsif CachesManager.is_refreshing_in_progress_with_attest?
-#             if json_blob_content[:predicate] && json_blob_content[:predicate].is_a?(Hash)
-#               json_blob_content[:predicate].delete(:materials)
-#             end
-#           end
-#         end
-#       rescue Exception => e
-#         puts "Error when processing toto json: #{e}"
-#         return
-#       end
