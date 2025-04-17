@@ -185,7 +185,7 @@ sass:
     div
       span.uk-text-bold.icon-padding-right Licenses:
       a href="#{image_licenses}"= image_licenses
-- if !$read_only_mode
+- if !$read_only_mode && !$registry_host.nil?
   .uk-button-group.uk-float-right.small-column-gap
     button.switch-btn.uk-button.uk-button-default.uk-flex.align-items-center uk-tooltip="title: #{'Deleting tag leads to deleting all images'}; cls: uk-active; delay: 500;" style="" onclick="delete_tag('#{tag_string}')"
       span.icon-padding-right.icon-padding-right.uk-text-primary uk-icon="icon: trash" style="color: red !important"

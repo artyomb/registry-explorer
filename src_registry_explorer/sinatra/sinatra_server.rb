@@ -51,7 +51,6 @@ class RegistryExplorerFront < Sinatra::Base
   get '/json/:sha256', &->() { slim :json }
   get '/tar-gz/:sha256', &->() { slim :targz }
 
-  get '/file-in-archive/:sha256', &->() { slim :file_in_archive }
   get '/test', &->() { slim :test }
 
   get '/file-in-archive/*' do
@@ -287,7 +286,10 @@ class RegistryExplorerFront < Sinatra::Base
 
   def delete_index(image_path, image_sha256, is_current)
     if $read_only_mode
-      return [403, 'Registry is in read-only mode']
+      return [403, 'Registry explorer is in read-only mode']
+    end
+    if $hostname.nil?
+      return [403, 'Hostname of registry is not set']
     end
     request_url = "http://#{$hostname}#{$port.nil? ? '' : (':' + $port)}/v2/#{image_path}/manifests/sha256:#{image_sha256}"
 

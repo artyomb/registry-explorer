@@ -9,11 +9,14 @@ require_relative 'caches_manager'
 
 $base_path = (ENV['DBG'].nil? ? "/var/lib/registry" : Dir.pwd + '/../temp') + "/docker/registry/v2"
 $registry_host = ENV['DBG'].nil? ? ENV['REGISTRY_HOST'] : "172.22.0.1:5000"
-$hostname = ENV['DBG'].nil? ? $registry_host.split(':').first : "localhost"
-$port = ENV['DBG'].nil? ? ($registry_host.include?(':') ? $registry_host.split(':').last : nil ) : "5000"
+# In case when 'REGISTRY_HOST' in production is not set, user must get warning message about it
+warn "REGISTRY_HOST is not set, features with registry API interactions are disabled" if $registry_host.nil?
+
+$hostname = ENV['DBG'].nil? ? $registry_host.split(':').first : "localhost" unless $registry_host.nil?
+$port = ENV['DBG'].nil? ? ($registry_host.include?(':') ? $registry_host.split(':').last : nil ) : "5000" unless $registry_host.nil?
 $temp_dir = Dir.pwd + '/temp_registry_blobs/blobs'
 $zip_time_limit = 60 * 10
-$read_only_mode = ENV['DBG'].nil? ? ((ENV['READ_ONLY_MODE'].nil? || ENV['READ_ONLY_MODE'] == 'true') ? true : false) : false
+$read_only_mode = ENV['DBG'].nil? ? ((!ENV['READ_ONLY_MODE'].nil? && ENV['READ_ONLY_MODE'] == 'false') ? false : true) : false
 
 def extract_tar_gz_structure(tar_gz_sha256)
   TimeMeasurer.measure(:extracting_gz_structure) do
