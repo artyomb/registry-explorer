@@ -50,6 +50,7 @@ gem 'async-rspec'
 
 gem 'opentelemetry-sdk'
 gem 'opentelemetry-exporter-otlp'
+gem 'opentelemetry-instrumentation-grpc'
 gem 'opentelemetry-instrumentation-all'
 
 gem 'simplecov'
