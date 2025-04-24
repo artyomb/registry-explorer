@@ -117,7 +117,7 @@ javascript:
             }else {
                 const rows = document.querySelectorAll("tbody tr.tree-node");
                 rows.forEach(function (row) {
-                    if (mustRowBeVisible(row, searchString)) {
+                    if (isRowAcceptedByFilter(row, searchString)) {
                         row.classList.remove("hidden");
                         showAllChildren(row);
                         showAllParents(row);
@@ -128,7 +128,7 @@ javascript:
             // debug
             document.querySelectorAll("tbody tr.tree-node").forEach(function (row) {
                 if (row.classList.contains(".table-view") || row.querySelectorAll(".table-view").length > 0) {
-                    if (mustRowBeVisible(row, searchString)) {
+                    if (isRowAcceptedByFilter(row, searchString)) {
                         row.classList.remove("hidden");
                         showAllChildren(row);
                     }
@@ -138,7 +138,7 @@ javascript:
         updateRowStripes();
     }
 
-    function mustRowBeVisible(row, searchString) {
+    function isRowAcceptedByFilter(row, searchString) {
         const searchImages = document.getElementById("searchImages").checked;
         const searchTags = document.getElementById("searchTags").checked;
         const rowImage = row.dataset.imageName;
@@ -235,6 +235,50 @@ javascript:
         updateRowStripes();
     });
 
+    async function delete_filtered_tags(event) {
+        UIkit.modal.alert("This feature is not yet implemented.");
+        return;
+        const searchString = document.getElementById("imageSearch").value.toLowerCase();
+        if (!searchString || !(searchString.trim().length > 0)){
+            UIkit.modal.alert('Please enter a search term before deleting tags.');
+            return;
+        }
+        UIkit.modal.confirm("Are you sure you want to delete tags, that you see?").then(async function () {
+            try {
+                const tagsForDeletion = [];
+                document.querySelectorAll("tbody tr.tree-node").forEach(function (row) {
+                    if (row.dataset.tagName.length > 0 && isRowAcceptedByFilter(row, searchString)) {
+                        const fullString = row.dataset.imageName + ":" + row.dataset.tagName;
+                        tagsForDeletion.push(fullString);
+                    }
+                });
+                if (tagsForDeletion.length > 0) {
+                    const response = await fetch('/delete-tag', {
+                        method: 'DELETE',
+                        body: JSON.stringify({images_with_tags: tagsForDeletion}),
+                    });
+                    const responseText = await response.text(); // Wait for the response text
+                    if (response.ok) {
+                        UIkit.notification({message: responseText, status: 'success', pos: 'top-right'});
+                    } else {
+                        UIkit.notification({message: 'Error: ' + responseText, status: 'danger', pos: 'top-right'});
+                    }
+                } else {
+                    UIkit.notification({
+                        message: 'No tags to delete',
+                        status: 'warning',
+                    });
+                    return;
+                }
+            } catch (error) {
+                UIkit.notification({message: 'Error: ' + error, status: 'danger', pos: 'top-right'});
+            }
+        }, function () {
+            return false;
+        });
+
+    }
+
 / h1.uk-h1= "Docker registry content (#{images.map{|img| img[:tags].map{ |tag| tag[:index_Nodes].size }.sum}.sum} images in #{images.map{|img| img[:tags].size}.sum} tags, total size = #{represent_size(CachesManager.get_repo_size("REPOSITORY", required_in_registry_blobs))})"
 .uk-flex.uk-padding.uk-padding-remove-horizontal.uk-width-expand.uk-flex-between.align-items-center.uk-padding-remove-bottom
   h1.uk-h1.uk-margin-remove= "Docker registry content"
@@ -267,7 +311,9 @@ hr
         input.uk-checkbox type="checkbox" id="searchImages" checked="checked" onchange="performSearch(event)"= " Search among images"
       label.uk-margin-left
         input.uk-checkbox type="checkbox" id="searchTags" checked="checked" onchange="performSearch(event)"= " Search among tags"
-
+    button.uk-button.uk-button-default.uk-flex.align-items-center.uk-margin-left uk-tooltip="title: #{'Delete all tags that you see'}; cls: uk-active; delay: 500;" style="" onclick="delete_filtered_tags(event)"
+      span.icon-padding-right.icon-padding-right.uk-text-primary uk-icon="icon: trash" style="color: red !important"
+      span= "Delete shown tags"
   .uk-button-group.uk-float-right
     button.switch-btn.uk-button.uk-button-primary id="treeViewButton" style=""= "Tree view"
     button.switch-btn.uk-button.uk-button-default id="tableViewButton" style=""= "Table view"

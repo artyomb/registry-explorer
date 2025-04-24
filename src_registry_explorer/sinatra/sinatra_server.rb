@@ -97,11 +97,27 @@ class RegistryExplorerFront < Sinatra::Base
     return delete_index(image_path, image_sha256, false)
   end
 
+
   delete '/delete-tag/*' do
     path_data = params[:splat].first.split('/$sha256/')
     image_path = path_data[0]
     image_sha256 = path_data[1]
     return delete_index(image_path, image_sha256, true)
+  end
+
+  delete '/delete-tag' do
+    boby = request.body.read
+    data = JSON.parse(boby, symbolize_names: true)
+    if data.nil? || data[:images_with_tags].nil?
+      return [400, 'Error when deleting list of tags: no data to delete']
+    end
+    number_of_deleted_tags = 0
+    # TODO: implement deleting tags
+    # path_data = params[:splat].first.split('/$sha256/')
+    # image_path = path_data[0]
+    # image_sha256 = path_data[1]
+    # return delete_index(image_path, image_sha256, true)
+    [200, "Deleting #{number_of_deleted_tags} tags is successfull"]
   end
 
   delete '/delete-non-current-images/*' do
