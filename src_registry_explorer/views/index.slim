@@ -280,8 +280,8 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
             span #{tag[:name]}
           td.uk-text-right.cursor-pointer.uk-overflow-auto
             - node_link = tag[:index_Nodes]&.select{ |nd| tag[:current_index_sha256] == nd[:node].sha256 }.first
-            - service_version ||= node_link.dig(:build_info, :labels, "ORG_OPENCONTAINERS_IMAGE_VERSION".to_sym)
-            - service_version ||= node_link.dig(:build_info, :labels, "ORG_LABEL-SCHEMA_VERSION".to_sym)
+            - service_version ||= node_link.dig(:build_info, :labels, "org.opencontainers.image.version".to_sym)
+            - service_version ||= node_link.dig(:build_info, :labels, "org.label-schema.version".to_sym)
             - if !service_version.nil?
               .inline-container
                 span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-right.uk-padding-remove-left= service_version
