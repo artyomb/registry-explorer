@@ -234,6 +234,12 @@ hr
   form.uk-search.uk-search-default onsubmit="performSearch(event); return false;"
     input.uk-search-input type="search" id="imageSearch" placeholder="Type image name" aria-label="Search"
     button.uk-search-icon-flip onclick="performSearch(event)" uk-search-icon=""
+    / .uk-margin.uk-grid-small.uk-child-width-auto.uk-grid
+    /   label
+    /     input.uk-checkbox type="checkbox" id="showHiddenImages" checked="checked"= " Search among images"
+    /   label
+    /     input.uk-checkbox type="checkbox" id="showHiddenTags" checked="checked"= " Search among tags"
+
   .uk-button-group.uk-float-right
     button.switch-btn.uk-button.uk-button-primary id="treeViewButton" style=""= "Tree view"
     button.switch-btn.uk-button.uk-button-default id="tableViewButton" style=""= "Table view"
@@ -241,6 +247,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
   thead
     tr
       th Image/tag name
+      th style="text-align: right" Version
       th style="text-align: right" Images amount
       th style="text-align: right" Image size
       th style="text-align: right" Disk usage
@@ -257,7 +264,8 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
           - unless node[:children_count] == 0 && (node[:image][:tags] || []).empty?
             span.hide-show-arrow uk-icon="icon: chevron-right"
           span = node[:name]
-        td.alight-text-right
+        td.align-text-right
+        td.align-text-right
         td.align-text-right
         td.align-text-right #{node[:children_count] == 0 ? represent_size(node[:image][:total_size]) : represent_size(CachesManager.get_repo_size("#{repo_path}/#{node[:name]}", node[:required_blobs]))}
         td -
@@ -270,6 +278,16 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
             span uk-icon="icon: tag" style="padding: 0.5rem"
             span.table-view.hidden #{node[:image][:name][1..]}:
             span #{tag[:name]}
+          td.uk-text-right.cursor-pointer.uk-overflow-auto
+            - node_link = tag[:index_Nodes]&.select{ |nd| tag[:current_index_sha256] == nd[:node].sha256 }.first
+            - service_version ||= node_link.dig(:build_info, :labels, "ORG_OPENCONTAINERS_IMAGE_VERSION".to_sym)
+            - service_version ||= node_link.dig(:build_info, :labels, "ORG_LABEL-SCHEMA_VERSION".to_sym)
+            - if !service_version.nil?
+              .inline-container
+                span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-right.uk-padding-remove-left= service_version
+            - else
+              .inline-container
+                span.uk-text-secondary= "Could not find labels to define version"
           td.align-text-right #{tag[:index_Nodes].size}
           / Adjust disk usage
           td.align-text-right #{represent_size(tag[:index_Nodes].first[:node].get_effective_size).to_s + (tag[:problem_blobs].size > 0 ? ' (some blobs not found)' : '')}

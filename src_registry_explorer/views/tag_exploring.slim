@@ -196,6 +196,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
     tr
       th style="min-width: 0%; width: 0%; max-width: 0%" Current
       th Image exploring
+      th.uk-text-right Version
       th.uk-text-right Git pipeline
       th.uk-text-right Git commit
       th Commit message
@@ -217,6 +218,15 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
             span.copy-btn.cursor-pointer data-buffervalue="#{node_link[:node].sha256}" uk-icon="icon: copy"
           - current_node_size = node_link[:node].actual_blob_size.nil? ? "-" : represent_size(node_link[:node].actual_blob_size)
           - current_image_node_size = represent_size(node_link[:node].get_effective_size)
+        td.uk-text-right.cursor-pointer.uk-overflow-auto
+          - service_version ||= node_link.dig(:build_info, :labels, "ORG_OPENCONTAINERS_IMAGE_VERSION".to_sym)
+          - service_version ||= node_link.dig(:build_info, :labels, "ORG_LABEL-SCHEMA_VERSION".to_sym)
+          - if !service_version.nil?
+            .inline-container
+              span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-right.uk-padding-remove-left= service_version
+          - else
+            .inline-container
+              span.uk-text-secondary= "Could not find labels to define version"
         td.uk-text-right.uk-text-primary.cursor-pointer
           - git_pipeline_url ||= node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_PIPELINEURL)
           - git_pipeline_url ||= node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_ACTIONURL)
