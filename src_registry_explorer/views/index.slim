@@ -78,6 +78,19 @@ javascript:
         updateRowStripes();
     }
 
+    function showAllParents(row) {
+        const imageNamePath = row.dataset.imageName.split("/");
+        document.querySelectorAll("tbody tr.tree-node").forEach(function (potentialParent) {
+            if (potentialParent.dataset.level === "0") {
+                if (potentialParent.dataset.imageName === imageNamePath[1]) {
+                    potentialParent.classList.remove('hidden');
+                    // If want to retain only top level parent, then remove the following line
+                    showAllChildren(potentialParent);
+                }
+            }
+        });
+    }
+
     function hideAllChildren(currentNode) {
         let childElem = currentNode.nextElementSibling;
         let closestArrow = currentNode?.querySelector(".hide-show-arrow");
@@ -92,20 +105,22 @@ javascript:
 
     function performSearch(event) {
         const searchString = document.getElementById("imageSearch").value.toLowerCase();
+        document.querySelectorAll("tbody tr.tree-node").forEach(function (row) {
+            if (row.dataset.level === "0") {
+                row.classList.add("hidden");
+                hideAllChildren(row);
+            }
+        });
         if (viewMode === 'tree') {
             if (searchString.length === 0) {
                 showDefaultTreeView();
             }else {
                 const rows = document.querySelectorAll("tbody tr.tree-node");
                 rows.forEach(function (row) {
-                    const rowText = row.textContent.toLowerCase();
-                    if (rowText.includes(searchString)) {
+                    if (mustRowBeVisible(row, searchString)) {
                         row.classList.remove("hidden");
-
                         showAllChildren(row);
-                    } else {
-                        row.classList.add("hidden");
-                        hideAllChildren(row);
+                        showAllParents(row);
                     }
                 });
             }
@@ -113,18 +128,30 @@ javascript:
             // debug
             document.querySelectorAll("tbody tr.tree-node").forEach(function (row) {
                 if (row.classList.contains(".table-view") || row.querySelectorAll(".table-view").length > 0) {
-                    const rowText = row.textContent.toLowerCase();
-                    if (rowText.includes(searchString)) {
+                    if (mustRowBeVisible(row, searchString)) {
                         row.classList.remove("hidden");
                         showAllChildren(row);
-                    } else {
-                        row.classList.add("hidden");
-                        hideAllChildren(row);
                     }
                 }
             });
         }
         updateRowStripes();
+    }
+
+    function mustRowBeVisible(row, searchString) {
+        const searchImages = document.getElementById("searchImages").checked;
+        const searchTags = document.getElementById("searchTags").checked;
+        const rowImage = row.dataset.imageName;
+        const rowTag = row.dataset.tagName;
+        if (searchImages && searchTags) {
+            return rowImage.includes(searchString) || rowTag.includes(searchString);
+        } else if (searchImages) {
+            return rowImage.includes(searchString);
+        } else if (searchTags) {
+            return rowTag.includes(searchString);
+        } else {
+            return false;
+        }
     }
 
     function showDefaultTreeView(){
@@ -231,14 +258,15 @@ javascript:
       span.icon-padding-right= " #{represent_size(CachesManager.get_repo_size("REPOSITORY", required_in_registry_blobs))}"
 hr
 .uk-padding-small.uk-padding-remove-horizontal.uk-padding-remove-bottom.uk-flex.uk-flex-between.align-items-center.uk-flex-wrap
-  form.uk-search.uk-search-default onsubmit="performSearch(event); return false;"
-    input.uk-search-input type="search" id="imageSearch" placeholder="Type image name" aria-label="Search"
-    button.uk-search-icon-flip onclick="performSearch(event)" uk-search-icon=""
-    / .uk-margin.uk-grid-small.uk-child-width-auto.uk-grid
-    /   label
-    /     input.uk-checkbox type="checkbox" id="showHiddenImages" checked="checked"= " Search among images"
-    /   label
-    /     input.uk-checkbox type="checkbox" id="showHiddenTags" checked="checked"= " Search among tags"
+  .uk-flex.uk-flex-row.uk-flex-wrap.uk-flex-middle
+    form.uk-search.uk-search-default onsubmit="performSearch(event); return false;"
+      input.uk-search-input type="search" id="imageSearch" placeholder="Type image name" aria-label="Search"
+      button.uk-search-icon-flip onclick="performSearch(event)" uk-search-icon=""
+    .uk-margin-left.uk-child-width-auto
+      label
+        input.uk-checkbox type="checkbox" id="searchImages" checked="checked" onchange="performSearch(event)"= " Search among images"
+      label.uk-margin-left
+        input.uk-checkbox type="checkbox" id="searchTags" checked="checked" onchange="performSearch(event)"= " Search among tags"
 
   .uk-button-group.uk-float-right
     button.switch-btn.uk-button.uk-button-primary id="treeViewButton" style=""= "Tree view"
@@ -247,15 +275,15 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
   thead
     tr
       th Image/tag name
-      th style="text-align: right" Version
-      th style="text-align: right" Images amount
-      th style="text-align: right" Image size
-      th style="text-align: right" Disk usage
-      th Created at
+      th style="width: 10%; text-align: right" Version
+      th style="width: 10%; text-align: right" Images amount
+      th style="width: 10%; text-align: right" Image size
+      th style="width: 10%; text-align: right" Disk usage
+      th style="width: 10%" Created at
   tbody
     - flattened.each do |node|
       - warn_node_condition = node[:problem_blobs].size > 0 || (!node[:image].nil? && node[:image].size > 0 && node[:image][:problem_blobs].size > 0)
-      tr.tree-node.tree-view.hidden class="#{warn_node_condition ? 'warning-background' : ''}" data-level="#{node[:level]}"
+      tr.tree-node.tree-view.hidden class="#{warn_node_condition ? 'warning-background' : ''}" data-level="#{node[:level]}" data-image-name="#{node[:name]}" data-tag-name=""
         td
           - if warn_node_condition
             - puts "Node #{node[:name]} has problem blobs #{node[:problem_blobs].map { |s| s[0..25] + '...' }.join(', ')}"
@@ -270,7 +298,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
         td.align-text-right #{node[:children_count] == 0 ? represent_size(node[:image][:total_size]) : represent_size(CachesManager.get_repo_size("#{repo_path}/#{node[:name]}", node[:required_blobs]))}
         td -
       - node[:image][:tags]&.each do |tag|
-        tr.tree-node.hidden class="#{tag[:problem_blobs].size > 0 ? 'warning-background' : ''}" data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}"
+        tr.tree-node.hidden class="#{tag[:problem_blobs].size > 0 ? 'warning-background' : ''}" data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}" data-image-name="#{node[:image][:name]}" data-tag-name="#{tag[:name]}"
           td
             - if tag[:problem_blobs].size != 0
               span.warning-icon uk-tooltip="title: #{(tag[:problem_blobs].size == 0) ? 'Full size of tag' : "Some layers of tag not found:<br>" + tag[:problem_blobs].map{|s| s[0..25] + '...' }.join('<br>')}; delay: 500;"  uk-icon="icon: warning"
