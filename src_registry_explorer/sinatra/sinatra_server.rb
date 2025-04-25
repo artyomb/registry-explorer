@@ -124,10 +124,7 @@ class RegistryExplorerFront < Sinatra::Base
         exceptions << e.message
       end
     end
-    # path_data = params[:splat].first.split('/$sha256/')
-    # image_path = path_data[0]
-    # image_sha256 = path_data[1]
-    # return delete_index(image_path, image_sha256, true)
+    puts "Deleting #{number_of_deleted_tags} tags is successful. #{exceptions.size} exceptions raised:#{exceptions.join("\n")}"
     [200, "Deleting #{number_of_deleted_tags} tags is successful. #{exceptions.size} exceptions raised"]
   end
 

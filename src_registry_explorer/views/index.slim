@@ -243,7 +243,15 @@ javascript:
             UIkit.modal.alert('Please enter a search term before deleting tags.');
             return;
         }
-        UIkit.modal.confirm("Are you sure you want to delete tags, that you see?").then(async function () {
+        UIkit.modal.prompt('Are you sure you want to delete tags, chosen by filter? Type "confirm" to start the process').then(async function (prompted) {
+            if (!prompted) {
+                UIkit.modal.alert('Deletion aborted.');
+                return;
+            }
+            if (prompted !== "confirm") {
+                UIkit.modal.alert('You did not type "confirm".');
+                return;
+            }
             try {
                 const tagsForDeletion = [];
                 document.querySelectorAll("tbody tr.tree-node").forEach(function (row) {
@@ -311,9 +319,9 @@ hr
         input.uk-checkbox type="checkbox" id="searchImages" checked="checked" onchange="performSearch(event)"= " Search among images"
       label.uk-margin-left
         input.uk-checkbox type="checkbox" id="searchTags" checked="checked" onchange="performSearch(event)"= " Search among tags"
-    button.uk-button.uk-button-default.uk-flex.align-items-center.uk-margin-left uk-tooltip="title: #{'Delete all tags that you see'}; cls: uk-active; delay: 500;" style="" onclick="delete_filtered_tags(event)"
+    button.uk-button.uk-button-default.uk-flex.align-items-center.uk-margin-left uk-tooltip="title: #{'Delete all tags accepted by filter'}; cls: uk-active; delay: 500;" style="" onclick="delete_filtered_tags(event)"
       span.icon-padding-right.icon-padding-right.uk-text-primary uk-icon="icon: trash" style="color: red !important"
-      span= "Delete shown tags"
+      span= "Delete filtered tags"
   .uk-button-group.uk-float-right
     button.switch-btn.uk-button.uk-button-primary id="treeViewButton" style=""= "Tree view"
     button.switch-btn.uk-button.uk-button-default id="tableViewButton" style=""= "Table view"
