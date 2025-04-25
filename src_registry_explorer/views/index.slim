@@ -85,7 +85,7 @@ javascript:
                 if (potentialParent.dataset.imageName === imageNamePath[1]) {
                     potentialParent.classList.remove('hidden');
                     // If want to retain only top level parent, then remove the following line
-                    showAllChildren(potentialParent);
+                    // showAllChildren(potentialParent);
                 }
             }
         });
@@ -236,8 +236,8 @@ javascript:
     });
 
     async function delete_filtered_tags(event) {
-        UIkit.modal.alert("This feature is not yet implemented.");
-        return;
+        // UIkit.modal.alert("This feature is not yet implemented.");
+        // return;
         const searchString = document.getElementById("imageSearch").value.toLowerCase();
         if (!searchString || !(searchString.trim().length > 0)){
             UIkit.modal.alert('Please enter a search term before deleting tags.');

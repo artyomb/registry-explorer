@@ -112,18 +112,26 @@ class RegistryExplorerFront < Sinatra::Base
       return [400, 'Error when deleting list of tags: no data to delete']
     end
     number_of_deleted_tags = 0
+    exceptions = []
     # TODO: implement deleting tags
+    data[:images_with_tags].each do |image_with_tags|
+      image_path, tag = image_with_tags.split(':')
+      puts "Deleting tag #{tag} from image #{image_path}:"
+      begin
+        delete_image_tag(image_path[1..], tag)
+        number_of_deleted_tags += 1
+      rescue StandardError => e
+        exceptions << e.message
+      end
+    end
     # path_data = params[:splat].first.split('/$sha256/')
     # image_path = path_data[0]
     # image_sha256 = path_data[1]
     # return delete_index(image_path, image_sha256, true)
-    [200, "Deleting #{number_of_deleted_tags} tags is successfull"]
+    [200, "Deleting #{number_of_deleted_tags} tags is successful. #{exceptions.size} exceptions raised"]
   end
 
   delete '/delete-non-current-images/*' do
-    if $read_only_mode
-      return [403, 'Registry is in read-only mode']
-    end
     path_data = params[:splat].first.split('/$sha256/')
     url_image_path = path_data[0].split('/')[0..-2].join('/')
     image_path = $base_path + '/repositories/' + url_image_path
@@ -298,42 +306,6 @@ class RegistryExplorerFront < Sinatra::Base
                       source_blobs: blobs_set.to_a.to_json
     }.to_json
     body response_body
-  end
-
-  def delete_index(image_path, image_sha256, is_current)
-    if $read_only_mode
-      return [403, 'Registry explorer is in read-only mode']
-    end
-    if $hostname.nil?
-      return [403, 'Hostname of registry is not set']
-    end
-    request_url = "http://#{$hostname}#{$port.nil? ? '' : (':' + $port)}/v2/#{image_path}/manifests/sha256:#{image_sha256}"
-
-    begin
-      url = URI.parse(request_url)
-      http = Net::HTTP.new(url.host, url.port)
-      request = Net::HTTP::Delete.new(url.request_uri)
-      error_message = $registry_host.nil? ? 'Registry host is not set' : ""
-      if !error_message.empty?
-        raise StandardError, error_message
-      end
-      request['Accept'] = CachesManager.find_node(image_sha256).node_type
-      response = http.request(request)
-      if response.code.to_i / 100 == 2
-        message = "#{is_current ? 'Tag' : 'Image'} by sha256:#{image_sha256} deleted successfully"
-        puts message
-        return message
-      else
-        message = "Error deleting #{is_current ? 'tag' : 'image'} by sha256:#{image_sha256} from #{image_path}. Registry message: #{response.message}"
-        puts message
-        raise StandardError, message
-      end
-    rescue StandardError => e
-      message = "Error deleting image #{image_sha256} from #{image_path}: #{e.message}"
-      puts message
-      status 400
-      raise StandardError, message
-    end
   end
 
   def self.get_session

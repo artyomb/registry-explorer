@@ -258,6 +258,47 @@ def flatten_tree(node, level = 0, pname = nil)
   result
 end
 
+def delete_index(image_path, image_sha256, is_current)
+  if $read_only_mode
+    return [403, 'Registry explorer is in read-only mode']
+  end
+  if $hostname.nil?
+    return [403, 'Hostname of registry is not set']
+  end
+  request_url = "http://#{$hostname}#{$port.nil? ? '' : (':' + $port)}/v2/#{image_path}/manifests/sha256:#{image_sha256}"
+
+  begin
+    url = URI.parse(request_url)
+    http = Net::HTTP.new(url.host, url.port)
+    request = Net::HTTP::Delete.new(url.request_uri)
+    error_message = $registry_host.nil? ? 'Registry host is not set' : ""
+    if !error_message.empty?
+      raise StandardError, error_message
+    end
+    request['Accept'] = CachesManager.find_node(image_sha256).node_type
+    response = http.request(request)
+    if response.code.to_i / 100 == 2
+      message = "#{is_current ? 'Tag' : 'Image'} by sha256:#{image_sha256} deleted successfully"
+      puts message
+      return message
+    else
+      message = "Error deleting #{is_current ? 'tag' : 'image'} by sha256:#{image_sha256} from #{image_path}. Registry message: #{response.message}"
+      puts message
+      raise StandardError, message
+    end
+  rescue StandardError => e
+    message = "Error deleting image #{image_sha256} from #{image_path}: #{e.message}"
+    puts message
+    status 400
+    raise StandardError, message
+  end
+end
+
+def delete_image_tag(image_path, image_tag)
+  return [403, 'Registry explorer is in read-only mode'] if $read_only_mode
+  current_index_of_tag = CachesManager.get_index_sha256($base_path + "/repositories/#{image_path}/_manifests/tags/#{image_tag}/current/link")
+  delete_index(image_path, current_index_of_tag, true)
+end
 
 def debugging(val)
   puts "DEBUGGING: #{val}"
