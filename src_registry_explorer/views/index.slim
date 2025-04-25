@@ -267,7 +267,10 @@ javascript:
                     });
                     const responseText = await response.text(); // Wait for the response text
                     if (response.ok) {
-                        UIkit.notification({message: responseText, status: 'success', pos: 'top-right'});
+                        // UIkit.notification({message: responseText, status: 'success', pos: 'top-right'});
+                        UIkit.modal.confirm(`Deletion successful. Response text:\n${responseText}\nDo you want to reload this page to see updated structure?`).then(function (confirmed) {
+                          location.reload();
+                        }, {});
                     } else {
                         UIkit.notification({message: 'Error: ' + responseText, status: 'danger', pos: 'top-right'});
                     }
