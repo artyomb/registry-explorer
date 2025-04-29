@@ -3,30 +3,33 @@ ruby:
   require_relative '../utils/Node'
   require_relative '../utils/file_utils'
   require_relative '../utils/time_measurer'
+  require_relative '../utils/index_page_help_utils'
+
   margin_coef=1.5
   repo_path = $base_path + "/repositories"
 
-  images = Set.new
-  TimeMeasurer.start_measurement
-
-  tree = { children: {}, image: {}, total_images_amount: 0, required_blobs: Set.new, problem_blobs: Set.new }
-
-  flattened = nil
-  extract_images(images)
-  required_in_registry_blobs = Set.new
-  problem_blobs = Set.new
-  images.each do |image|
-    required_in_registry_blobs.merge(image[:required_blobs])
-    problem_blobs.merge(image[:problem_blobs])
-  end
-  TimeMeasurer.measure(:building_tree) do
-    build_tree(images, tree)
-  end
-  TimeMeasurer.measure(:flatten_tree) do
-    flattened = flatten_tree(tree)
-  end
-  puts TimeMeasurer.log_measurers
-  puts "Flattened tree size: #{flattened.size}"
+  #images = Set.new
+  #TimeMeasurer.start_measurement
+  #
+  #tree = { children: {}, image: {}, total_images_amount: 0, required_blobs: Set.new, problem_blobs: Set.new }
+  #
+  #flattened = nil
+  #extract_images(images)
+  #required_in_registry_blobs = Set.new
+  #problem_blobs = Set.new
+  #images.each do |image|
+  #  required_in_registry_blobs.merge(image[:required_blobs])
+  #  problem_blobs.merge(image[:problem_blobs])
+  #end
+  #TimeMeasurer.measure(:building_tree) do
+  #  build_tree(images, tree)
+  #end
+  #TimeMeasurer.measure(:flatten_tree) do
+  #  flattened = flatten_tree(tree)
+  #end
+  #puts TimeMeasurer.log_measurers
+  #puts "Flattened tree size: #{flattened.size}"
+  flattened, images, problem_blobs, required_in_registry_blobs = load_tree
 
 javascript:
     let viewMode = 'tree';
@@ -365,8 +368,8 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
             span #{tag[:name]}
           td.uk-text-right.cursor-pointer.uk-overflow-auto
             - latest_index_build_info = tag[:index_Nodes]&.select{ |nd| tag[:current_index_sha256] == nd[:node].sha256 }.first[:build_info]
-            - service_version ||= latest_index_build_info.dig(:labels, "org.opencontainers.image.version".to_sym)
-            - service_version ||= latest_index_build_info.dig(:labels, "org.label-schema.version".to_sym)
+            - service_version ||= latest_index_build_info.dig(:labels, "org.opencontainers.image.version".to_sym) if latest_index_build_info != nil
+            - service_version ||= latest_index_build_info.dig(:labels, "org.label-schema.version".to_sym) if latest_index_build_info != nil
             - if !service_version.nil?
               .inline-container
                 span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-right.uk-padding-remove-left= service_version

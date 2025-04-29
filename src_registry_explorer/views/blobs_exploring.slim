@@ -151,6 +151,20 @@ javascript:
         });
     }
 
+    async function delete_blob(sha256) {
+        const deleteUrl = `/delete_blob/${sha256}`;
+        UIkit.modal.alert("This function is not implemented yet.");
+        return;
+        UIkit.modal.confirm('Are you sure you want to delete this blob?').then(
+            async function (){
+                UIkit.notification({message: 'Deleting blob...', status: 'warning', pos: 'top-right'});
+            },
+            function () {
+                UIkit.notification({message: 'Deleting blob rejected', status: 'warning', pos: 'top-right'});
+            }
+        );
+    }
+
     async function loadBlobsData() {
         document.getElementById("loading-spinner-meta").style.display = "flex";
         document.getElementById("metadata-info").style.display = "none";
