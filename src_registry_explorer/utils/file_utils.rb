@@ -97,6 +97,7 @@ def extract_images(images=Set.new)
   images_paths = get_images_paths
   TimeMeasurer.measure(:images_paths_after) do
     images_paths.each do |image_path|
+      puts("Processing image: #{image_path}")
       subfolders = image_path.split('/')
       image_name = "/" + subfolders[subfolders.find_index('repositories') + 1..].join('/')
       current_img = { name: image_name, tags: Set.new, total_size: -1, required_blobs: Set.new, problem_blobs: Set.new }
@@ -117,6 +118,7 @@ def extract_images(images=Set.new)
 end
 
 def extract_tag(tag_path)
+  puts("Processing tag: #{tag_path}")
   current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: CachesManager.get_index_sha256(tag_path + "/current/link"), required_blobs: Set.new, size: -1, problem_blobs: Set.new }
   indexes_paths = Dir.glob(tag_path + "/index/sha256/*")
   current_tag[:index_Nodes] << extract_index(current_tag[:current_index_sha256])
@@ -146,6 +148,7 @@ def extract_tag(tag_path)
 end
 
 def extract_index(index_sha256)
+  puts("Processing index: #{index_sha256}")
   index_node_link = { path: ['Image'], node: CachesManager.get_node(nil, index_sha256, CachesManager.blob_size(index_sha256)) }
   index_node_link[:build_info] = CachesManager.build_metadata(index_node_link[:node].sha256) unless index_node_link[:node].actual_blob_size <= 0 || index_node_link[:node].get_problem_blobs.size > 0
   index_node_link[:build_info] ||= nil

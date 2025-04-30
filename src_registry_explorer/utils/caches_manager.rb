@@ -261,3 +261,33 @@ class CachesManager
     TimeMeasurer.log_measurers
   end
 end
+# 7dbb79e914894fa3f885e27b5eb19f0b30afdf2c (current index of stack-insight)
+# sha256:b017f4f91e71393f966e8063623fb49a61403f75946d0415022762d1e6a68adb (manifest of stack-insight(from current index))
+# {
+#   "schemaVersion": 2,
+#   "mediaType": "application/vnd.oci.image.index.v1+json",
+#   "manifests": [
+#     {
+#       "mediaType": "application/vnd.oci.image.manifest.v1+json",
+#       "digest": "sha256:b017f4f91e71393f966e8063623fb49a61403f75946d0415022762d1e6a68adb",
+#       "size": 2007,
+#       "platform": {
+#         "architecture": "amd64",
+#         "os": "linux"
+#       }
+#     },
+#     {
+#       "mediaType": "application/vnd.oci.image.manifest.v1+json",
+#       "digest": "sha256:5b6de226858a9ecf279e67b1cb018fbd340016397fbadc83eee3e5e853e779bf",
+#       "size": 567,
+#       "annotations": {
+#         "vnd.docker.reference.digest": "sha256:b017f4f91e71393f966e8063623fb49a61403f75946d0415022762d1e6a68adb",
+#         "vnd.docker.reference.type": "attestation-manifest"
+#       },
+#       "platform": {
+#         "architecture": "unknown",
+#         "os": "unknown"
+#       }
+#     }
+#   ]
+# }
