@@ -1,5 +1,6 @@
 def get_service_version
-  File.read(Dir.pwd + "/.version").strip
+  # File.read(Dir.pwd + "/.version").strip
+  ENV['ORG_OPENCONTAINERS_IMAGE_VERSION']
 end
 
 
