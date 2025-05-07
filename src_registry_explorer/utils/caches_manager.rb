@@ -160,6 +160,9 @@ class CachesManager
             end
           end
           result_hash
+        rescue Exception => e
+          puts "Error while building metadata for #{sha256_of_node}: #{e.message}"
+          nil
         end
       end
     TimeMeasurer.measure(:build_metadata_time) do
