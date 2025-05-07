@@ -151,7 +151,6 @@ def extract_index(index_sha256)
   puts("Processing index: #{index_sha256}")
   index_node_link = { path: ['Image'], node: CachesManager.get_node(nil, index_sha256, CachesManager.blob_size(index_sha256)) }
   index_node_link[:build_info] = CachesManager.build_metadata(index_node_link[:node].sha256) unless index_node_link[:node].actual_blob_size <= 0 || index_node_link[:node].get_problem_blobs.size > 0
-  index_node_link[:build_info] ||= nil
   index_node_link
 end
 
@@ -197,7 +196,7 @@ def get_images_paths
 
     Find.find(path_to_repositories) do |path|
       next unless File.directory?(path)
-      subdirs = %w[_layers _manifests _uploads]
+      subdirs = %w[_manifests]
       if subdirs.all? { |subdir| Dir.exist?(File.join(path, subdir)) }
         images_paths.add path
         Find.prune
