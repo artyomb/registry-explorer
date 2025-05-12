@@ -148,7 +148,7 @@ def extract_tag(tag_path)
 end
 
 def extract_index(index_sha256)
-  puts("Processing index: #{index_sha256}")
+  # puts("Processing index: #{index_sha256}")
   index_node_link = { path: ['Image'], node: CachesManager.get_node(nil, index_sha256, CachesManager.blob_size(index_sha256)) }
   index_node_link[:build_info] = CachesManager.build_metadata(index_node_link[:node].sha256) unless index_node_link[:node].actual_blob_size <= 0 || index_node_link[:node].get_problem_blobs.size > 0
   index_node_link
@@ -193,6 +193,8 @@ def get_images_paths
   path_to_repositories = $base_path + "/repositories"
   TimeMeasurer.measure(:images_paths_before) do
     images_paths = Set.new
+
+    return [] if !Dir.exist?(path_to_repositories)
 
     Find.find(path_to_repositories) do |path|
       next unless File.directory?(path)
