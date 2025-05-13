@@ -228,7 +228,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
               span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-right.uk-padding-remove-left= service_version
           - else
             .inline-container
-              span.uk-text-secondary= "Could not find labels to define version"
+              span.uk-text-secondary= "-"
         td.uk-text-right.uk-text-primary.cursor-pointer
           - git_pipeline_url ||= node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_PIPELINEURL) if !node_link.nil?
           - git_pipeline_url ||= node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_ACTIONURL) if !node_link.nil?
@@ -240,7 +240,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
                 span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-right.uk-padding-remove-left= git_pipeline_iid
           - else
             .inline-container
-              span.uk-text-secondary= "Could not find git pipeline url"
+              span.uk-text-secondary= "-"
         td.uk-text-right.uk-text-primary.cursor-pointer
           - git_commit_url ||= node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_COMMITURL) if !node_link.nil?
           - git_commit_url ||= node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_COMMITURL) if !node_link.nil?
@@ -253,7 +253,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
                 span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-right.uk-padding-remove-left= git_commit_short_sha
           - else
             .inline-container
-              span.uk-text-secondary="Could not find git commit url"
+              span.uk-text-secondary="-"
         td.uk-overflow-auto
           - commit_message ||= node_link.dig(:build_info, :gitlab_ci_cd_env, :COM_GITLAB_CI_COMMIT_MESSAGE) if !node_link.nil?
           - commit_message ||= node_link.dig(:build_info, :github_ci_cd_env, :COM_GITHUB_CI_COMMIT_MESSAGE) if !node_link.nil?

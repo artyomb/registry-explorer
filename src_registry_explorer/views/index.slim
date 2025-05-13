@@ -375,7 +375,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
                 span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-right.uk-padding-remove-left= service_version
             - else
               .inline-container
-                span.uk-text-secondary= "Could not find labels to define version"
+                span.uk-text-secondary= "-"
           td.align-text-right #{tag[:index_Nodes].size}
           / Adjust disk usage
           td.align-text-right #{represent_size(tag[:index_Nodes].first[:node].get_effective_size).to_s + (tag[:problem_blobs].size > 0 ? ' (some blobs not found)' : '')}
