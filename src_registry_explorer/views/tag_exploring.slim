@@ -148,6 +148,72 @@ javascript:
         }
     }
 
+    function validateDockerTag(tag) {
+        const errors = [];
+
+        if (typeof tag !== 'string') {
+            errors.push("Tag must be a string.");
+            return errors.join('\n'); // early return since nothing else makes sense
+        }
+
+        if (tag.length === 0) {
+            errors.push("Tag must not be empty.");
+        }
+
+        if (tag.length > 128) {
+            errors.push("Tag must not exceed 128 characters.");
+        }
+
+        if (/\s/.test(tag)) {
+            errors.push("Tag must not contain whitespace.");
+        }
+
+        if (!/^[A-Za-z0-9._-]*$/.test(tag)) {
+            errors.push("Tag contains invalid characters (only letters, digits, '.', '_', and '-' are allowed).");
+        }
+
+        if (/^[.-]/.test(tag)) {
+            errors.push("Tag must not start with a period (.) or dash (-).");
+        }
+
+        return errors.length === 0 ? "" : errors.join('\n');
+    }
+
+    async function tag_image(sha256) {
+        UIkit.modal.prompt('Enter new tag name for this image', 'Tag name').then(async function (newTagName) {
+            console.log('Prompted:', newTagName)
+            const errorMessage = validateDockerTag(newTagName);
+            // check if error message is empty
+            if (errorMessage !== "") {
+                UIkit.notification({message: errorMessage, status: 'danger', pos: 'top-right'});
+                return;
+            }
+            const hostURL = imagesRegistryHost == null || imagesRegistryHost === '' ? window.location.host : imagesRegistryHost;
+            const imageString = `${hostURL}${pathToImage}:${tagString}@sha256:${sha256}`;
+            const newTagString = `${hostURL}${pathToImage}:${newTagName}`;
+            try {
+                const url = `/tag-from-image`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        image: imageString,
+                        new_tag: newTagString
+                    })
+                });
+
+                const responseText = await response.text(); // Wait for the response text
+
+                if (response.ok) {
+                    UIkit.notification({message: responseText, status: 'success', pos: 'top-right'});
+                } else {
+                    UIkit.notification({message: 'Error: ' + responseText, status: 'danger', pos: 'top-right'});
+                }
+            } catch (error) {
+                UIkit.notification({message: 'Error: ' + error, status: 'danger', pos: 'top-right'});
+            }
+        });
+    }
+
 sass:
   .copy-btn
     margin-left: 3.5rem
@@ -266,4 +332,5 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
           - if !node_link[:node].sha256.nil?
             - if !$read_only_mode
               span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: trash" uk-tooltip="title: #{'Delete chosen image'}; cls: uk-active; delay: 500;" onclick="delete_image(`#{node_link[:node].sha256}`, true)"
-            span.uk-icon-link.cursor-pointer uk-icon="icon: copy" uk-tooltip="title: #{'Copy pulling this image command'}; cls: uk-active; delay: 500;" onclick="copy_pull_command(`#{node_link[:node].sha256}`)"
+            span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: copy" uk-tooltip="title: #{'Copy pulling this image command'}; cls: uk-active; delay: 500;" onclick="copy_pull_command(`#{node_link[:node].sha256}`)"
+            span.uk-icon-link.cursor-pointer uk-icon="icon: tag" uk-tooltip="title: #{'Create new tag with this image'}; cls: uk-active; delay: 500;" onclick="tag_image(`#{node_link[:node].sha256}`)"

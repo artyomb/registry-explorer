@@ -7,6 +7,7 @@ require 'net/http'
 require 'cgi'
 require_relative '../utils/file_utils'
 require_relative '../utils/garbage_collection'
+require 'open3'
 
 class RegistryExplorerFront < Sinatra::Base
   use Rack::SassC, css_location: "#{__dir__}/../public/css", scss_location: "#{__dir__}/../css",
@@ -247,6 +248,55 @@ class RegistryExplorerFront < Sinatra::Base
   end
 
   get '/blobs-exploring',         &->() { slim :blobs_exploring }
+
+  post '/tag-from-image' do
+    boby = request.body.read
+    data = JSON.parse(boby, symbolize_names: true)
+
+    current_image_str = data[:image]
+    new_tag_string = data[:new_tag]
+
+    current_image_str = current_image_str.gsub('localhost:7000', 'localhost:5000') if !ENV['DBG'].nil?
+    new_tag_string = new_tag_string.gsub('localhost:7000', 'localhost:5000') if !ENV['DBG'].nil?
+    return [400, "Please provide a valid image string and tag string."] if current_image_str.nil? || new_tag_string.nil?
+
+    # healthcheck docker
+    docker_cmd = ['docker', 'version']
+    puts "Running command to check docker version: #{docker_cmd.join(' ')}"
+    docker_output, docker_err, docker_status = Open3.capture3(*docker_cmd)
+    if !docker_status.success?
+      error_message = "Failed to check docker version: #{docker_err}"
+      return [400, error_message]
+    end
+
+    pull_cmd = ['docker', 'pull', current_image_str]
+    puts "Running command to pull image: #{pull_cmd.join(' ')}"
+    pull_output, pull_err, pull_status = Open3.capture3(*pull_cmd)
+    if !pull_status.success?
+      error_message = "Failed to pull image: #{pull_err}"
+      puts "Failed to pull image: #{pull_err}"
+      return [400, error_message]
+    end
+
+    tag_cmd = ['docker', 'tag', current_image_str, new_tag_string]
+    puts "Running command to tag image: #{tag_cmd.join(' ')}"
+    tag_output, tag_err, tag_status = Open3.capture3(*tag_cmd)
+    if !tag_status.success?
+      error_message = "Failed to tag image: #{tag_err}"
+      puts "Failed to tag image: #{tag_err}"
+      return [400, error_message]
+    end
+
+    push_cmd = ['docker', 'push', new_tag_string]
+    puts "Running command to push image: #{push_cmd.join(' ')}"
+    push_output, push_err, push_status = Open3.capture3(*push_cmd)
+    if !push_status.success?
+      error_message = "Failed to push image: #{push_err}"
+      puts "Failed to push image: #{push_err}"
+      return [400, error_message]
+    end
+    [200, "Tag created successfully"]
+  end
 
   get '/blobs-exploring-data' do
     # REFRESHING CACHE WITH EXPLORING ATTESTATIONS
