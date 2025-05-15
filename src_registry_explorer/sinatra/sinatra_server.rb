@@ -253,48 +253,68 @@ class RegistryExplorerFront < Sinatra::Base
     boby = request.body.read
     data = JSON.parse(boby, symbolize_names: true)
 
-    current_image_str = data[:image]
-    new_tag_string = data[:new_tag]
+    # current_image_str = data[:image]
+    # new_tag_string = data[:new_tag]
+    #
+    # current_image_str = current_image_str.gsub('localhost:7000', 'localhost:5000') if !ENV['DBG'].nil?
+    # new_tag_string = new_tag_string.gsub('localhost:7000', 'localhost:5000') if !ENV['DBG'].nil?
+    # return [400, "Please provide a valid image string and tag string."] if current_image_str.nil? || new_tag_string.nil?
+    #
+    # # healthcheck docker
+    # docker_cmd = ['docker', 'version']
+    # puts "Running command to check docker version: #{docker_cmd.join(' ')}"
+    # docker_output, docker_err, docker_status = Open3.capture3(*docker_cmd)
+    # if !docker_status.success?
+    #   error_message = "Failed to check docker version: #{docker_err}"
+    #   return [400, error_message]
+    # end
+    #
+    # pull_cmd = ['docker', 'pull', current_image_str]
+    # puts "Running command to pull image: #{pull_cmd.join(' ')}"
+    # pull_output, pull_err, pull_status = Open3.capture3(*pull_cmd)
+    # if !pull_status.success?
+    #   error_message = "Failed to pull image: #{pull_err}"
+    #   puts "Failed to pull image: #{pull_err}"
+    #   return [400, error_message]
+    # end
+    #
+    # tag_cmd = ['docker', 'tag', current_image_str, new_tag_string]
+    # puts "Running command to tag image: #{tag_cmd.join(' ')}"
+    # tag_output, tag_err, tag_status = Open3.capture3(*tag_cmd)
+    # if !tag_status.success?
+    #   error_message = "Failed to tag image: #{tag_err}"
+    #   puts "Failed to tag image: #{tag_err}"
+    #   return [400, error_message]
+    # end
+    #
+    # push_cmd = ['docker', 'push', new_tag_string]
+    # puts "Running command to push image: #{push_cmd.join(' ')}"
+    # push_output, push_err, push_status = Open3.capture3(*push_cmd)
+    # if !push_status.success?
+    #   error_message = "Failed to push image: #{push_err}"
+    #   puts "Failed to push image: #{push_err}"
+    #   return [400, error_message]
+    # end
+    # [200, "Tag created successfully"]
+    #############################################################################################
+    path_to_image = data[:path_to_image]
+    old_tag = data[:old_tag]
+    new_tag = data[:new_tag]
+    image_sha256 = data[:image_sha256]
+    return [400, "Please provide a valid path to image, old tag, new tag and image sha256."] if path_to_image.nil? || old_tag.nil? || new_tag.nil? || image_sha256.nil?
+    full_image_path = $base_path + "/repositories" + path_to_image
+    return [400, "Please provide a valid path to image."] if !Dir.exist?(full_image_path + "/_manifests/tags")
+    return [400, "Such tag already exists."] if Dir.exist?(full_image_path + "/_manifests/tags/" + new_tag)
 
-    current_image_str = current_image_str.gsub('localhost:7000', 'localhost:5000') if !ENV['DBG'].nil?
-    new_tag_string = new_tag_string.gsub('localhost:7000', 'localhost:5000') if !ENV['DBG'].nil?
-    return [400, "Please provide a valid image string and tag string."] if current_image_str.nil? || new_tag_string.nil?
+    Dir.mkdir(full_image_path + "/_manifests/tags/" + new_tag)
+    Dir.mkdir(full_image_path + "/_manifests/tags/" + new_tag + "/current")
+    File.write(full_image_path + "/_manifests/tags/" + new_tag + "/current/link", "sha256:#{image_sha256}")
 
-    # healthcheck docker
-    docker_cmd = ['docker', 'version']
-    puts "Running command to check docker version: #{docker_cmd.join(' ')}"
-    docker_output, docker_err, docker_status = Open3.capture3(*docker_cmd)
-    if !docker_status.success?
-      error_message = "Failed to check docker version: #{docker_err}"
-      return [400, error_message]
-    end
+    Dir.mkdir(full_image_path + "/_manifests/tags/" + new_tag + "/index")
+    Dir.mkdir(full_image_path + "/_manifests/tags/" + new_tag + "/index/sha256")
+    Dir.mkdir(full_image_path + "/_manifests/tags/" + new_tag + "/index/sha256/#{image_sha256}")
+    File.write(full_image_path + "/_manifests/tags/" + new_tag + "/index/sha256/#{image_sha256}/link", "sha256:#{image_sha256}")
 
-    pull_cmd = ['docker', 'pull', current_image_str]
-    puts "Running command to pull image: #{pull_cmd.join(' ')}"
-    pull_output, pull_err, pull_status = Open3.capture3(*pull_cmd)
-    if !pull_status.success?
-      error_message = "Failed to pull image: #{pull_err}"
-      puts "Failed to pull image: #{pull_err}"
-      return [400, error_message]
-    end
-
-    tag_cmd = ['docker', 'tag', current_image_str, new_tag_string]
-    puts "Running command to tag image: #{tag_cmd.join(' ')}"
-    tag_output, tag_err, tag_status = Open3.capture3(*tag_cmd)
-    if !tag_status.success?
-      error_message = "Failed to tag image: #{tag_err}"
-      puts "Failed to tag image: #{tag_err}"
-      return [400, error_message]
-    end
-
-    push_cmd = ['docker', 'push', new_tag_string]
-    puts "Running command to push image: #{push_cmd.join(' ')}"
-    push_output, push_err, push_status = Open3.capture3(*push_cmd)
-    if !push_status.success?
-      error_message = "Failed to push image: #{push_err}"
-      puts "Failed to push image: #{push_err}"
-      return [400, error_message]
-    end
     [200, "Tag created successfully"]
   end
 
