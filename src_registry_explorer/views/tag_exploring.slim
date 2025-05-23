@@ -180,7 +180,7 @@ javascript:
     }
 
     async function tag_image(sha256) {
-        UIkit.modal.prompt('Enter new tag name for this image', 'Tag name').then(async function (newTagName) {
+        UIkit.modal.prompt('Enter new tag name for this image<br><br><div style="padding: 1rem; background-color: #faa05a; color: #ffffff">WARNING<br> if you will delete one of these tags, when they share the same \'current\' image, both of them will be deleted</span>', 'Tag name').then(async function (newTagName) {
             console.log('Prompted:', newTagName)
             const errorMessage = validateDockerTag(newTagName);
             // check if error message is empty
@@ -253,6 +253,9 @@ sass:
           span.icon-padding-right uk-icon="icon: database"
           span.uk-text-bold Size:
           span= image_tag_size.nil? ? "Size unknown" : image_tag_size
+h1.uk-margin-remove-top
+  span Image 
+  a href="/image-exploring#{image_in_registry_path}"= image_in_registry_path[1..-1]
 .uk-flex.uk-flex-row.uk-padding-small.uk-padding-remove-horizontal.uk-margin.uk-margin-remove-left.uk-margin-remove-right.uk-flex-between.border-top.border-bottom
   - if !image_source.nil?
     div

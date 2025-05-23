@@ -11,6 +11,138 @@ ruby:
   flattened, images, problem_blobs, required_for_image_blobs = load_image_tree(current_tag_image_path)
 
 javascript:
+    let imagesRegistryHost = #{{$reg_host.to_json}};
+    let pathToImage = '/' + #{{tag_image_path.to_json}};
+
+    function validateDockerTag(tag) {
+        const errors = [];
+
+        if (typeof tag !== 'string') {
+            errors.push("Tag must be a string.");
+            return errors.join('\n'); // early return since nothing else makes sense
+        }
+
+        if (tag.length === 0) {
+            errors.push("Tag must not be empty.");
+        }
+
+        if (tag.length > 128) {
+            errors.push("Tag must not exceed 128 characters.");
+        }
+
+        if (/\s/.test(tag)) {
+            errors.push("Tag must not contain whitespace.");
+        }
+
+        if (!/^[A-Za-z0-9._-]*$/.test(tag)) {
+            errors.push("Tag contains invalid characters (only letters, digits, '.', '_', and '-' are allowed).");
+        }
+
+        if (/^[.-]/.test(tag)) {
+            errors.push("Tag must not start with a period (.) or dash (-).");
+        }
+
+        return errors.length === 0 ? "" : errors.join('\n');
+    }
+
+    async function tag_current_image(event, tagString, currentIndexSha256) {
+        event.stopPropagation();
+        UIkit.modal.prompt('Enter new tag name for this image<br><br><div style="padding: 1rem; background-color: #faa05a; color: #ffffff">WARNING<br> if you will delete one of these tags, when they share the same \'current\' image, both of them will be deleted</span>', 'Tag name').then(async function (newTagName) {
+            console.log('Prompted:', newTagName)
+            const errorMessage = validateDockerTag(newTagName);
+            // check if error message is empty
+            if (errorMessage !== "") {
+                UIkit.notification({message: errorMessage, status: 'danger', pos: 'top-right'});
+                return;
+            }
+
+            try {
+                // const url = `/tag-from-image`;
+                // const hostURL = imagesRegistryHost == null || imagesRegistryHost === '' ? window.location.host : imagesRegistryHost;
+                // const imageString = `${hostURL}${pathToImage}:${tagString}@sha256:${sha256}`;
+                // const newTagString = `${hostURL}${pathToImage}:${newTagName}`;
+                // const response = await fetch(url, {
+                //     method: 'POST',
+                //     body: JSON.stringify({
+                //         image: imageString,
+                //         new_tag: newTagString
+                //     })
+                // });
+                ////////////////////////////////////////////////////////////////////////////
+
+                const url = `/tag-from-image`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        path_to_image: pathToImage,
+                        old_tag: tagString,
+                        new_tag: newTagName,
+                        image_sha256: currentIndexSha256
+                    })
+                });
+
+                const responseText = await response.text(); // Wait for the response text
+
+                if (response.ok) {
+                    tryToUseURL = true;
+                    UIkit.notification({message: responseText, status: 'success', pos: 'top-right'});
+                    UIkit.notification({message: 'Refresh this page to see new tag', status: 'success', pos: 'top-right'});
+                } else {
+                    UIkit.notification({message: 'Error: ' + responseText, status: 'danger', pos: 'top-right'});
+                }
+            } catch (error) {
+                UIkit.notification({message: 'Error: ' + error, status: 'danger', pos: 'top-right'});
+            }
+        });
+    }
+
+    async function copy_pull_command(event, tagString, currentIndexSha256) {
+        event.stopPropagation();
+        const pullUrl = imagesRegistryHost == null || imagesRegistryHost === '' ? window.location.host : imagesRegistryHost;
+        try {
+            const command_text = `docker pull ${pullUrl}${pathToImage}@sha256:${currentIndexSha256}`;
+            navigator.clipboard.writeText(command_text).then(function () {
+                UIkit.notification({
+                    message: `Command '${command_text}' copied to clipboard`,
+                    status: 'success',
+                    pos: 'top-right'
+                });
+            });
+        } catch (error) {
+            UIkit.notification({message: 'Error: ' + error, status: 'danger', pos: 'top-right'});
+        }
+    }
+
+    async function delete_tag(event, tagString, currentIndexSha256) {
+        event.stopPropagation();
+        delete_by_sha256(currentIndexSha256, tagString, 'Are you sure you want to delete this tag?');
+    }
+
+    async function delete_by_sha256(sha256, tagString, confirmationMessage) {
+        // handle confirmation
+        const tableElement = document.getElementById(tagString);
+        UIkit.modal.confirm(confirmationMessage).then(async function () {
+            try {
+                const url = `/delete-tag` + pathToImage + '/$sha256/' + sha256;
+                const response = await fetch(url, {
+                    method: 'DELETE'
+                });
+                const responseText = await response.text(); // Wait for the response text
+
+                if (response.ok) {
+                    tryToUseURL = true;
+                    UIkit.notification({message: responseText, status: 'success', pos: 'top-right'});
+                } else {
+                    UIkit.notification({message: 'Error: ' + responseText, status: 'danger', pos: 'top-right'});
+                }
+            } catch (error) {
+                UIkit.notification({message: 'Error: ' + error, status: 'danger', pos: 'top-right'});
+            }
+        }, function () {
+            return false;
+        });
+    }
+
     function updateRowStripes() {
         const visibleRows = [...document.querySelectorAll('tbody tr.tree-node:not(.hidden)')];
 
@@ -70,17 +202,19 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
       th.uk-text-right style="width: 10%" Image size
       th.uk-text-right style="width: 10%" Disk usage
       th style="width: 10%" Created at
+      th.uk-text-right Actions
   tbody
     - flattened.each do |node|
       - warn_node_condition = node[:problem_blobs].size > 0 || (!node[:image].nil? && node[:image].size > 0 && node[:image][:problem_blobs].size > 0)
       - node[:image][:tags]&.each do |tag|
-        tr.tree-node class="#{tag[:problem_blobs].size > 0 ? 'warning-background' : ''}" data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}" data-image-name="#{node[:image][:name]}" data-tag-name="#{tag[:name]}"
+        tr.tree-node class="#{tag[:problem_blobs].size > 0 ? 'warning-background' : ''}" data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}" data-image-name="#{node[:image][:name]}" data-tag-name="#{tag[:name]}" id="#{tag[:name]}"
           td
             - if tag[:problem_blobs].size != 0
               span.warning-icon uk-tooltip="title: #{(tag[:problem_blobs].size == 0) ? 'Full size of tag' : "Some layers of tag not found:<br>" + tag[:problem_blobs].map{|s| s[0..25] + '...' }.join('<br>')}; delay: 500;"  uk-icon="icon: warning"
             span uk-icon="icon: tag" style="padding: 0.5rem"
             span #{tag[:name]}
-          - latest_index_build_info = tag[:index_Nodes]&.select{ |nd| tag[:current_index_sha256] == nd[:node].sha256 }.first[:build_info]
+          - current_image_node = tag[:index_Nodes]&.select{ |nd| tag[:current_index_sha256] == nd[:node].sha256 }.first
+          - latest_index_build_info = current_image_node[:build_info]
           - if latest_index_build_info != nil
             td.uk-text-right.cursor-pointer.uk-overflow-auto
               - service_version ||= latest_index_build_info.dig(:labels, "org.opencontainers.image.version".to_sym)
@@ -126,9 +260,16 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
             td.uk-text-right.uk-text-secondary= "-"
             td.uk-text-right.uk-text-secondary= "-"
             td.uk-text-right.uk-text-secondary= "-"
+            td.uk-text-right.uk-text-secondary= "-"
           td.align-text-right #{tag[:index_Nodes].size}
           / Adjust disk usage
           td.align-text-right #{represent_size(tag[:index_Nodes].first[:node].get_effective_size).to_s + (tag[:problem_blobs].size > 0 ? ' (some blobs not found)' : '')}
           td.align-text-right #{represent_size(tag[:size]).to_s + (tag[:problem_blobs].size > 0 ? ' (some blobs not found)' : '')}
           - node_date_time = tag[:index_Nodes]&.select{ |nd| tag[:current_index_sha256] == nd[:node].sha256 }.first[:node].created_at
           td #{node_date_time.nil? ? 'Unknown' : represent_datetime(node_date_time)}
+          td.align-text-right
+            - if !current_image_node[:node].sha256.nil?
+              - if !$read_only_mode
+                span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: trash" uk-tooltip="title: #{'Delete chosen tag'}; cls: uk-active; delay: 500;" onclick="delete_tag(event, `#{tag[:name]}`, `#{current_image_node[:node].sha256}`)"
+              span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: copy" uk-tooltip="title: #{'Copy pulling this tag'}; cls: uk-active; delay: 500;" onclick="copy_pull_command(event, `#{tag[:name]}`, `#{current_image_node[:node].sha256}`)"
+              span.uk-icon-link.cursor-pointer uk-icon="icon: tag" uk-tooltip="title: #{'Create new tag with from current image'}; cls: uk-active; delay: 500;" onclick="tag_current_image(event, `#{tag[:name]}`, `#{current_image_node[:node].sha256}`)"
