@@ -59,10 +59,13 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
   thead
     tr
       th Tag name
-      th style="width: 10%; text-align: right" Version
-      th style="width: 10%; text-align: right" Images amount
-      th style="width: 10%; text-align: right" Image size
-      th style="width: 10%; text-align: right" Disk usage
+      th.uk-text-right style="width: 10%" Latest version
+      th.uk-text-right style="width: 10%" Latest Git Pipeline
+      th.uk-text-right style="width: 20%" Latest Git Commit
+      th style="width: 25%" Latest Commit Message
+      th.uk-text-right style="width: 10%" Images amount
+      th.uk-text-right style="width: 10%" Image size
+      th.uk-text-right style="width: 10%" Disk usage
       th style="width: 10%" Created at
   tbody
     - flattened.each do |node|
@@ -72,19 +75,54 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
           td
             - if tag[:problem_blobs].size != 0
               span.warning-icon uk-tooltip="title: #{(tag[:problem_blobs].size == 0) ? 'Full size of tag' : "Some layers of tag not found:<br>" + tag[:problem_blobs].map{|s| s[0..25] + '...' }.join('<br>')}; delay: 500;"  uk-icon="icon: warning"
-            span style="padding-left: #{node[:level] + 1}em"
             span uk-icon="icon: tag" style="padding: 0.5rem"
             span #{tag[:name]}
-          td.uk-text-right.cursor-pointer.uk-overflow-auto
-            - latest_index_build_info = tag[:index_Nodes]&.select{ |nd| tag[:current_index_sha256] == nd[:node].sha256 }.first[:build_info]
-            - service_version ||= latest_index_build_info.dig(:labels, "org.opencontainers.image.version".to_sym) if latest_index_build_info != nil
-            - service_version ||= latest_index_build_info.dig(:labels, "org.label-schema.version".to_sym) if latest_index_build_info != nil
-            - if !service_version.nil?
-              .inline-container
-                span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-right.uk-padding-remove-left= service_version
-            - else
-              .inline-container
-                span.uk-text-secondary= "-"
+          - latest_index_build_info = tag[:index_Nodes]&.select{ |nd| tag[:current_index_sha256] == nd[:node].sha256 }.first[:build_info]
+          - if latest_index_build_info != nil
+            td.uk-text-right.cursor-pointer.uk-overflow-auto
+              - service_version ||= latest_index_build_info.dig(:labels, "org.opencontainers.image.version".to_sym)
+              - service_version ||= latest_index_build_info.dig(:labels, "org.label-schema.version".to_sym)
+              - if !service_version.nil?
+                .inline-container
+                  span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-right.uk-padding-remove-left= service_version
+              - else
+                .inline-container
+                  span.uk-text-secondary= "-"
+            td.uk-text-right.uk-text-primary.cursor-pointer
+              - git_pipeline_url ||= latest_index_build_info.dig(:gitlab_ci_cd_env, :COM_GITLAB_CI_PIPELINEURL)
+              - git_pipeline_url ||= latest_index_build_info.dig(:github_ci_cd_env, :COM_GITHUB_CI_ACTIONURL)
+              - git_pipeline_iid ||= latest_index_build_info.dig(:gitlab_ci_cd_env, :COM_GITLAB_CI_PIPELINE_IID)
+              - git_pipeline_iid ||= git_pipeline_url.nil? ? nil : git_pipeline_url.split('/').last
+              - if !git_pipeline_url.nil?
+                a href="#{git_pipeline_url}"
+                  .inline-container
+                    span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-right.uk-padding-remove-left= git_pipeline_iid
+              - else
+                .inline-container
+                  span.uk-text-secondary= "-"
+            td.uk-text-right.uk-text-primary.cursor-pointer
+              - git_commit_url ||= latest_index_build_info.dig(:gitlab_ci_cd_env, :COM_GITLAB_CI_COMMITURL)
+              - git_commit_url ||= latest_index_build_info.dig(:github_ci_cd_env, :COM_GITHUB_CI_COMMITURL)
+              - git_commit_short_sha ||= latest_index_build_info.dig(:gitlab_ci_cd_env, :COM_GITLAB_CI_COMMIT_SHORT_SHA)
+              - git_commit_short_sha ||= latest_index_build_info.dig(:github_ci_cd_env, :COM_GITHUB_CI_COMMIT_SHORT_SHA)
+              - if !git_commit_url.nil?
+                a.uk-flex.uk-flex-right href="#{git_commit_url}"
+                  span uk-icon="icon: git-branch"
+                  .inline-container.uk-text-right
+                    span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-right.uk-padding-remove-left= git_commit_short_sha
+              - else
+                .inline-container
+                  span.uk-text-secondary= "-"
+            td.uk-overflow-auto
+              - commit_message ||= latest_index_build_info.dig(:gitlab_ci_cd_env, :COM_GITLAB_CI_COMMIT_MESSAGE)
+              - commit_message ||= latest_index_build_info.dig(:github_ci_cd_env, :COM_GITHUB_CI_COMMIT_MESSAGE)
+              - if !commit_message.nil?
+                .inline-container
+                  span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-right.uk-padding-remove-left.white-space-pre= commit_message.gsub('\n', "\n")
+          - else
+            td.uk-text-right.uk-text-secondary= "-"
+            td.uk-text-right.uk-text-secondary= "-"
+            td.uk-text-right.uk-text-secondary= "-"
           td.align-text-right #{tag[:index_Nodes].size}
           / Adjust disk usage
           td.align-text-right #{represent_size(tag[:index_Nodes].first[:node].get_effective_size).to_s + (tag[:problem_blobs].size > 0 ? ' (some blobs not found)' : '')}
