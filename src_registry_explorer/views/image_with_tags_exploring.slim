@@ -8,7 +8,7 @@ ruby:
   margin_coef=1.5
   repo_path = $base_path + "/repositories"
   current_tag_image_path = repo_path + "/#{tag_image_path}"
-  flattened, images, problem_blobs, required_in_registry_blobs = load_image_tree(current_tag_image_path)
+  flattened, images, problem_blobs, required_for_image_blobs = load_image_tree(current_tag_image_path)
 
 javascript:
     function updateRowStripes() {
@@ -33,7 +33,7 @@ javascript:
         updateRowStripes();
     });
 
-/ h1.uk-h1= "Docker registry content (#{images.map{|img| img[:tags].map{ |tag| tag[:index_Nodes].size }.sum}.sum} images in #{images.map{|img| img[:tags].size}.sum} tags, total size = #{represent_size(CachesManager.get_repo_size("REPOSITORY", required_in_registry_blobs))})"
+/ h1.uk-h1= "Docker registry content (#{images.map{|img| img[:tags].map{ |tag| tag[:index_Nodes].size }.sum}.sum} images in #{images.map{|img| img[:tags].size}.sum} tags, total size = #{represent_size(CachesManager.get_repo_size("REPOSITORY", required_for_image_blobs))})"
 .uk-flex.uk-padding.uk-padding-remove-horizontal.uk-width-expand.uk-flex-between.align-items-center.uk-padding-remove-bottom
   h1.uk-h1.uk-margin-remove= "Image #{tag_image_path}"
   .uk-flex.uk-flex-middle.uk-flex-between.small-column-gap.uk-overflow-auto
@@ -53,7 +53,7 @@ javascript:
     a.link-tag.uk-label.label-paddings.unset-text-transform.align-content-center.border-around href="/blobs-exploring"
       span.icon-padding-right uk-icon="icon: database"
       span.uk-text-bold Disk usage:
-      span.icon-padding-right= " #{represent_size(CachesManager.get_repo_size("REPOSITORY", required_in_registry_blobs))}"
+      span.icon-padding-right= " #{represent_size(CachesManager.get_repo_size(current_tag_image_path, required_for_image_blobs))}"
 hr
 table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
   thead
