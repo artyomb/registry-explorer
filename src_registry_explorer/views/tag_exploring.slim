@@ -294,7 +294,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
             span.uk-padding-remove uk-icon="icon: check" style="color: green; min-width: max-content; padding: 0.5rem"
         td
           .inline-container-small
-            a href="/image-exploring/#{img_pth_param + '/' + tag_string}/#{node_link[:node].sha256}" uk-tooltip="title: #{node_link[:node].sha256}; cls: uk-active; delay: 500;"= node_link[:node].sha256[0..6] + "..."
+            a href="/image-exploring/#{img_pth_param + '/' + tag_string}/sha256:#{node_link[:node].sha256}" uk-tooltip="title: #{node_link[:node].sha256}; cls: uk-active; delay: 500;"= node_link[:node].sha256[0..6] + "..."
           a.to-be-hidden.uk-hidden
             span.copy-btn.cursor-pointer data-buffervalue="#{node_link[:node].sha256}" uk-icon="icon: copy"
           - current_node_size = node_link[:node].actual_blob_size.nil? ? "-" : represent_size(node_link[:node].actual_blob_size)

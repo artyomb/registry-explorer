@@ -35,7 +35,12 @@ class RegistryExplorerFront < Sinatra::Base
   end
   get '/image-exploring/*' do
     tag_image_path = params[:splat].first || '' # expect following url: /image-exploring/re/po/si/to/ry/tag_name/imgsha256
-    slim :image_exploring, locals: { tag_image_path: tag_image_path }
+    if tag_image_path.include?('sha256:')
+      slim :image_exploring, locals: { tag_image_path: tag_image_path }
+    else
+      slim :image_with_tags_exploring, locals: { tag_image_path: tag_image_path }
+    end
+
   end
   get '/blob-exploring/:sha256', &->() {
     json_content = begin

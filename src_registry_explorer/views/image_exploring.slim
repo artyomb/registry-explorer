@@ -9,7 +9,7 @@ ruby:
   img_pth_param = splited_path[0..-3].join('/')
   image_in_registry_path = "/" + img_pth_param
   tag_string = splited_path[-2]
-  image_sha256 = tag_image_path[(tag_image_path.rindex('/') + 1)..]
+  image_sha256 = tag_image_path[(tag_image_path.rindex('/') + 1)..].split(':').last
   path_to_repositories = $base_path + "/repositories"
   full_path_to_image_tag = path_to_repositories + image_in_registry_path + '/_manifests/tags/' + tag_string
   index_node_link = nil

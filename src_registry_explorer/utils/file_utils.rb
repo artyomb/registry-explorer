@@ -97,24 +97,29 @@ def extract_images(images=Set.new)
   images_paths = get_images_paths
   TimeMeasurer.measure(:images_paths_after) do
     images_paths.each do |image_path|
-      puts("Processing image: #{image_path}")
-      subfolders = image_path.split('/')
-      image_name = "/" + subfolders[subfolders.find_index('repositories') + 1..].join('/')
-      current_img = { name: image_name, tags: Set.new, total_size: -1, required_blobs: Set.new, problem_blobs: Set.new }
-      tag_paths = Dir.glob(image_path + "/_manifests/tags/*").select { |f| File.directory?(f) }
-      TimeMeasurer.measure(:creating_tags) do
-        tag_paths.map { |tag_path| extract_tag(tag_path) }.each do |tag|
-          current_img[:tags].add(tag)
-          current_img[:required_blobs].merge(tag[:required_blobs])
-          current_img[:problem_blobs].merge(tag[:problem_blobs])
-        end
-      end
-      next if current_img[:tags].empty?
-      images.add current_img
-      current_img[:total_size] = CachesManager.get_repo_size(image_path, current_img[:required_blobs])
+      current_img = extract_image_with_tags(image_path)
+      images.add(current_img) if !current_img[:tags].empty?
     end
   end
   images
+end
+
+def extract_image_with_tags(image_path)
+  puts("Processing image: #{image_path}")
+  subfolders = image_path.split('/')
+  image_name = "/" + subfolders[subfolders.find_index('repositories') + 1..].join('/')
+  current_img = { name: image_name, tags: Set.new, total_size: -1, required_blobs: Set.new, problem_blobs: Set.new }
+  tag_paths = Dir.glob(image_path + "/_manifests/tags/*").select { |f| File.directory?(f) }
+  TimeMeasurer.measure(:creating_tags) do
+    tag_paths.map { |tag_path| extract_tag(tag_path) }.each do |tag|
+      current_img[:tags].add(tag)
+      current_img[:required_blobs].merge(tag[:required_blobs])
+      current_img[:problem_blobs].merge(tag[:problem_blobs])
+    end
+  end
+  return current_img if current_img[:tags].empty?
+  current_img[:total_size] = CachesManager.get_repo_size(image_path, current_img[:required_blobs])
+  current_img
 end
 
 def extract_tag(tag_path)

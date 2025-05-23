@@ -1,0 +1,93 @@
+ruby:
+  require 'benchmark'
+  require_relative '../utils/Node'
+  require_relative '../utils/file_utils'
+  require_relative '../utils/time_measurer'
+  require_relative '../utils/index_page_help_utils'
+
+  margin_coef=1.5
+  repo_path = $base_path + "/repositories"
+  current_tag_image_path = repo_path + "/#{tag_image_path}"
+  flattened, images, problem_blobs, required_in_registry_blobs = load_image_tree(current_tag_image_path)
+
+javascript:
+    function updateRowStripes() {
+        const visibleRows = [...document.querySelectorAll('tbody tr.tree-node:not(.hidden)')];
+
+        visibleRows.forEach((row, index) => {
+            if (index % 2 === 0) {
+                row.classList.add('striped-even');
+                row.classList.remove('striped-odd');
+            } else {
+                row.classList.add('striped-odd');
+                row.classList.remove('striped-even');
+            }
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        document.querySelector('body').addEventListener('click', function (event) {
+            const row = event.target.closest('tr[data-href]');
+            if (row) window.location.href = row.dataset.href;
+        });
+        updateRowStripes();
+    });
+
+/ h1.uk-h1= "Docker registry content (#{images.map{|img| img[:tags].map{ |tag| tag[:index_Nodes].size }.sum}.sum} images in #{images.map{|img| img[:tags].size}.sum} tags, total size = #{represent_size(CachesManager.get_repo_size("REPOSITORY", required_in_registry_blobs))})"
+.uk-flex.uk-padding.uk-padding-remove-horizontal.uk-width-expand.uk-flex-between.align-items-center.uk-padding-remove-bottom
+  h1.uk-h1.uk-margin-remove= "Image #{tag_image_path}"
+  .uk-flex.uk-flex-middle.uk-flex-between.small-column-gap.uk-overflow-auto
+    .uk-label.label-paddings.unset-text-transform.align-content-center.custom-label-background
+      span.icon-padding-right uk-icon="icon: tag"
+      span.uk-text-bold Tags:
+      span= " #{images.map{|img| img[:tags].size}.sum}"
+    .uk-label.label-paddings.unset-text-transform.align-content-center.custom-label-background
+      / span uk-icon="icon: hashtag"
+      span.icon-padding-right uk-icon="icon: album"
+      span.uk-text-bold Images :
+      span= " #{images.map{|img| img[:tags].map{ |tag| tag[:index_Nodes].size }.sum}.sum}"
+    a.link-tag.uk-label.label-paddings.unset-text-transform.align-content-center.border-around href="/registry-healthcheck"
+      span.icon-padding-right uk-icon="icon: ban"
+      span.uk-text-bold Problem blobs:
+      span.icon-padding-right= " #{problem_blobs.size}"
+    a.link-tag.uk-label.label-paddings.unset-text-transform.align-content-center.border-around href="/blobs-exploring"
+      span.icon-padding-right uk-icon="icon: database"
+      span.uk-text-bold Disk usage:
+      span.icon-padding-right= " #{represent_size(CachesManager.get_repo_size("REPOSITORY", required_in_registry_blobs))}"
+hr
+table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
+  thead
+    tr
+      th Tag name
+      th style="width: 10%; text-align: right" Version
+      th style="width: 10%; text-align: right" Images amount
+      th style="width: 10%; text-align: right" Image size
+      th style="width: 10%; text-align: right" Disk usage
+      th style="width: 10%" Created at
+  tbody
+    - flattened.each do |node|
+      - warn_node_condition = node[:problem_blobs].size > 0 || (!node[:image].nil? && node[:image].size > 0 && node[:image][:problem_blobs].size > 0)
+      - node[:image][:tags]&.each do |tag|
+        tr.tree-node class="#{tag[:problem_blobs].size > 0 ? 'warning-background' : ''}" data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}" data-image-name="#{node[:image][:name]}" data-tag-name="#{tag[:name]}"
+          td
+            - if tag[:problem_blobs].size != 0
+              span.warning-icon uk-tooltip="title: #{(tag[:problem_blobs].size == 0) ? 'Full size of tag' : "Some layers of tag not found:<br>" + tag[:problem_blobs].map{|s| s[0..25] + '...' }.join('<br>')}; delay: 500;"  uk-icon="icon: warning"
+            span style="padding-left: #{node[:level] + 1}em"
+            span uk-icon="icon: tag" style="padding: 0.5rem"
+            span #{tag[:name]}
+          td.uk-text-right.cursor-pointer.uk-overflow-auto
+            - latest_index_build_info = tag[:index_Nodes]&.select{ |nd| tag[:current_index_sha256] == nd[:node].sha256 }.first[:build_info]
+            - service_version ||= latest_index_build_info.dig(:labels, "org.opencontainers.image.version".to_sym) if latest_index_build_info != nil
+            - service_version ||= latest_index_build_info.dig(:labels, "org.label-schema.version".to_sym) if latest_index_build_info != nil
+            - if !service_version.nil?
+              .inline-container
+                span.uk-padding-small.uk-padding-remove-vertical.uk-padding-remove-right.uk-padding-remove-left= service_version
+            - else
+              .inline-container
+                span.uk-text-secondary= "-"
+          td.align-text-right #{tag[:index_Nodes].size}
+          / Adjust disk usage
+          td.align-text-right #{represent_size(tag[:index_Nodes].first[:node].get_effective_size).to_s + (tag[:problem_blobs].size > 0 ? ' (some blobs not found)' : '')}
+          td.align-text-right #{represent_size(tag[:size]).to_s + (tag[:problem_blobs].size > 0 ? ' (some blobs not found)' : '')}
+          - node_date_time = tag[:index_Nodes]&.select{ |nd| tag[:current_index_sha256] == nd[:node].sha256 }.first[:node].created_at
+          td #{node_date_time.nil? ? 'Unknown' : represent_datetime(node_date_time)}
