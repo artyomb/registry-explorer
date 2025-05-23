@@ -25,23 +25,21 @@ class CachesManager
   @@refreshing_in_progress_with_attest = false
   def self.json_blob_content(sha256)
     # Version with cache
-    # TimeMeasurer.measure(:reading_jsons) do
-    #   if !@@refreshing_in_progress || @@refreshing_in_progress
-    #     @@cache_dict[:json_contents][:values][sha256] ||= begin
-    #       cont = File.read($base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data")
-    #       JSON.parse(cont, symbolize_names: true)
-    #     end
-    #   end
-    # end
-
-    # Version without cache
-    TimeMeasurer.measure(:reading_jsons) do
-      begin
-        JSON.parse(File.read($base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data"), symbolize_names: true)
-      rescue Exception => e
-        raise "Error in json parsing: #{e}"
+    TimeMeasurer.measure(:getting_jsons) do
+      @@cache_dict[:json_contents][:values][sha256] ||= begin
+        cont = File.read($base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data")
+        JSON.parse(cont, symbolize_names: true)
       end
     end
+
+    # Version without cache
+    # TimeMeasurer.measure(:reading_jsons) do
+    #   begin
+    #     JSON.parse(File.read($base_path + "/blobs/sha256/#{sha256[0..1]}/#{sha256}/data"), symbolize_names: true)
+    #   rescue Exception => e
+    #     raise "Error in json parsing: #{e}"
+    #   end
+    # end
   end
 
   def self.blob_size(sha256)
@@ -238,11 +236,12 @@ class CachesManager
     TimeMeasurer.start_measurement
     TimeMeasurer.measure(:refresh_cache_time) do
       puts "🔄 Refreshing cache at #{Time.now}"
-
+      json_cashes = actualize_json_cashes(dict[:json_contents][:values])
       dict.keys.each do |key|
         dict[key][:latest_update] = Time.now
         dict[key][:values] = {}
       end
+      dict[:json_contents][:values] = json_cashes
       tree = { children: {}, image: {}, total_images_amount: 0, required_blobs: Set.new, problem_blobs: Set.new }
       images = extract_images(Set.new)
       build_tree(images, tree)
@@ -262,6 +261,14 @@ class CachesManager
       node[:children_count] == 0 ? represent_size(node[:image][:total_size]) : CachesManager.get_repo_size("#{$base_path}/repositories/#{node[:name]}", node[:required_blobs])
     end
     TimeMeasurer.log_measurers
+  end
+
+  def self.actualize_json_cashes(json_cashes)
+    path_to_check_presence = "#{$base_path}/blobs/sha256/"
+    json_cashes.reject! do |sha256_of_node, _|
+      !File.exist?(File.join(path_to_check_presence, sha256_of_node[0..1], sha256_of_node, 'data'))
+    end
+    json_cashes
   end
 end
 # 7dbb79e914894fa3f885e27b5eb19f0b30afdf2c (current index of stack-insight)
