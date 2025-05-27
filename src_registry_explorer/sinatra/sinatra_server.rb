@@ -309,15 +309,13 @@ class RegistryExplorerFront < Sinatra::Base
     return [400, "Please provide a valid path to image, old tag, new tag and image sha256."] if path_to_image.nil? || old_tag.nil? || new_tag.nil? || image_sha256.nil?
     full_image_path = $base_path + "/repositories" + path_to_image
     return [400, "Please provide a valid path to image."] if !Dir.exist?(full_image_path + "/_manifests/tags")
-    return [400, "Such tag already exists."] if Dir.exist?(full_image_path + "/_manifests/tags/" + new_tag)
-
-    Dir.mkdir(full_image_path + "/_manifests/tags/" + new_tag)
-    Dir.mkdir(full_image_path + "/_manifests/tags/" + new_tag + "/current")
+    Dir.mkdir(full_image_path + "/_manifests/tags/" + new_tag) if !Dir.exist?(full_image_path + "/_manifests/tags/" + new_tag)
+    Dir.mkdir(full_image_path + "/_manifests/tags/" + new_tag + "/current") if !Dir.exist?(full_image_path + "/_manifests/tags/" + new_tag + "/current")
     File.write(full_image_path + "/_manifests/tags/" + new_tag + "/current/link", "sha256:#{image_sha256}")
 
-    Dir.mkdir(full_image_path + "/_manifests/tags/" + new_tag + "/index")
-    Dir.mkdir(full_image_path + "/_manifests/tags/" + new_tag + "/index/sha256")
-    Dir.mkdir(full_image_path + "/_manifests/tags/" + new_tag + "/index/sha256/#{image_sha256}")
+    Dir.mkdir(full_image_path + "/_manifests/tags/" + new_tag + "/index") if !Dir.exist?(full_image_path + "/_manifests/tags/" + new_tag + "/index")
+    Dir.mkdir(full_image_path + "/_manifests/tags/" + new_tag + "/index/sha256") if !Dir.exist?(full_image_path + "/_manifests/tags/" + new_tag + "/index/sha256")
+    Dir.mkdir(full_image_path + "/_manifests/tags/" + new_tag + "/index/sha256/#{image_sha256}") if !Dir.exist?(full_image_path + "/_manifests/tags/" + new_tag + "/index/sha256/#{image_sha256}")
     File.write(full_image_path + "/_manifests/tags/" + new_tag + "/index/sha256/#{image_sha256}/link", "sha256:#{image_sha256}")
 
     [200, "Tag created successfully"]

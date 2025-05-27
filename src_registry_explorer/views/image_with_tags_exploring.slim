@@ -235,14 +235,14 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
             span #{tag[:name]}
           - current_image_node = tag[:index_Nodes]&.select{ |nd| tag[:current_index_sha256] == nd[:node].sha256 }.first
           - latest_index_build_info = current_image_node[:build_info]
+          td.sha-container
+            .inline-container-small
+              a href="/image-exploring/#{tag_image_path + '/' + tag[:name]}/sha256:#{current_image_node[:node].sha256}" onclick="event.stopPropagation();" uk-tooltip="title: #{current_image_node[:node].sha256}; cls: uk-active; delay: 500;"= current_image_node[:node].sha256[0..6] + "..."
+            a.to-be-hidden.uk-hidden
+              span.copy-btn.cursor-pointer data-buffervalue="#{current_image_node[:node].sha256}" uk-icon="icon: copy"
+            - current_node_size = current_image_node[:node].actual_blob_size.nil? ? "-" : represent_size(current_image_node[:node].actual_blob_size)
+            - current_image_node_size = represent_size(current_image_node[:node].get_effective_size)
           - if latest_index_build_info != nil
-            td.sha-container
-              .inline-container-small
-                a href="/image-exploring/#{tag_image_path + '/' + tag[:name]}/sha256:#{current_image_node[:node].sha256}" onclick="event.stopPropagation();" uk-tooltip="title: #{current_image_node[:node].sha256}; cls: uk-active; delay: 500;"= current_image_node[:node].sha256[0..6] + "..."
-              a.to-be-hidden.uk-hidden
-                span.copy-btn.cursor-pointer data-buffervalue="#{current_image_node[:node].sha256}" uk-icon="icon: copy"
-              - current_node_size = current_image_node[:node].actual_blob_size.nil? ? "-" : represent_size(current_image_node[:node].actual_blob_size)
-              - current_image_node_size = represent_size(current_image_node[:node].get_effective_size)
             td.uk-text-right.cursor-pointer.uk-overflow-auto
               - service_version ||= latest_index_build_info.dig(:labels, "org.opencontainers.image.version".to_sym)
               - service_version ||= latest_index_build_info.dig(:labels, "org.label-schema.version".to_sym)
