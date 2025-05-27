@@ -100,7 +100,12 @@ class RegistryExplorerFront < Sinatra::Base
     path_data = params[:splat].first.split('/$sha256/')
     image_path = path_data[0]
     image_sha256 = path_data[1]
-    return delete_index(image_path, image_sha256, false)
+    if params[:soft] == 'false'
+      return delete_index(image_path, image_sha256, false)
+    else
+      [400, 'Error when deleting image: soft delete is not supported yet']
+    end
+
   end
 
 
@@ -108,7 +113,11 @@ class RegistryExplorerFront < Sinatra::Base
     path_data = params[:splat].first.split('/$sha256/')
     image_path = path_data[0]
     image_sha256 = path_data[1]
-    return delete_index(image_path, image_sha256, true)
+    if params[:soft] == 'false'
+      return delete_index(image_path, image_sha256, true)
+    else
+      [400, 'Error when deleting tag: soft delete is not supported yet']
+    end
   end
 
   delete '/delete-tag' do
@@ -119,7 +128,7 @@ class RegistryExplorerFront < Sinatra::Base
     end
     number_of_deleted_tags = 0
     exceptions = []
-    # TODO: implement deleting tags
+    return
     data[:images_with_tags].each do |image_with_tags|
       image_path, tag = image_with_tags.split(':')
       puts "Deleting tag #{tag} from image #{image_path}:"
@@ -145,7 +154,11 @@ class RegistryExplorerFront < Sinatra::Base
     error_messages_collector = []
     list_of_non_current_images_sha256_to_delete.each do |sha256|
       begin
-        delete_index(url_image_path, sha256, false)
+        if params[:soft] == 'false'
+          delete_index(url_image_path, sha256, false)
+        else
+          return [400, 'Error when deleting image: soft delete is not supported yet']
+        end
       rescue StandardError => e
         error_messages_collector << e.message
       end

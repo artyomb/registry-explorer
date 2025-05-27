@@ -264,7 +264,7 @@ javascript:
                     }
                 });
                 if (tagsForDeletion.length > 0) {
-                    const response = await fetch('/delete-tag', {
+                    const response = await fetch('/delete-tag?soft=false', {
                         method: 'DELETE',
                         body: JSON.stringify({images_with_tags: tagsForDeletion}),
                     });

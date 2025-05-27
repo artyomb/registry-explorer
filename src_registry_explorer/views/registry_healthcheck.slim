@@ -35,7 +35,7 @@ javascript:
             failed_deletions = 0;
             for (let i = 0; i < problem_indexes.length; i++) {
                 try {
-                    const url = `/delete-image` + problem_indexes[i].image + '/$sha256/' + problem_indexes[i].index_node;
+                    const url = `/delete-image` + problem_indexes[i].image + '/$sha256/' + problem_indexes[i].index_node + '?soft=false';
                     const response = await fetch(url, {
                         method: 'DELETE'
                     })

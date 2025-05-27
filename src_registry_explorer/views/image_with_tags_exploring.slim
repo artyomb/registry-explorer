@@ -115,15 +115,19 @@ javascript:
 
     async function delete_tag(event, tagString, currentIndexSha256) {
         event.stopPropagation();
-        delete_by_sha256(currentIndexSha256, tagString, 'Are you sure you want to delete this tag?');
+        delete_by_sha256(currentIndexSha256, tagString, 'Are you sure you want to delete this tag?', false);
+    }
+    async function soft_delete_tag(event, tagString, currentIndexSha256) {
+        event.stopPropagation();
+        delete_by_sha256(currentIndexSha256, tagString, 'Are you sure you want to delete this tag?', true);
     }
 
-    async function delete_by_sha256(sha256, tagString, confirmationMessage) {
+    async function delete_by_sha256(sha256, tagString, confirmationMessage, soft = false) {
         // handle confirmation
         const tableElement = document.getElementById(tagString);
         UIkit.modal.confirm(confirmationMessage).then(async function () {
             try {
-                const url = `/delete-tag` + pathToImage + '/$sha256/' + sha256;
+                const url = `/delete-tag` + pathToImage + '/$sha256/' + sha256 + '?soft=' + soft;
                 const response = await fetch(url, {
                     method: 'DELETE'
                 });
@@ -212,17 +216,17 @@ hr
 table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
   thead
     tr
-      th style="width: 15%" Tag name
-      th style="width: 10%" Latest sha256
-      th.uk-text-right style="width: 10%" Latest version
-      th.uk-text-right style="width: 10%" Latest Git Pipeline
-      th.uk-text-right style="width: 20%" Latest Git Commit
-      th style="width: 25%" Latest Commit Message
-      th.uk-text-right style="width: 10%" Images amount
-      th.uk-text-right style="width: 10%" Image size
+      th style="width: 10%" Tag name
+      th style="width: 5%" Latest sha256
+      th.uk-text-right style="width: 5%" Latest version
+      th.uk-text-right style="width: 5%" Latest Git Pipeline
+      th.uk-text-right style="width: 15%" Latest Git Commit
+      th style="width: 20%" Latest Commit Message
+      th.uk-text-right style="width: 5%" Images amount
+      th.uk-text-right style="width: 5%" Image size
       th.uk-text-right style="width: 10%" Disk usage
       th style="width: 10%" Created at
-      th.uk-text-right Actions
+      th.uk-text-right style="width: 10%" Actions
   tbody
     - flattened.each do |node|
       - warn_node_condition = node[:problem_blobs].size > 0 || (!node[:image].nil? && node[:image].size > 0 && node[:image][:problem_blobs].size > 0)
@@ -298,5 +302,6 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
             - if !current_image_node[:node].sha256.nil?
               - if !$read_only_mode
                 span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: trash" uk-tooltip="title: #{'Delete chosen tag'}; cls: uk-active; delay: 500;" onclick="delete_tag(event, `#{tag[:name]}`, `#{current_image_node[:node].sha256}`)"
+                span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: minus-circle" uk-tooltip="title: #{'Soft delete chosen tag'}; cls: uk-active; delay: 500;" onclick="soft_delete_tag(event, `#{tag[:name]}`, `#{current_image_node[:node].sha256}`)"
               span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: copy" uk-tooltip="title: #{'Copy pulling this tag'}; cls: uk-active; delay: 500;" onclick="copy_pull_command(event, `#{tag[:name]}`, `#{current_image_node[:node].sha256}`)"
               span.uk-icon-link.cursor-pointer uk-icon="icon: tag" uk-tooltip="title: #{'Create new tag with from current image'}; cls: uk-active; delay: 500;" onclick="tag_current_image(event, `#{tag[:name]}`, `#{current_image_node[:node].sha256}`)"

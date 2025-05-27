@@ -116,7 +116,7 @@ javascript:
         // const tableElement = document.getElementById(`${pathToImage.substring(1)}/${tagString}/${sha256}`);
         UIkit.modal.confirm("Are you sure to delete all non-current images?").then(async function () {
             try {
-                const url = `/delete-non-current-images` + pathToImage + "/" + tagString + '/$sha256/' + currentIndexSha256;
+                const url = `/delete-non-current-images` + pathToImage + "/" + tagString + '/$sha256/' + currentIndexSha256 + '?soft=false';
                 const response = await fetch(url, {
                     method: 'DELETE'
                 })
