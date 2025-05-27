@@ -237,11 +237,13 @@ class CachesManager
     TimeMeasurer.measure(:refresh_cache_time) do
       puts "🔄 Refreshing cache at #{Time.now}"
       json_cashes = actualize_json_cashes(dict[:json_contents][:values])
+      # sizes_caches = actualize_blobs_sizes_cashes(dict[:sizes][:values])
       dict.keys.each do |key|
         dict[key][:latest_update] = Time.now
         dict[key][:values] = {}
       end
       dict[:json_contents][:values] = json_cashes
+      # dict[:sizes][:values] = sizes_caches
       tree = { children: {}, image: {}, total_images_amount: 0, required_blobs: Set.new, problem_blobs: Set.new }
       images = extract_images(Set.new)
       build_tree(images, tree)
@@ -270,6 +272,14 @@ class CachesManager
     end
     json_cashes
   end
+  #
+  # def self.actualize_blobs_sizes_cashes(sizes_dict)
+  #   path_to_check_presence = "#{$base_path}/blobs/sha256/"
+  #   sizes_dict.reject! do |sha256_of_node, _|
+  #     !File.exist?(File.join(path_to_check_presence, sha256_of_node[0..1], sha256_of_node, 'data'))
+  #   end
+  #   sizes_dict
+  # end
 end
 # 7dbb79e914894fa3f885e27b5eb19f0b30afdf2c (current index of stack-insight)
 # sha256:b017f4f91e71393f966e8063623fb49a61403f75946d0415022762d1e6a68adb (manifest of stack-insight(from current index))

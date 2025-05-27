@@ -308,6 +308,25 @@ def delete_image_tag(image_path, image_tag)
   current_index_of_tag = CachesManager.get_index_sha256($base_path + "/repositories/#{image_path}/_manifests/tags/#{image_tag}/current/link")
   delete_index(image_path, current_index_of_tag, true)
 end
+#
+# def create_manifest_blob(full_image_path, image_sha256)
+#   node = CachesManager.find_node(image_sha256)
+#   raise "Node with sha256:#{image_sha256} not found" if node.nil?
+#   get_first_manifest_with_config(node)
+# end
+
+# def get_first_manifest_with_config(node)
+#   if node.node_type.to_s =~ /json/
+#     if node.node_type.to_s =~ /manifest/ && CachesManager.json_blob_content(node.sha256)[:layers].any?
+#       return node
+#     end
+#     node.links.each do |link|
+#       if link
+#     end
+#   else
+#     return nil
+#   end
+# end
 
 def debugging(val)
   puts "DEBUGGING: #{val}"

@@ -162,9 +162,28 @@ javascript:
             const row = event.target.closest('tr[data-href]');
             if (row) window.location.href = row.dataset.href;
         });
+        document.querySelectorAll('.copy-btn').forEach(function (copyBtn) {
+            copyBtn.addEventListener('click', function (event) {
+                event.stopPropagation();
+                const textToCopy = copyBtn.dataset.buffervalue;
+                navigator.clipboard.writeText(textToCopy).then(function () {
+                    UIkit.notification({message: 'sha256 copied to clipboard', status: 'success', pos: 'top-right'});
+                });
+            });
+        });
         updateRowStripes();
     });
-
+sass:
+  .copy-btn
+    margin-left: 3.5rem
+  .inline-container-small
+    display: inline-block
+    width: 3rem
+  .inline-container
+    display: inline-block
+    width: 5rem
+  .sha-container
+    align-content: center
 / h1.uk-h1= "Docker registry content (#{images.map{|img| img[:tags].map{ |tag| tag[:index_Nodes].size }.sum}.sum} images in #{images.map{|img| img[:tags].size}.sum} tags, total size = #{represent_size(CachesManager.get_repo_size("REPOSITORY", required_for_image_blobs))})"
 .uk-flex.uk-padding.uk-padding-remove-horizontal.uk-width-expand.uk-flex-between.align-items-center.uk-padding-remove-bottom
   .uk-flex
@@ -193,7 +212,8 @@ hr
 table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
   thead
     tr
-      th Tag name
+      th style="width: 15%" Tag name
+      th style="width: 10%" Latest sha256
       th.uk-text-right style="width: 10%" Latest version
       th.uk-text-right style="width: 10%" Latest Git Pipeline
       th.uk-text-right style="width: 20%" Latest Git Commit
@@ -207,7 +227,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
     - flattened.each do |node|
       - warn_node_condition = node[:problem_blobs].size > 0 || (!node[:image].nil? && node[:image].size > 0 && node[:image][:problem_blobs].size > 0)
       - node[:image][:tags]&.each do |tag|
-        tr.tree-node class="#{tag[:problem_blobs].size > 0 ? 'warning-background' : ''}" data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}" data-image-name="#{node[:image][:name]}" data-tag-name="#{tag[:name]}" id="#{tag[:name]}"
+        tr.tree-node class="#{tag[:problem_blobs].size > 0 ? 'warning-background' : ''}" data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}" data-image-name="#{node[:image][:name]}" data-tag-name="#{tag[:name]}" id="#{tag[:name]}" onmouseover="this.querySelector('.to-be-hidden').classList.remove('uk-hidden')" onmouseout="this.querySelector('.to-be-hidden').classList.add('uk-hidden')"
           td
             - if tag[:problem_blobs].size != 0
               span.warning-icon uk-tooltip="title: #{(tag[:problem_blobs].size == 0) ? 'Full size of tag' : "Some layers of tag not found:<br>" + tag[:problem_blobs].map{|s| s[0..25] + '...' }.join('<br>')}; delay: 500;"  uk-icon="icon: warning"
@@ -216,6 +236,13 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
           - current_image_node = tag[:index_Nodes]&.select{ |nd| tag[:current_index_sha256] == nd[:node].sha256 }.first
           - latest_index_build_info = current_image_node[:build_info]
           - if latest_index_build_info != nil
+            td.sha-container
+              .inline-container-small
+                a href="/image-exploring/#{tag_image_path + '/' + tag[:name]}/sha256:#{current_image_node[:node].sha256}" onclick="event.stopPropagation();" uk-tooltip="title: #{current_image_node[:node].sha256}; cls: uk-active; delay: 500;"= current_image_node[:node].sha256[0..6] + "..."
+              a.to-be-hidden.uk-hidden
+                span.copy-btn.cursor-pointer data-buffervalue="#{current_image_node[:node].sha256}" uk-icon="icon: copy"
+              - current_node_size = current_image_node[:node].actual_blob_size.nil? ? "-" : represent_size(current_image_node[:node].actual_blob_size)
+              - current_image_node_size = represent_size(current_image_node[:node].get_effective_size)
             td.uk-text-right.cursor-pointer.uk-overflow-auto
               - service_version ||= latest_index_build_info.dig(:labels, "org.opencontainers.image.version".to_sym)
               - service_version ||= latest_index_build_info.dig(:labels, "org.label-schema.version".to_sym)
