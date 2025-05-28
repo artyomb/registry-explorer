@@ -112,11 +112,12 @@ class RegistryExplorerFront < Sinatra::Base
   delete '/delete-tag/*' do
     path_data = params[:splat].first.split('/$sha256/')
     image_path = path_data[0]
-    image_sha256 = path_data[1]
+    image_sha256 = path_data[1] if path_data.size == 2
     if params[:soft] == 'false'
       return delete_index(image_path, image_sha256, true)
     else
-      [400, 'Error when deleting tag: soft delete is not supported yet']
+      return [400, 'Error when deleting tag: specify tag name'] if params[:tag].nil?
+      return delete_tag_soft(image_path, params[:tag])
     end
   end
 

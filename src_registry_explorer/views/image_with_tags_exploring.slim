@@ -115,7 +115,7 @@ javascript:
 
     async function delete_tag(event, tagString, currentIndexSha256) {
         event.stopPropagation();
-        delete_by_sha256(currentIndexSha256, tagString, 'Are you sure you want to delete this tag?', false);
+        delete_by_sha256(currentIndexSha256, tagString, `Are you sure you want to delete this tag?<br><br><div style="padding: 1rem; background-color: #faa05a; color: #ffffff">WARNING<br> If you will delete tag this way, all images from other tags, that share the same sha256 with any of image of chosen tag, WILL ALSO BE DELETED </span>`, false);
     }
     async function soft_delete_tag(event, tagString, currentIndexSha256) {
         event.stopPropagation();
@@ -127,7 +127,7 @@ javascript:
         const tableElement = document.getElementById(tagString);
         UIkit.modal.confirm(confirmationMessage).then(async function () {
             try {
-                const url = `/delete-tag` + pathToImage + '/$sha256/' + sha256 + '?soft=' + soft;
+                const url = `/delete-tag` + pathToImage + '?soft=' + soft + '&tag=' + tagString;
                 const response = await fetch(url, {
                     method: 'DELETE'
                 });
@@ -301,7 +301,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
           td.align-text-right
             - if !current_image_node[:node].sha256.nil?
               - if !$read_only_mode
-                span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: trash" uk-tooltip="title: #{'Delete chosen tag'}; cls: uk-active; delay: 500;" onclick="delete_tag(event, `#{tag[:name]}`, `#{current_image_node[:node].sha256}`)"
-                span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: minus-circle" uk-tooltip="title: #{'Soft delete chosen tag'}; cls: uk-active; delay: 500;" onclick="soft_delete_tag(event, `#{tag[:name]}`, `#{current_image_node[:node].sha256}`)"
+                span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: close-circle" uk-tooltip="title: #{'Delete chosen tag'}; cls: uk-active; delay: 500;" onclick="delete_tag(event, `#{tag[:name]}`, `#{current_image_node[:node].sha256}`)"
+                span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: trash" uk-tooltip="title: #{'Soft delete chosen tag'}; cls: uk-active; delay: 500;" onclick="soft_delete_tag(event, `#{tag[:name]}`, `#{current_image_node[:node].sha256}`)"
               span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: copy" uk-tooltip="title: #{'Copy pulling this tag'}; cls: uk-active; delay: 500;" onclick="copy_pull_command(event, `#{tag[:name]}`, `#{current_image_node[:node].sha256}`)"
               span.uk-icon-link.cursor-pointer uk-icon="icon: tag" uk-tooltip="title: #{'Create new tag with from current image'}; cls: uk-active; delay: 500;" onclick="tag_current_image(event, `#{tag[:name]}`, `#{current_image_node[:node].sha256}`)"

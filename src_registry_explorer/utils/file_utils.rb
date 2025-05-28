@@ -308,7 +308,45 @@ def delete_image_tag(image_path, image_tag)
   current_index_of_tag = CachesManager.get_index_sha256($base_path + "/repositories/#{image_path}/_manifests/tags/#{image_tag}/current/link")
   delete_index(image_path, current_index_of_tag, true)
 end
-#
+
+def delete_tag_soft(image_path, tag)
+  full_image_path = $base_path + "/repositories/" + image_path
+  other_tags = Dir.children(File.join(full_image_path, '_manifests', 'tags')).select { |tag_name| tag_name != tag }
+
+  required_for_other_tags_blobs_sha256 = Set.new
+  other_tags.each do |other_tag|
+    required_for_other_tags_blobs_sha256.merge(get_required_blobs_for_image_tag(image_path, other_tag))
+  end
+
+  sha256_of_current_tag_indexes = Dir.children(File.join(full_image_path, '_manifests', 'tags', tag, 'index', 'sha256'))
+  must_retain_couner = 0
+  sha256_of_current_tag_indexes.each do |index_sha256|
+    must_retain_couner += 1 if required_for_other_tags_blobs_sha256.include?(index_sha256)
+    if !required_for_other_tags_blobs_sha256.include?(index_sha256)
+      FileUtils.rm_rf(File.join(full_image_path, '_manifests', 'revisions', 'sha256', index_sha256))
+    end
+    FileUtils.rm_rf(File.join(full_image_path, '_manifests', 'tags', tag, 'index', 'sha256', index_sha256))
+  end
+  FileUtils.rm_rf(File.join(full_image_path, '_manifests', 'tags', tag))
+
+  return "Tag #{image_path}:#{tag} successfully deleted. #{sha256_of_current_tag_indexes.size} indexes deleted with tag. #{must_retain_couner} of them were not deleted because they are required for other tags"
+end
+
+def get_required_blobs_for_image_tag(image_path, tag)
+  indexes_sha256 = Dir.children(File.join($base_path, "repositories", image_path, "_manifests", "tags", tag, "index", "sha256"))
+  required_blobs = Set.new
+  indexes_sha256.each do |index_sha256|
+    next if !File.exist?($base_path + "/repositories/" + image_path + "/_manifests/revisions/sha256/" + index_sha256 + "/link")
+    index_node = CachesManager.find_node(index_sha256)
+    required_blobs.merge(index_node.get_included_blobs)
+  end
+  required_blobs
+end
+
+def remove_refence_from_index(image_path, tag_name, image_sha256)
+
+end
+
 # def create_manifest_blob(full_image_path, image_sha256)
 #   node = CachesManager.find_node(image_sha256)
 #   raise "Node with sha256:#{image_sha256} not found" if node.nil?
