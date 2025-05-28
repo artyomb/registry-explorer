@@ -33,28 +33,31 @@ javascript:
         UIkit.modal.confirm("Are you sure to delete all images with at least one problem blob?").then(async function () {
             successful_deletions = 0;
             failed_deletions = 0;
-            for (let i = 0; i < problem_indexes.length; i++) {
-                try {
-                    const url = `/delete-image` + problem_indexes[i].image + '/$sha256/' + problem_indexes[i].index_node + '?soft=false';
-                    const response = await fetch(url, {
-                        method: 'DELETE'
-                    })
-                    const responseText = await response.text(); // Wait for the response text
-                    // const response = { 'ok': true, 'responseText': 'Success' };
-                    // const responseText = 'Success';
-                    if (response.ok) {
-                        UIkit.notification({message: responseText, status: 'success', pos: 'top-right'});
-                        successful_deletions++;
-                    } else {
-                        UIkit.notification({message: 'Error: ' + responseText, status: 'danger', pos: 'top-right'});
-                        failed_deletions++;
-                    }
-                } catch (error) {
-                    UIkit.notification({message: 'Error: ' + error, status: 'danger', pos: 'top-right'});
-                    failed_deletions++;
+            let items = []
+            problem_indexes.forEach(function (problem_index) {
+                items.push(`${problem_index.image}:${problem_index.tag}@sha256:${problem_index.index_node}`)
+            });
+            try {
+                UIkit.notification({message: `Deleting ${items.length} indexes...`, status: 'primary', pos: 'top-right'});
+
+                const url = `/delete-image?soft=false`;
+                const response = await fetch(url, {
+                    method: 'DELETE',
+                    body: JSON.stringify( { path_tags_sha256: items } )
+                })
+                const responseText = await response.text(); // Wait for the response text
+                // const response = { 'ok': true, 'responseText': 'Success' };
+                // const responseText = 'Success';
+                if (response.ok) {
+                    UIkit.notification({message: responseText, status: 'success', pos: 'top-right'});
+                } else {
+                    UIkit.notification({message: 'Error: ' + responseText, status: 'danger', pos: 'top-right'});
                 }
+            } catch (error) {
+                UIkit.notification({message: 'Error: ' + error, status: 'danger', pos: 'top-right'});
+                failed_deletions++;
             }
-            UIkit.notification({message: `Successfully deleted ${successful_deletions} images, failed to delete ${failed_deletions} images`});
+            UIkit.notification({message: `Successfully deleted ${successful_deletions} images, failed to delete images`});
             UIkit.modal.confirm('Do you want return to the main page?').then(function () {
                 window.location.href = '/';
             }, function () {

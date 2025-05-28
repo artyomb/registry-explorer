@@ -73,15 +73,24 @@ javascript:
         });
     });
 
-    async function delete_by_sha256(sha256, entityString, confirmationMessage, deleteRow) {
+    async function delete_by_sha256(sha256, entityString, confirmationMessage, deleteRow, soft = false) {
         // handle confirmation
         const tableElement = document.getElementById(`${pathToImage.substring(1)}/${tagString}/${sha256}`);
         UIkit.modal.confirm(confirmationMessage).then(async function () {
             try {
-                const url = `/delete-${entityString}` + pathToImage + '/$sha256/' + sha256;
+                const url = `/delete-${entityString}?soft=${soft}`;
+                let body;
+                if (entityString === 'tag') {
+                    body = { images_with_tags: [`${pathToImage}:${tagString}`] };
+                } else {
+                    body = { path_tags_sha256: [`${pathToImage}:${tagString}@sha256:${sha256}`] };
+                }
+                const requestBody = JSON.stringify(body);
                 const response = await fetch(url, {
-                    method: 'DELETE'
-                })
+                    method: 'DELETE',
+                    body: requestBody
+                });
+
                 const responseText = await response.text(); // Wait for the response text
 
                 if (response.ok) {
@@ -105,20 +114,28 @@ javascript:
         });
     }
 
-    async function delete_image(sha256, deleteRow) {
-        delete_by_sha256(sha256, 'image', 'Are you sure you want to delete this image?', deleteRow);
+    async function delete_image_soft(sha256, deleteRow) {
+        delete_by_sha256(sha256, 'image', 'Are you sure you want to delete this image?', deleteRow, true);
     }
     async function delete_tag(tagString) {
-        delete_by_sha256(currentIndexSha256, 'tag', 'Are you sure you want to delete this tag? After confirmation you will be returned to the main page.', false);
+        delete_by_sha256(currentIndexSha256, 'tag', 'Are you sure you want to delete this tag? After confirmation you will be returned to the main page.', false, true);
     }
 
     async function delete_non_current_images() {
         // const tableElement = document.getElementById(`${pathToImage.substring(1)}/${tagString}/${sha256}`);
+        tryToUseURL = true;
         UIkit.modal.confirm("Are you sure to delete all non-current images?").then(async function () {
             try {
-                const url = `/delete-non-current-images` + pathToImage + "/" + tagString + '/$sha256/' + currentIndexSha256 + '?soft=false';
+                let items = [];
+                document.querySelectorAll('.index-row').forEach(function (row) {
+                    if (row.dataset.sha256 !== currentIndexSha256) {
+                        items.push(`${pathToImage}:${tagString}@sha256:${row.dataset.sha256}`);
+                    }
+                });
+                const url = `/delete-image?soft=true`;
                 const response = await fetch(url, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    body: JSON.stringify( { path_tags_sha256: items } )
                 })
                 const responseText = await response.text(); // Wait for the response text
 
@@ -291,7 +308,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
     - tag[:index_Nodes].each do |node_link|
       - node_is_current = node_link[:node].sha256 == tag[:current_index_sha256]
       - class_string_warning = node_link[:node].get_problem_blobs.size > 0 || node_link[:node].get_problem_blobs.nil? ? 'warning-background' : ''
-      tr.tree-node style="cursor: default" id="#{img_pth_param}/#{tag_string}/#{node_link[:node].sha256}" class="#{class_string_warning}" onmouseover="this.querySelector('.to-be-hidden').classList.remove('uk-hidden')" onmouseout="this.querySelector('.to-be-hidden').classList.add('uk-hidden')"
+      tr.index-row data-sha256="#{node_link[:node].sha256}" style="cursor: default" id="#{img_pth_param}/#{tag_string}/#{node_link[:node].sha256}" class="#{class_string_warning}" onmouseover="this.querySelector('.to-be-hidden').classList.remove('uk-hidden')" onmouseout="this.querySelector('.to-be-hidden').classList.add('uk-hidden')"
         td.align-text-center
           - if node_is_current
             span.uk-padding-remove uk-icon="icon: check" style="color: green; min-width: max-content; padding: 0.5rem"
@@ -348,6 +365,6 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
         td.align-text-right
           - if !node_link[:node].sha256.nil?
             - if !$read_only_mode
-              span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: trash" uk-tooltip="title: #{'Delete chosen image'}; cls: uk-active; delay: 500;" onclick="delete_image(`#{node_link[:node].sha256}`, true)"
+              span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: trash" uk-tooltip="title: #{'Delete chosen image'}; cls: uk-active; delay: 500;" onclick="delete_image_soft(`#{node_link[:node].sha256}`, true)"
             span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: copy" uk-tooltip="title: #{'Copy pulling this image command'}; cls: uk-active; delay: 500;" onclick="copy_pull_command(`#{node_link[:node].sha256}`)"
             span.uk-icon-link.cursor-pointer uk-icon="icon: tag" uk-tooltip="title: #{'Create new tag with this image'}; cls: uk-active; delay: 500;" onclick="tag_image(`#{node_link[:node].sha256}`)"

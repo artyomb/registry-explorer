@@ -329,7 +329,7 @@ def delete_image_tag_soft(image_path, tag)
   end
   FileUtils.rm_rf(File.join(full_image_path, '_manifests', 'tags', tag))
 
-  return "Tag #{image_path}:#{tag} successfully deleted. #{sha256_of_current_tag_indexes.size} indexes deleted with tag. #{must_retain_couner} of them were not deleted because they are required for other tags"
+  return "Tag #{image_path}:#{tag} successfully deleted. #{sha256_of_current_tag_indexes.size} indexes deleted with tag. #{must_retain_couner} of them were not deleted from 'revisions' because they are required for other tags"
 end
 
 def get_required_blobs_for_image_tag(image_path, tag)
@@ -343,8 +343,25 @@ def get_required_blobs_for_image_tag(image_path, tag)
   required_blobs
 end
 
-def remove_refence_from_index(image_path, tag_name, image_sha256)
+def delete_index_soft(image_path, tag, image_sha256)
+  current_index_of_tag = CachesManager.get_index_sha256(File.join($base_path, "repositories", image_path, "_manifests", "tags", tag, "current", "link"))
+  raise StandardError, "Current image of tag can't be deleted in 'SOFT' mode" if image_sha256 == current_index_of_tag
 
+  full_image_path = File.join($base_path, "repositories", image_path)
+  other_tags = Dir.children(File.join(full_image_path, '_manifests', 'tags')).select { |tag_name| tag_name != tag }
+
+  required_for_other_tags_blobs_sha256 = Set.new
+  other_tags.each do |other_tag|
+    required_for_other_tags_blobs_sha256.merge(get_required_blobs_for_image_tag(image_path, other_tag))
+  end
+
+  removed_from_revisions = false
+  if !required_for_other_tags_blobs_sha256.include?(image_sha256)
+    FileUtils.rm_rf(File.join(full_image_path, '_manifests', 'revisions', 'sha256', image_sha256))
+    removed_from_revisions = true
+  end
+  FileUtils.rm_rf(File.join(full_image_path, '_manifests', 'tags', tag, 'index', 'sha256', image_sha256))
+  return "Image #{image_path}:#{tag}@sha256:#{image_sha256} successfully deleted. This sha256 was #{removed_from_revisions ? '' : 'not'} removed from revisions"
 end
 
 # def create_manifest_blob(full_image_path, image_sha256)

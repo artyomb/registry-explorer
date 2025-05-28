@@ -93,31 +93,38 @@ class RegistryExplorerFront < Sinatra::Base
     [200, 'OK']
   end
 
-  delete '/delete-image/*' do
+  delete '/delete-image' do
     if $read_only_mode
       return [403, 'Registry is in read-only mode']
     end
-    path_data = params[:splat].first.split('/$sha256/')
-    image_path = path_data[0]
-    image_sha256 = path_data[1]
-    if params[:soft] == 'false'
-      return delete_index(image_path, image_sha256, false)
-    else
-      [400, 'Error when deleting image: soft delete is not supported yet']
+    boby = request.body.read
+    data = JSON.parse(boby, symbolize_names: true)
+    return [400, 'Error when deleting list of images: no data to delete'] if data.nil? || data[:path_tags_sha256].nil?
+    exceptions = []
+    number_of_deleted_images = 0
+    data[:path_tags_sha256].each do |image_path_tag_sha256|
+      path_and_tag, sha256 = image_path_tag_sha256.split('@sha256:')
+      temp = path_and_tag.split(':')
+      path, tag = temp[0], temp[1 .. temp.length].join(':')
+      begin
+        if params[:soft] == 'false'
+          message = delete_index(path, sha256, false)
+          puts message
+          number_of_deleted_images += 1
+        else
+          message = delete_index_soft(path, tag, sha256)
+          puts message
+          number_of_deleted_images += 1
+        end
+      rescue StandardError => e
+        exceptions << e.message
+        puts e.message
+      end
     end
-
-  end
-
-
-  delete '/delete-tag/*' do
-    path_data = params[:splat].first.split('/$sha256/')
-    image_path = path_data[0]
-    image_sha256 = path_data[1] if path_data.size == 2
-    if params[:soft] == 'false'
-      return delete_index(image_path, image_sha256, true)
+    if exceptions.empty?
+      [200, "Deleted #{number_of_deleted_images} images"]
     else
-      return [400, 'Error when deleting tag: specify tag name'] if params[:tag].nil?
-      return delete_image_tag_soft(image_path, params[:tag])
+      [500, "Deleted #{number_of_deleted_images} images. Error when deleting images: #{exceptions.join(', ')}"]
     end
   end
 
@@ -137,7 +144,8 @@ class RegistryExplorerFront < Sinatra::Base
           delete_image_tag(image_path[1..], tag)
           number_of_deleted_tags += 1
         else
-          delete_image_tag_soft(image_path[1..], tag)
+          message = delete_image_tag_soft(image_path[1..], tag)
+          puts message
           number_of_deleted_tags += 1
         end
       rescue StandardError => e
@@ -146,33 +154,6 @@ class RegistryExplorerFront < Sinatra::Base
     end
     puts "Deleting #{number_of_deleted_tags} tags is successful. #{exceptions.size} exceptions raised:#{exceptions.join("\n")}"
     [200, "Deleting #{number_of_deleted_tags} tags is successful. #{exceptions.size} exceptions raised"]
-  end
-
-  delete '/delete-non-current-images/*' do
-    path_data = params[:splat].first.split('/$sha256/')
-    url_image_path = path_data[0].split('/')[0..-2].join('/')
-    image_path = $base_path + '/repositories/' + url_image_path
-    tag = path_data[0].split('/').last
-    tag_path = image_path + '/_manifests/tags/' + tag
-    current_image_sha256 = path_data[1]
-    list_of_non_current_images_sha256_to_delete = Dir.children(tag_path + '/index/sha256').select { |sha256| sha256 != current_image_sha256 && File.exist?("#{tag_path}/../../revisions/sha256/#{sha256}/link") }
-    error_messages_collector = []
-    list_of_non_current_images_sha256_to_delete.each do |sha256|
-      begin
-        if params[:soft] == 'false'
-          delete_index(url_image_path, sha256, false)
-        else
-          return [400, 'Error when deleting image: soft delete is not supported yet']
-        end
-      rescue StandardError => e
-        error_messages_collector << e.message
-      end
-    end
-    if error_messages_collector.empty?
-      [200, 'All images deleted successfully']
-    else
-      [500, "Errors, occurred when deleting images: #{error_messages_collector.join('; ')}"]
-    end
   end
 
   get '/registry-healthcheck' do

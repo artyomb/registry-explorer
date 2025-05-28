@@ -127,9 +127,10 @@ javascript:
         const tableElement = document.getElementById(tagString);
         UIkit.modal.confirm(confirmationMessage).then(async function () {
             try {
-                const url = `/delete-tag` + pathToImage + '?soft=' + soft + '&tag=' + tagString;
+                const url = '/delete-tag?soft=' + soft;
                 const response = await fetch(url, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    body: JSON.stringify({images_with_tags: [`${pathToImage}:${tagString}`]})
                 });
                 const responseText = await response.text(); // Wait for the response text
 
