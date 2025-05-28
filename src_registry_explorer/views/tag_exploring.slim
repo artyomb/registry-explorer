@@ -114,8 +114,8 @@ javascript:
         });
     }
 
-    async function delete_image_soft(sha256, deleteRow) {
-        delete_by_sha256(sha256, 'image', 'Are you sure you want to delete this image?', deleteRow, true);
+    async function delete_image(sha256, deleteRow, soft) {
+        delete_by_sha256(sha256, 'image', 'Are you sure you want to delete this image?', deleteRow, soft);
     }
     async function delete_tag(tagString) {
         delete_by_sha256(currentIndexSha256, 'tag', 'Are you sure you want to delete this tag? After confirmation you will be returned to the main page.', false, true);
@@ -365,6 +365,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
         td.align-text-right
           - if !node_link[:node].sha256.nil?
             - if !$read_only_mode
-              span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: trash" uk-tooltip="title: #{'Delete chosen image'}; cls: uk-active; delay: 500;" onclick="delete_image_soft(`#{node_link[:node].sha256}`, true)"
+              span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: close-circle" uk-tooltip="title: #{'Delete chosen tag'}; cls: uk-active; delay: 500;" onclick="delete_image(`#{node_link[:node].sha256}`, true, false)"
+              span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: trash" uk-tooltip="title: #{'Soft delete chosen image'}; cls: uk-active; delay: 500;" onclick="delete_image(`#{node_link[:node].sha256}`, true, true)"
             span.uk-icon-link.cursor-pointer.icon-padding-right uk-icon="icon: copy" uk-tooltip="title: #{'Copy pulling this image command'}; cls: uk-active; delay: 500;" onclick="copy_pull_command(`#{node_link[:node].sha256}`)"
             span.uk-icon-link.cursor-pointer uk-icon="icon: tag" uk-tooltip="title: #{'Create new tag with this image'}; cls: uk-active; delay: 500;" onclick="tag_image(`#{node_link[:node].sha256}`)"

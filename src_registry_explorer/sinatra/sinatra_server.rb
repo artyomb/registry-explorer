@@ -108,7 +108,7 @@ class RegistryExplorerFront < Sinatra::Base
       path, tag = temp[0], temp[1 .. temp.length].join(':')
       begin
         if params[:soft] == 'false'
-          message = delete_index(path, sha256, false)
+          message = delete_index(path[0] == '/' ? path[1..-1] : path, sha256, false)
           puts message
           number_of_deleted_images += 1
         else
