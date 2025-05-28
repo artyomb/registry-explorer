@@ -309,7 +309,7 @@ def delete_image_tag(image_path, image_tag)
   delete_index(image_path, current_index_of_tag, true)
 end
 
-def delete_tag_soft(image_path, tag)
+def delete_image_tag_soft(image_path, tag)
   full_image_path = $base_path + "/repositories/" + image_path
   other_tags = Dir.children(File.join(full_image_path, '_manifests', 'tags')).select { |tag_name| tag_name != tag }
 

@@ -117,7 +117,7 @@ class RegistryExplorerFront < Sinatra::Base
       return delete_index(image_path, image_sha256, true)
     else
       return [400, 'Error when deleting tag: specify tag name'] if params[:tag].nil?
-      return delete_tag_soft(image_path, params[:tag])
+      return delete_image_tag_soft(image_path, params[:tag])
     end
   end
 
@@ -129,13 +129,17 @@ class RegistryExplorerFront < Sinatra::Base
     end
     number_of_deleted_tags = 0
     exceptions = []
-    return
     data[:images_with_tags].each do |image_with_tags|
       image_path, tag = image_with_tags.split(':')
       puts "Deleting tag #{tag} from image #{image_path}:"
       begin
-        delete_image_tag(image_path[1..], tag)
-        number_of_deleted_tags += 1
+        if params[:soft] == 'false'
+          delete_image_tag(image_path[1..], tag)
+          number_of_deleted_tags += 1
+        else
+          delete_image_tag_soft(image_path[1..], tag)
+          number_of_deleted_tags += 1
+        end
       rescue StandardError => e
         exceptions << e.message
       end
