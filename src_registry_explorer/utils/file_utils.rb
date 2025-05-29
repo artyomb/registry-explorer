@@ -96,10 +96,12 @@ end
 otl_def def extract_images(images=Set.new)
   images_paths = get_images_paths
   TimeMeasurer.measure(:images_paths_after) do
-    images_paths.each do |image_path|
-      current_img = extract_image_with_tags(image_path)
-      images.add(current_img) if !current_img[:tags].empty?
-    end
+    images_paths.map do |image_path|
+      Async do
+        current_img = extract_image_with_tags(image_path)
+        images.add(current_img) if !current_img[:tags].empty?
+      end
+    end.join(&:wait)
   end
   images
 end
@@ -111,6 +113,7 @@ otl_def def extract_image_with_tags(image_path)
     subfolders = image_path.split('/')
     image_name = "/" + subfolders[subfolders.find_index('repositories') + 1..].join('/')
     current_img = { name: image_name, tags: Set.new, total_size: -1, required_blobs: Set.new, problem_blobs: Set.new }
+    # TODO: tag_paths = Dir.entries(image_path + "/_manifests/tags").reject { |f| f == '.' || f == '..' }.map { |f| File.join(image_path, "_manifests/tags", f) }.select { |f| File.directory?(f) }
     tag_paths = Dir.glob(image_path + "/_manifests/tags/*").select { |f| File.directory?(f) }
     TimeMeasurer.measure(:creating_tags) do
       tag_paths.map { |tag_path| extract_tag(tag_path) }.each do |tag|
@@ -313,13 +316,13 @@ def delete_index(image_path, image_sha256, is_current)
   end
 end
 
-def delete_image_tag(image_path, image_tag)
+def delete_image_tag(image_path, image_tag, retain_conditions = [])
   return [403, 'Registry explorer is in read-only mode'] if $read_only_mode
   current_index_of_tag = CachesManager.get_index_sha256($base_path + "/repositories/#{image_path}/_manifests/tags/#{image_tag}/current/link")
   delete_index(image_path, current_index_of_tag, true)
 end
 
-def delete_image_tag_soft(image_path, tag)
+def delete_image_tag_soft(image_path, tag, retain_conditions = [])
   full_image_path = $base_path + "/repositories/" + image_path
   other_tags = Dir.children(File.join(full_image_path, '_manifests', 'tags')).select { |tag_name| tag_name != tag }
 
