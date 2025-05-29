@@ -105,51 +105,61 @@ otl_def def extract_images(images=Set.new)
 end
 
 otl_def def extract_image_with_tags(image_path)
-  puts("Processing image: #{image_path}")
-  subfolders = image_path.split('/')
-  image_name = "/" + subfolders[subfolders.find_index('repositories') + 1..].join('/')
-  current_img = { name: image_name, tags: Set.new, total_size: -1, required_blobs: Set.new, problem_blobs: Set.new }
-  tag_paths = Dir.glob(image_path + "/_manifests/tags/*").select { |f| File.directory?(f) }
-  TimeMeasurer.measure(:creating_tags) do
-    tag_paths.map { |tag_path| extract_tag(tag_path) }.each do |tag|
-      current_img[:tags].add(tag)
-      current_img[:required_blobs].merge(tag[:required_blobs])
-      current_img[:problem_blobs].merge(tag[:problem_blobs])
+  otl_current_span do |span|
+    span.add_attributes( {'current_image_path' => image_path} )
+    puts("Processing image: #{image_path}")
+    subfolders = image_path.split('/')
+    image_name = "/" + subfolders[subfolders.find_index('repositories') + 1..].join('/')
+    current_img = { name: image_name, tags: Set.new, total_size: -1, required_blobs: Set.new, problem_blobs: Set.new }
+    tag_paths = Dir.glob(image_path + "/_manifests/tags/*").select { |f| File.directory?(f) }
+    TimeMeasurer.measure(:creating_tags) do
+      tag_paths.map { |tag_path| extract_tag(tag_path) }.each do |tag|
+        current_img[:tags].add(tag)
+        current_img[:required_blobs].merge(tag[:required_blobs])
+        current_img[:problem_blobs].merge(tag[:problem_blobs])
+      end
     end
+    return current_img if current_img[:tags].empty?
+    current_img[:total_size] = CachesManager.get_repo_size(image_path, current_img[:required_blobs])
+    span.add_attributes( {'image_total_size' => current_img[:total_size]} )
+    span.add_attributes( {'image_total_tags' => current_img[:tags].size} )
+    current_img
   end
-  return current_img if current_img[:tags].empty?
-  current_img[:total_size] = CachesManager.get_repo_size(image_path, current_img[:required_blobs])
-  current_img
 end
 
 otl_def def extract_tag(tag_path)
-  puts("Processing tag: #{tag_path}")
-  current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: CachesManager.get_index_sha256(tag_path + "/current/link"), required_blobs: Set.new, size: -1, problem_blobs: Set.new }
-  indexes_paths = Dir.glob(tag_path + "/index/sha256/*")
-  current_tag[:index_Nodes] << extract_index(current_tag[:current_index_sha256])
-  index_without_problems = []
-  problem_indexes = []
-  indexes_paths.each do |index_path|
-    index_sha256 = index_path.split('/').last
-    next if index_sha256 == current_tag[:current_index_sha256] || !File.exist?(tag_path + "/../../revisions/sha256/#{index_sha256}/link")
-    cur_index = extract_index(index_sha256)
-    if cur_index[:node].get_problem_blobs.size > 0
-      problem_indexes << cur_index
-    else
-      index_without_problems << cur_index
+  otl_current_span do |span|
+    span.add_attributes( {'current_tag_path' => tag_path} )
+    puts("Processing tag: #{tag_path}")
+    current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: CachesManager.get_index_sha256(tag_path + "/current/link"), required_blobs: Set.new, size: -1, problem_blobs: Set.new }
+    indexes_paths = Dir.glob(tag_path + "/index/sha256/*")
+    current_tag[:index_Nodes] << extract_index(current_tag[:current_index_sha256])
+    index_without_problems = []
+    problem_indexes = []
+    indexes_paths.each do |index_path|
+      index_sha256 = index_path.split('/').last
+      next if index_sha256 == current_tag[:current_index_sha256] || !File.exist?(tag_path + "/../../revisions/sha256/#{index_sha256}/link")
+      cur_index = extract_index(index_sha256)
+      if cur_index[:node].get_problem_blobs.size > 0
+        problem_indexes << cur_index
+      else
+        index_without_problems << cur_index
+      end
     end
-  end
-  index_without_problems.sort_by! { _1[:node]&.created_at || '-' }.reverse!
-  current_tag[:index_Nodes].append(*index_without_problems)
-  current_tag[:index_Nodes].append(*problem_indexes)
-  TimeMeasurer.measure(:search_tags_blobs) do
-    current_tag[:index_Nodes].map do |index_node|
-      current_tag[:required_blobs].merge index_node[:node].get_included_blobs
-      current_tag[:problem_blobs].merge index_node[:node].get_problem_blobs
+    index_without_problems.sort_by! { _1[:node]&.created_at || '-' }.reverse!
+    current_tag[:index_Nodes].append(*index_without_problems)
+    current_tag[:index_Nodes].append(*problem_indexes)
+    TimeMeasurer.measure(:search_tags_blobs) do
+      current_tag[:index_Nodes].map do |index_node|
+        current_tag[:required_blobs].merge index_node[:node].get_included_blobs
+        current_tag[:problem_blobs].merge index_node[:node].get_problem_blobs
+      end
     end
+    current_tag[:size] = CachesManager.get_repo_size(tag_path, current_tag[:required_blobs])
+    span.add_attributes( {'current_tag_size' => current_tag[:size]} )
+    span.add_attributes( {'current_tag_indexes' => current_tag[:index_Nodes].size} )
+    current_tag
   end
-  current_tag[:size] = CachesManager.get_repo_size(tag_path, current_tag[:required_blobs])
-  current_tag
 end
 
 def extract_index(index_sha256)
