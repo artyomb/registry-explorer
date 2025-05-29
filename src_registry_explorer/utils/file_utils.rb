@@ -113,8 +113,8 @@ otl_def def extract_image_with_tags(image_path)
     subfolders = image_path.split('/')
     image_name = "/" + subfolders[subfolders.find_index('repositories') + 1..].join('/')
     current_img = { name: image_name, tags: Set.new, total_size: -1, required_blobs: Set.new, problem_blobs: Set.new }
-    # TODO: tag_paths = Dir.entries(image_path + "/_manifests/tags").reject { |f| f == '.' || f == '..' }.map { |f| File.join(image_path, "_manifests/tags", f) }.select { |f| File.directory?(f) }
-    tag_paths = Dir.glob(image_path + "/_manifests/tags/*").select { |f| File.directory?(f) }
+    tag_paths = get_tags_paths(image_path)
+    # tag_paths = Dir.glob(image_path + "/_manifests/tags/*").select { |f| File.directory?(f) }
     TimeMeasurer.measure(:creating_tags) do
       tag_paths.map { |tag_path| extract_tag(tag_path) }.each do |tag|
         current_img[:tags].add(tag)
@@ -135,7 +135,7 @@ otl_def def extract_tag(tag_path)
     span.add_attributes( {'current_tag_path' => tag_path} )
     puts("Processing tag: #{tag_path}")
     current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: CachesManager.get_index_sha256(tag_path + "/current/link"), required_blobs: Set.new, size: -1, problem_blobs: Set.new }
-    indexes_paths = Dir.glob(tag_path + "/index/sha256/*")
+    indexes_paths = Dir.children(File.join(tag_path, "index", "sha256")).map { |sha256| tag_path + "/index/sha256/#{sha256}" }
     current_tag[:index_Nodes] << extract_index(current_tag[:current_index_sha256])
     index_without_problems = []
     problem_indexes = []
@@ -224,6 +224,11 @@ def get_images_paths
     end
     images_paths
   end
+end
+
+def get_tags_paths(image_path)
+  # Dir.entries(image_path + "/_manifests/tags").reject { |f| f == '.' || f == '..' }.map { |f| File.join(image_path, "_manifests/tags", f) }.select { |f| File.directory?(f) }
+  Dir.children(image_path + "/_manifests/tags").map { |f| File.join(image_path, "_manifests/tags", f) }.select { |f| File.directory?(f) }
 end
 
 def get_referring_image_entries(blob_sha256)

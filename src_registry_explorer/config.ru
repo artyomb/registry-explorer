@@ -1,11 +1,12 @@
 #!/usr/bin/env ruby
 require_relative 'logging'
 require_relative 'otlp'
+otel_initialize
 require_relative 'helpers'
 require_relative 'config.rb'
 require_relative 'sinatra/sinatra_server'
 
-otel_initialize
+
 run RegistryExplorerFront
 
 # PATCH: /home/user/.rbenv/versions/3.1.2/bin/bundle
