@@ -290,7 +290,60 @@ javascript:
         }, function () {
             return false;
         });
+    }
 
+    async function clean_up_registry(event) {
+        UIkit.modal.alert("This feature is not yet implemented.");
+        return;
+        const searchString = document.getElementById("imageSearch").value.toLowerCase();
+        if (!searchString || !(searchString.trim().length > 0)) {
+            UIkit.modal.alert('Please enter a search term before deleting tags.');
+            return;
+        }
+        UIkit.modal.prompt('Are you sure you want to delete tags, chosen by filter? Type "confirm" to start the process').then(async function (prompted) {
+            if (!prompted) {
+                UIkit.modal.alert('Deletion aborted.');
+                return;
+            }
+            if (prompted !== "confirm") {
+                UIkit.modal.alert('You did not type "confirm".');
+                return;
+            }
+            try {
+                const tagsForDeletion = [];
+                document.querySelectorAll("tbody tr.tree-node").forEach(function (row) {
+                    if (row.dataset.tagName.length > 0 && isRowAcceptedByFilter(row, searchString)) {
+                        const fullString = row.dataset.imageName + ":" + row.dataset.tagName;
+                        tagsForDeletion.push(fullString);
+                    }
+                });
+                if (tagsForDeletion.length > 0) {
+                    const response = await fetch('/delete-tag?soft=true', {
+                        method: 'DELETE',
+                        body: JSON.stringify({images_with_tags: tagsForDeletion}),
+                    });
+                    const responseText = await response.text(); // Wait for the response text
+                    if (response.ok) {
+                        // UIkit.notification({message: responseText, status: 'success', pos: 'top-right'});
+                        UIkit.modal.confirm(`Deletion successful. Response text:\n${responseText}\nDo you want to reload this page to see updated structure?`).then(function (confirmed) {
+                            location.reload();
+                        }, {});
+                    } else {
+                        UIkit.notification({message: 'Error: ' + responseText, status: 'danger', pos: 'top-right'});
+                    }
+                } else {
+                    UIkit.notification({
+                        message: 'No tags to delete',
+                        status: 'warning',
+                    });
+                    return;
+                }
+            } catch (error) {
+                UIkit.notification({message: 'Error: ' + error, status: 'danger', pos: 'top-right'});
+            }
+        }, function () {
+            return false;
+        });
     }
 
 / h1.uk-h1= "Docker registry content (#{images.map{|img| img[:tags].map{ |tag| tag[:index_Nodes].size }.sum}.sum} images in #{images.map{|img| img[:tags].size}.sum} tags, total size = #{represent_size(CachesManager.get_repo_size("REPOSITORY", required_in_registry_blobs))})"
@@ -328,6 +381,10 @@ hr
     button.uk-button.uk-button-default.uk-flex.align-items-center.uk-margin-left uk-tooltip="title: #{'Delete all tags accepted by filter'}; cls: uk-active; delay: 500;" style="" onclick="delete_filtered_tags(event)"
       span.icon-padding-right.icon-padding-right.uk-text-primary uk-icon="icon: trash" style="color: red !important"
       span= "Delete filtered tags"
+    button.uk-button.uk-button-default.uk-flex.align-items-center.uk-margin-left uk-tooltip="title: #{'Configure cleaning registry'}; cls: uk-active; delay: 500;" style="" onclick="clean_up_registry(event)"
+      span.icon-padding-right.icon-padding-right.uk-text-primary uk-icon="icon: trash" style="color: red !important"
+      span= "Clean up registry"
+
   .uk-button-group.uk-float-right
     button.switch-btn.uk-button.uk-button-primary id="treeViewButton" style=""= "Tree view"
     button.switch-btn.uk-button.uk-button-default id="tableViewButton" style=""= "Table view"

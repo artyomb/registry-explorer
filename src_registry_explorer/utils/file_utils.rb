@@ -93,7 +93,7 @@ def cleanup_old_temp_dirs
   end
 end
 
-def extract_images(images=Set.new)
+otl_def def extract_images(images=Set.new)
   images_paths = get_images_paths
   TimeMeasurer.measure(:images_paths_after) do
     images_paths.each do |image_path|
@@ -104,7 +104,7 @@ def extract_images(images=Set.new)
   images
 end
 
-def extract_image_with_tags(image_path)
+otl_def def extract_image_with_tags(image_path)
   puts("Processing image: #{image_path}")
   subfolders = image_path.split('/')
   image_name = "/" + subfolders[subfolders.find_index('repositories') + 1..].join('/')
@@ -122,7 +122,7 @@ def extract_image_with_tags(image_path)
   current_img
 end
 
-def extract_tag(tag_path)
+otl_def def extract_tag(tag_path)
   puts("Processing tag: #{tag_path}")
   current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: CachesManager.get_index_sha256(tag_path + "/current/link"), required_blobs: Set.new, size: -1, problem_blobs: Set.new }
   indexes_paths = Dir.glob(tag_path + "/index/sha256/*")
