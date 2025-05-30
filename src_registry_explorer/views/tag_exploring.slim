@@ -244,6 +244,97 @@ javascript:
             }
         });
     }
+    async function call_clean_up_dialog(event) {
+        event.stopPropagation();
+        cleanUpDialog = UIkit.modal.dialog(`
+              <div class="uk-modal-body" id="cleanUpDialog">
+                  <h2 class="uk-modal-title">Clean Up Tag</h2>
+                  <form class="uk-form-stacked">
+                      <div class="uk-margin">
+                          <label class="uk-form-label">Keep last N versions</label>
+                          <div class="uk-form-controls">
+                              <input type="number" class="uk-input" id="retainNumber" min="1" value="5">
+                          </div>
+                      </div>
+                      <div class="uk-margin">
+                          <label class="uk-form-label">Delete before date</label>
+                          <div class="uk-form-controls">
+                              <input type="date" class="uk-input" id="deleteBeforeDate">
+                          </div>
+                      </div>
+                  </form>
+              </div>
+              <div class="uk-modal-footer uk-text-right">
+                  <button class="uk-button uk-button-default uk-modal-close">Cancel</button>
+                  <button class="uk-button uk-button-primary" id="confirmCleanup" onclick="clean_up_tag(event)">Confirm</button>
+              </div>
+          `);
+    }
+
+    async function clean_up_tag(event) {
+        const dialog = document.getElementById("cleanUpDialog");
+        const retainNumber = parseInt(dialog.querySelector("#retainNumber").value);
+        const deleteBeforeDate = dialog.querySelector("#deleteBeforeDate").value;
+
+        if (!retainNumber || retainNumber < 1) {
+            UIkit.notification({
+                message: 'Number of versions to keep must be at least 1',
+                status: 'danger',
+                pos: 'top-right'
+            });
+            return;
+        }
+
+        if (deleteBeforeDate && new Date(deleteBeforeDate) > new Date()) {
+            UIkit.notification({
+                message: 'Delete before date cannot be in the future',
+                status: 'danger',
+                pos: 'top-right'
+            });
+            return;
+        }
+
+        cleanUpDialog.$destroy(true);
+
+        UIkit.notification({
+            message: '<div uk-spinner></div> Cleaning up image...',
+            status: 'primary',
+            pos: 'top-right'
+        });
+        try {
+            const tagsForDeletion = [];
+            tagsForDeletion.push(pathToImage + ":" + tagString);
+            if (tagsForDeletion.length > 0) {
+                const response = await fetch('/clean-up-tag', {
+                    method: 'DELETE',
+                    body: JSON.stringify({
+                        images_with_tags: tagsForDeletion,
+                        conditions: {
+                            at_least_to_retain_number: retainNumber,
+                            deadline_to_retain: deleteBeforeDate,
+                        }
+                    })
+                });
+                const responseText = await response.text(); // Wait for the response text
+                if (response.ok) {
+                    // UIkit.notification({message: responseText, status: 'success', pos: 'top-right'});
+                    UIkit.modal.confirm(`Cleaning up successful. Response text:\n${responseText}\nDo you want to reload this page to see updated structure?`).then(function (confirmed) {
+                        location.reload();
+                    }, {});
+                } else {
+                    UIkit.notification({message: 'Error: ' + responseText, status: 'danger', pos: 'top-right'});
+                }
+            } else {
+                UIkit.notification({
+                    message: 'No tags to clean up',
+                    status: 'warning',
+                });
+                return;
+            }
+        } catch (error) {
+            UIkit.notification({message: 'Error: ' + error, status: 'danger', pos: 'top-right'});
+        }
+    }
 
 sass:
   .copy-btn
@@ -291,7 +382,12 @@ h1.uk-margin-remove-top
     button.switch-btn.uk-button.uk-button-default.uk-flex.align-items-center uk-tooltip="title: #{'Deleting tag leads to deleting all images'}; cls: uk-active; delay: 500;" style="" onclick="delete_tag('#{tag_string}')"
       span.icon-padding-right.icon-padding-right.uk-text-primary uk-icon="icon: trash" style="color: red !important"
       span="Delete tag (all images)"
-    button.switch-btn.uk-button.uk-button-default uk-tooltip="title: #{'Deleting all images, besides current'}; cls: uk-active; delay: 500;" onclick="delete_non_current_images()" style=""= "Delete non-current images"
+    button.switch-btn.uk-button.uk-button-default uk-tooltip="title: #{'Deleting all images, besides current'}; cls: uk-active; delay: 500;" onclick="delete_non_current_images()" style=""
+      span.icon-padding-right.icon-padding-right.uk-text-primary uk-icon="icon: trash" style="color: red !important"
+      span= "Delete non-current images"
+    button.switch-btn.uk-button.uk-button-default  uk-tooltip="title: #{'Configure cleaning registry'}; cls: uk-active; delay: 500;" style="" onclick="call_clean_up_dialog(event)"
+      span.icon-padding-right.icon-padding-right.uk-text-primary uk-icon="icon: trash" style="color: red !important"
+      span= "Clean up image"
 table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
   thead
     tr

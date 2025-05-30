@@ -320,7 +320,6 @@ javascript:
         `);
     }
     async function clean_up_registry(event) {
-        console.log('clean_up_registry');
         const dialog = document.getElementById("cleanUpDialog");
         const retainNumber = parseInt(dialog.querySelector("#retainNumber").value);
         const deleteBeforeDate = dialog.querySelector("#deleteBeforeDate").value;
@@ -359,7 +358,7 @@ javascript:
                 const responseText = await response.text(); // Wait for the response text
                 if (response.ok) {
                     // UIkit.notification({message: responseText, status: 'success', pos: 'top-right'});
-                    UIkit.modal.confirm(`Cleaning up of all tags successful. Response text:\n${responseText}\nDo you want to reload this page to see updated structure?`).then(function (confirmed) {
+                    UIkit.modal.confirm(`Cleaning up successful. Response text:\n${responseText}\nDo you want to reload this page to see updated structure?`).then(function (confirmed) {
                         location.reload();
                     }, {});
                 } else {
