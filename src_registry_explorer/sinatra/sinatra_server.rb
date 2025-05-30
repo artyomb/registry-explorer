@@ -7,6 +7,7 @@ require 'net/http'
 require 'cgi'
 require_relative '../utils/file_utils'
 require_relative '../utils/garbage_collection'
+require_relative '../utils/clean_up_utils'
 require 'open3'
 
 class RegistryExplorerFront < Sinatra::Base
@@ -154,6 +155,32 @@ class RegistryExplorerFront < Sinatra::Base
     end
     puts "Deleting #{number_of_deleted_tags} tags is successful. #{exceptions.size} exceptions raised:#{exceptions.join("\n")}"
     [200, "Deleting #{number_of_deleted_tags} tags is successful. #{exceptions.size} exceptions raised"]
+  end
+
+  delete '/clean-up-tag' do
+    boby = request.body.read
+    data = JSON.parse(boby, symbolize_names: true)
+    if data.nil? || data[:images_with_tags].nil?
+      return [400, 'Error when deleting list of tags: no data to delete']
+    end
+    if data[:conditions].nil? || data[:conditions].empty?
+      return [400, 'Error when deleting list of tags: conditions privided']
+    end
+    number_of_deleted_tags = 0
+    exceptions = []
+    data[:images_with_tags].each do |image_with_tags|
+      image_path, tag = image_with_tags.split(':')
+      puts "Cleaning up tag #{tag} from image #{image_path}:"
+      begin
+        message = clean_up_image_tag(image_path[1..], tag, data[:conditions])
+        puts message
+        number_of_deleted_tags += 1
+      rescue StandardError => e
+        exceptions << e.message
+      end
+    end
+    puts "Cleaning up #{number_of_deleted_tags} tags is successful. #{exceptions.size} exceptions raised:#{exceptions.join("\n")}"
+    [200, "Cleaning up #{number_of_deleted_tags} tags is successful. #{exceptions.size} exceptions raised"]
   end
 
   get '/registry-healthcheck' do

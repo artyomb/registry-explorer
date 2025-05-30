@@ -1,6 +1,6 @@
 require_relative 'file_utils'
 
-def get_images_strictire_where_indexes_without_revisions(images_structure = Set.new)
+def get_images_structure_where_indexes_without_revisions(images_structure = Set.new)
   images_paths = get_images_paths
   images_paths.each do |image_path|
     subfolders = image_path.split('/')

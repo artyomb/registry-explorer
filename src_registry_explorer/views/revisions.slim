@@ -119,7 +119,7 @@ ruby:
   end
   all_revisions_blobs_total_size = all_revisions_blobs.map { |b| CachesManager.blob_size(b) }.sum
   #####################################################################################################################################
-  images_structure = get_images_strictire_where_indexes_without_revisions # retirns images structure with tags and indexes, where indexes are without link in revisions
+  images_structure = get_images_structure_where_indexes_without_revisions # retirns images structure with tags and indexes, where indexes are without link in revisions
   revisions_nodes_from_indexes_without_link = images_structure.flat_map{|img| img[:tags].flat_map { |tag| tag[:index_Nodes] } }.flatten
   revisions_nodes_from_indexes_without_link_blobs = Set.new
   images_structure.each{ |img| revisions_nodes_from_indexes_without_link_blobs.merge(img[:required_blobs]) }
