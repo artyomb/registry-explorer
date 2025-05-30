@@ -356,6 +356,11 @@ sass:
           span.icon-padding-right uk-icon="icon: tag"
           span.uk-text-bold Title:
           span= image_title.nil? ? "Title unknown" : image_title
+      .uk-label.label-paddings.unset-text-transform.align-content-center.custom-label-background
+        / span uk-icon="icon: hashtag"
+        span.icon-padding-right uk-icon="icon: album"
+        span.uk-text-bold Images :
+        span= " #{tag[:index_Nodes].size}"
       - if !image_tag_size.nil?
         .uk-label.uk-label-warning.label-paddings.custom-label-background.unset-text-transform.align-content-center
           span.icon-padding-right uk-icon="icon: database"
