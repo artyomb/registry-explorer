@@ -84,15 +84,15 @@ javascript:
 
     function showAllParents(row) {
         const imageNamePath = row.dataset.imageName.split("/");
-        document.querySelectorAll("tbody tr.tree-node").forEach(function (potentialParent) {
-            if (potentialParent.dataset.level === "0") {
-                if (potentialParent.dataset.imageName === imageNamePath[1]) {
-                    potentialParent.classList.remove('hidden');
-                    // If want to retain only top level parent, then remove the following line
-                    // showAllChildren(potentialParent);
-                }
+        console.log("accepted image path: " + imageNamePath);
+        const parentId = row.dataset.parentId;
+        if (parentId !== "") {
+            const parentRow = document.getElementById(parentId);
+            if (parentRow) {
+                parentRow.classList.remove('hidden');
+                showAllParents(parentRow);
             }
-        });
+        }
     }
 
     function hideAllChildren(currentNode) {
@@ -430,7 +430,9 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
     - flattened.each do |node|
       - warn_node_condition = node[:problem_blobs].size > 0 || (!node[:image].nil? && node[:image].size > 0 && node[:image][:problem_blobs].size > 0)
       - href_for_image_with_tags = (!node[:image][:tags].nil? && node[:image][:tags].size > 0) ? "#{node[:image][:name]}" : ""
-      tr.tree-node.tree-view.hidden class="#{warn_node_condition ? 'warning-background' : ''}" data-level="#{node[:level]}" data-image-name="#{node[:name]}" data-tag-name=""
+      - split_path = node[:name].split('/')
+      - parent_id = split_path.size > 1 ? split_path[0..-2].join('/') : ""
+      tr.tree-node.tree-view.hidden class="#{warn_node_condition ? 'warning-background' : ''}" data-level="#{node[:level]}" data-image-name="#{node[:name]}" data-tag-name="" id="#{node[:name]}" data-parent-id="#{parent_id}"
         td
           - if warn_node_condition
             - puts "Node #{node[:name]} has problem blobs #{node[:problem_blobs].map { |s| s[0..25] + '...' }.join(', ')}"
@@ -448,7 +450,7 @@ table.uk-table.uk-table-hover.uk-table-divider.uk-table-striped
         td.align-text-right #{node[:children_count] == 0 ? represent_size(node[:image][:total_size]) : represent_size(CachesManager.get_repo_size("#{repo_path}/#{node[:name]}", node[:required_blobs]))}
         td -
       - node[:image][:tags]&.each do |tag|
-        tr.tree-node.hidden class="#{tag[:problem_blobs].size > 0 ? 'warning-background' : ''}" data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}" data-image-name="#{node[:image][:name]}" data-tag-name="#{tag[:name]}"
+        tr.tree-node.hidden class="#{tag[:problem_blobs].size > 0 ? 'warning-background' : ''}" data-href="/tag-exploring#{node[:image][:name]}/#{tag[:name]}" data-level="#{node[:level]+1}" data-image-name="#{node[:image][:name]}" data-tag-name="#{tag[:name]}" data-parent-id="#{node[:name]}"
           td
             - if tag[:problem_blobs].size != 0
               span.warning-icon uk-tooltip="title: #{(tag[:problem_blobs].size == 0) ? 'Full size of tag' : "Some layers of tag not found:<br>" + tag[:problem_blobs].map{|s| s[0..25] + '...' }.join('<br>')}; delay: 500;"  uk-icon="icon: warning"
