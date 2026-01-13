@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
 require_relative 'logging'
 require_relative 'otlp'
-otel_initialize
 require_relative 'helpers'
 require_relative 'config.rb'
 require_relative 'sinatra/sinatra_server'
