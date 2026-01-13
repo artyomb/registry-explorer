@@ -208,23 +208,30 @@ def calculate_blobs_size(blobs)
 end
 
 def get_images_paths
-  path_to_repositories = $base_path + "/repositories"
+  path_to_repositories = File.join($base_path, "repositories")
+  required_dirs = %w[_uploads _manifests _layers]
+
   TimeMeasurer.measure(:images_paths_before) do
     images_paths = Set.new
-
-    return [] if !Dir.exist?(path_to_repositories)
+    return images_paths unless Dir.exist?(path_to_repositories)
 
     Find.find(path_to_repositories) do |path|
       next unless File.directory?(path)
-      subdirs = %w[_manifests]
-      if subdirs.all? { |subdir| Dir.exist?(File.join(path, subdir)) }
-        images_paths.add path
-        Find.prune
+
+      # Check if all required directories exist in this path
+      if required_dirs.all? { |dir| Dir.exist?(File.join(path, dir)) }
+        images_paths.add(path)
+
+        # Prune only the required technical directories,
+        # but allow searching other subfolders
+        Find.prune if required_dirs.include?(File.basename(path))
       end
     end
+
     images_paths
   end
 end
+
 
 def get_tags_paths(image_path)
   # Dir.entries(image_path + "/_manifests/tags").reject { |f| f == '.' || f == '..' }.map { |f| File.join(image_path, "_manifests/tags", f) }.select { |f| File.directory?(f) }
