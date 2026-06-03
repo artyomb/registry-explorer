@@ -135,12 +135,12 @@ otl_def def extract_tag(tag_path)
     span.add_attributes( {'current_tag_path' => tag_path} )
     puts("Processing tag: #{tag_path}") if ENV['DEBUG_CACHE'] == 'true'
     current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: CachesManager.get_index_sha256(tag_path + "/current/link"), required_blobs: Set.new, size: -1, problem_blobs: Set.new }
-    indexes_paths = Dir.children(File.join(tag_path, "index", "sha256")).map { |sha256| tag_path + "/index/sha256/#{sha256}" }
+    # indexes_paths = Dir.children(File.join(tag_path, "index", "sha256")).map { |sha256| tag_path + "/index/sha256/#{sha256}" }
+    indexes_sha256 = Dir.children(File.join(tag_path, "index", "sha256"))
     current_tag[:index_Nodes] << extract_index(current_tag[:current_index_sha256])
     index_without_problems = []
     problem_indexes = []
-    indexes_paths.each do |index_path|
-      index_sha256 = index_path.split('/').last
+    indexes_sha256.each do |index_sha256|
       next if index_sha256 == current_tag[:current_index_sha256] || !File.exist?(tag_path + "/../../revisions/sha256/#{index_sha256}/link")
       cur_index = extract_index(index_sha256)
       if cur_index[:node].get_problem_blobs.size > 0
