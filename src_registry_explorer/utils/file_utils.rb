@@ -217,14 +217,15 @@ def get_images_paths
 
     Find.find(path_to_repositories) do |path|
       next unless File.directory?(path)
+      # Skip registry metadata folders, but keep exploring nested namespace folders.
+      if required_dirs.include?(File.basename(path))
+        Find.prune
+        next
+      end
 
       # Check if all required directories exist in this path
       if required_dirs.all? { |dir| Dir.exist?(File.join(path, dir)) }
         images_paths.add(path)
-
-        # Prune only the required technical directories,
-        # but allow searching other subfolders
-        Find.prune if required_dirs.include?(File.basename(path))
       end
     end
 
