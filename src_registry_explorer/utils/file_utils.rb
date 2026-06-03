@@ -133,7 +133,7 @@ end
 otl_def def extract_tag(tag_path)
   otl_current_span do |span|
     span.add_attributes( {'current_tag_path' => tag_path} )
-    puts("Processing tag: #{tag_path}")
+    puts("Processing tag: #{tag_path}") if ENV['DEBUG_CACHE'] == 'true'
     current_tag = { name: tag_path.split('/').last, index_Nodes: [], current_index_sha256: CachesManager.get_index_sha256(tag_path + "/current/link"), required_blobs: Set.new, size: -1, problem_blobs: Set.new }
     indexes_paths = Dir.children(File.join(tag_path, "index", "sha256")).map { |sha256| tag_path + "/index/sha256/#{sha256}" }
     current_tag[:index_Nodes] << extract_index(current_tag[:current_index_sha256])
