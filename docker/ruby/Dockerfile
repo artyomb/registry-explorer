@@ -47,5 +47,5 @@ WORKDIR /app
 
 RUN bundle exec rspec
 
-HEALTHCHECK --interval=15s --timeout=2s --retries=3 --start-period=15m --start-interval=30s CMD curl --fail http://localhost:$PORT/healthcheck || exit 1
+HEALTHCHECK --interval=30s --timeout=30s --retries=3 --start-period=15m --start-interval=30s CMD curl --fail http://localhost:$PORT/healthcheck || exit 1
 CMD echo "Container start" && ls && bundle exec rackup -o 0.0.0.0 -p $PORT -s falcon
