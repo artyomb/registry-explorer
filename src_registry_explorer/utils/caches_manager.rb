@@ -20,7 +20,7 @@ class CachesManager
   @@cache_dicts = [@@cache_dict, @@cache_dict_with_attest]
 
 
-  @@cache_refresh_interval = 60 * 5 # seconds between each refresh
+  @@cache_refresh_interval = 60 * 30 # seconds between each refresh
   @@refreshing_in_progress_no_attest = false
   @@refreshing_in_progress_with_attest = false
   def self.json_blob_content(sha256)
